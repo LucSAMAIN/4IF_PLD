@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "7_correctFirst2.C": "cpp"
+        "7_correctFirst2.C": "cpp",
+        "variant": "cpp"
     }
 }

@@ -113,7 +113,7 @@ bool SymbolTableVisitor::checkSymbolTable() {
 }
 
 void SymbolTableVisitor::printSymbolTable() const {
-    std::cout << "=== Symbol Table ===\n";
+    std::cout << "\n==================== Symbol Table ====================\n";
     std::cout << "Variable\tIndex\tDeclared\tUsed\n";
     
     for (const auto& entry : symbolTable) {
@@ -123,5 +123,5 @@ void SymbolTableVisitor::printSymbolTable() const {
                   << (entry.second.isUsed ? "Yes" : "No") << "\n";
     }
     
-    std::cout << "===================\n";
+    std::cout << "======================================================\n\n";
 }

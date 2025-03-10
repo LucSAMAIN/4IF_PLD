@@ -4,13 +4,13 @@ axiom : prog EOF ;
 
 prog : 'int' 'main' '(' ')' '{' statement* return_stmt '}' ;
 
-return_stmt: RETURN CONST ';' ;
+return_stmt: RETURN expression ';' ;
 
 statement : declaration ';'
           | assignment ';'
           ;
 
-declaration : TYPE IDENTIFIER ('=' expression)?;
+declaration : type IDENTIFIER ('=' expression)?;
 assignment : IDENTIFIER '=' expression;
 
 expression : CONST
@@ -18,7 +18,13 @@ expression : CONST
            ;
 
 
-TYPE : 'int' | 'char' | 'void' ;
+type: 'int' | 'char' | 'void' ;
+
+
+
+
+
+
 RETURN : 'return' ;
 CONST : [0-9]+ ;
 IDENTIFIER : [a-zA-Z_][a-zA-Z0-9_]* ;

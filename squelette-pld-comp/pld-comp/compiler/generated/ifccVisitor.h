@@ -33,6 +33,8 @@ public:
 
     virtual antlrcpp::Any visitExpression(ifccParser::ExpressionContext *context) = 0;
 
+    virtual antlrcpp::Any visitType(ifccParser::TypeContext *context) = 0;
+
 
 };
 

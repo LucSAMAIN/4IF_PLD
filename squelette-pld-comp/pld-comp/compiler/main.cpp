@@ -54,7 +54,7 @@ int main(int argn, const char **argv)
     symTable.visit(tree);
     symTable.printSymbolTable();
 
-    CodeGenVisitor v;
+    CodeGenVisitor v(symTable.getSymbolTable());
     v.visit(tree);
     
     return 0;

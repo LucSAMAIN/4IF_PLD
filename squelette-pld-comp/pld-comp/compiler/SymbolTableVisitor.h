@@ -8,20 +8,21 @@
 #include <iostream>
 #include <vector>
 
+// Structure pour stocker les informations liés à chaque variable.
+struct VariableInfo {
+    int index;
+    bool isDeclared;
+    bool isUsed;
+};
 
 // -----------------------------------------
 // WARNING: uniquement des entier de 32 bits
 // -----------------------------------------
 class SymbolTableVisitor : public ifccBaseVisitor {
 public:
-    // Structure pour stocker les informations d'une variable
-    struct VariableInfo {
-        int index;
-        bool isDeclared;
-        bool isUsed;
-    };
 
-    SymbolTableVisitor() : nextIndex(0) {}
+
+    SymbolTableVisitor() : nextIndex(4) {} // car la première on la réserve pour la valeur initiale (avant qu'on lance notre programme il y avait qqchose ca évite d'override)...
     
     virtual antlrcpp::Any visitProg(ifccParser::ProgContext *ctx) override;
     virtual antlrcpp::Any visitDeclaration(ifccParser::DeclarationContext *ctx) override;
@@ -40,8 +41,11 @@ public:
     // Affiche la table des symboles pour debug
     void printSymbolTable() const;
 
+    // getterSymbolTable:
+    std::map<std::string, VariableInfo>& getSymbolTable(){return this->symbolTable;}
+
 private:
     std::map<std::string, VariableInfo> symbolTable;
-    int nextIndex;  // Toujours un multiple de 4
+    int nextIndex = 4;  // Toujours un multiple de 4
     std::vector<std::string> errors;  // Pour collecter les erreurs
 };

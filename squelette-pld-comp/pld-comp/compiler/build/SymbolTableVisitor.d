@@ -1,4 +1,4 @@
-build/CodeGenVisitor.o: CodeGenVisitor.cpp CodeGenVisitor.h \
+build/SymbolTableVisitor.o: SymbolTableVisitor.cpp SymbolTableVisitor.h \
  /usr/include/antlr4-runtime/antlr4-runtime.h \
  /usr/include/antlr4-runtime/antlr4-common.h \
  /usr/include/antlr4-runtime/support/guid.h \
@@ -156,4 +156,4 @@ build/CodeGenVisitor.o: CodeGenVisitor.cpp CodeGenVisitor.h \
  /usr/include/antlr4-runtime/tree/xpath/XPathWildcardAnywhereElement.h \
  /usr/include/antlr4-runtime/tree/xpath/XPathWildcardElement.h \
  generated/ifccBaseVisitor.h generated/ifccVisitor.h \
- generated/ifccParser.h SymbolTableVisitor.h
+ generated/ifccParser.h

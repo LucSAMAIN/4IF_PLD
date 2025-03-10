@@ -9,8 +9,6 @@ antlrcpp::Any SymbolTableVisitor::visitProg(ifccParser::ProgContext *ctx) {
     // Visite le return statement
     visit(ctx->return_stmt());
     
-    // Affiche la table des symboles
-    printSymbolTable();
     
     return antlrcpp::Any();
 }

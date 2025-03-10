@@ -1,4 +1,0 @@
-line 4:11 mismatched input 'x' expecting CONST
-error: syntax error during parsing
-
-exit status: 1

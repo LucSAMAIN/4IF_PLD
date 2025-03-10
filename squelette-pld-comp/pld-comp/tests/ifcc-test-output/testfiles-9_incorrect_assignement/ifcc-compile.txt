@@ -1,4 +1,0 @@
-line 3:8 extraneous input '189' expecting IDENTIFIER
-error: syntax error during parsing
-
-exit status: 1

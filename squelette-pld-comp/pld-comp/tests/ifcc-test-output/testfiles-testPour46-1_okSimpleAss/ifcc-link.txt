@@ -1,0 +1,9 @@
+asm-ifcc.s: Assembler messages:
+asm-ifcc.s:2: Error: junk at end of line, first unrecognized character is `='
+asm-ifcc.s:3: Error: no such instruction: `variable Index Declared Used'
+asm-ifcc.s:4: Error: no such instruction: `a 4 Yes Yes'
+asm-ifcc.s:5: Error: junk at end of line, first unrecognized character is `='
+asm-ifcc.s:13: Error: incorrect register `%rax' used with `l' suffix
+asm-ifcc.s:14: Error: incorrect register `%rax' used with `l' suffix
+
+exit status: 1

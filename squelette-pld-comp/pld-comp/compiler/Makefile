@@ -70,3 +70,6 @@ gui:
 clean:
 	rm -rf build generated
 	rm -f ifcc
+	rm -f *.out
+	rm -f *.o
+	rm -f *.s

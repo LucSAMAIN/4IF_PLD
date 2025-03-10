@@ -3,7 +3,7 @@
 antlrcpp::Any CodeGenVisitor::visitProg(ifccParser::ProgContext *ctx)
 {
     std::cout << ".globl main\n";
-    std::cout << " main: \n";
+    std::cout << "main: \n";
 
     // prologue
     std::cout << "#prologue \n";
@@ -26,22 +26,8 @@ antlrcpp::Any CodeGenVisitor::visitProg(ifccParser::ProgContext *ctx)
 
 antlrcpp::Any CodeGenVisitor::visitReturn_stmt(ifccParser::Return_stmtContext *ctx)
 {
-    // version détaillé pour le mot clef return
-    if (ctx->expression()->CONST() != nullptr)
-    {
-        // Expression est une constante
-        int val = std::stoi(ctx->expression()->CONST()->getText());
-        std::cout << "    movl $" << val << ", %eax\n";
-    }
-    else if (ctx->expression()->IDENTIFIER() != nullptr)
-    {
-        // Expression est une variable
-        std::string varName = ctx->expression()->IDENTIFIER()->getText();
-        // À compléter avec la table des symboles
-        std::cout << "    # Accès à la variable " << varName << " (à implémenter)\n";
-        std::cout << "    movl $0, %eax\n";
-    }
-
+    // Stocker dans %rax la valeur temporaire
+    visit(ctx->expression());
     return 0;
 }
 
@@ -94,7 +80,7 @@ antlrcpp::Any CodeGenVisitor::visitAssignment(ifccParser::AssignmentContext *ctx
 
     std::string varName = ctx->IDENTIFIER()->getText();
     int offset = symbolTable.at(varName).index;
-    std::cout << "  movl -" << offset << "(%rbp), %rax\n";
+    std::cout << "    movq %rax, -" << offset << "(%rbp)\n";
 
     return 0;
 }
@@ -106,7 +92,7 @@ antlrcpp::Any CodeGenVisitor::visitExpression(ifccParser::ExpressionContext *ctx
     {
         int val = std::stoi(ctx->CONST()->getText());
         // on met dans rax la valeur temp
-        std::cout << "    movl $" << val << ", %rax\n";
+        std::cout << "    movq $" << val << ", %rax\n";
     }
     // case identifier
     else if (ctx->IDENTIFIER() != nullptr)
@@ -114,7 +100,7 @@ antlrcpp::Any CodeGenVisitor::visitExpression(ifccParser::ExpressionContext *ctx
         std::string varName = ctx->IDENTIFIER()->getText();
         int offset = symbolTable.at(varName).index;
         // on met dans rax la valeur temp
-        std::cout << "    movl -" << offset << "(%rbp), %rax\n";
+        std::cout << "    movq -" << offset << "(%rbp), %rax\n";
     }
 
     return 0;

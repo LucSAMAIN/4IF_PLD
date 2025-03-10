@@ -62,6 +62,10 @@ int main(int argn, const char **argv)
         }
         return 1;
     }
+
+    
+    // Affiche la table des symboles
+    //symTable.printSymbolTable();
     
 
     CodeGenVisitor v(symTable.getSymbolTable());

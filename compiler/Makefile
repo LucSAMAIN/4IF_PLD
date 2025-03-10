@@ -9,7 +9,7 @@ CCFLAGS=-g -c -std=c++17 -I$(ANTLRINC) -Wno-attributes # -Wno-defaulted-function
 LDFLAGS=-g
 
 default: all
-all: ifcc
+all: ifcc.app
 
 ##########################################
 # link together all pieces of our compiler 
@@ -18,11 +18,12 @@ OBJECTS=build/ifccBaseVisitor.o \
 	build/ifccVisitor.o \
 	build/ifccParser.o \
 	build/main.o \
-	build/CodeGenVisitor.o
+	build/CodeGenVisitor.o \
+	build/SymbolTableGenVisitor.o
 
-ifcc: $(OBJECTS)
+ifcc.app: $(OBJECTS)
 	@mkdir -p build
-	$(CC) $(LDFLAGS) build/*.o $(ANTLRLIB) -o ifcc
+	$(CC) $(LDFLAGS) build/*.o $(ANTLRLIB) -o ifcc.app
 
 ##########################################
 # compile our hand-writen C++ code: main(), CodeGenVisitor, etc.
@@ -62,10 +63,10 @@ gui:
 	@mkdir -p generated build
 	$(ANTLR) -Dlanguage=Java -o generated ifcc.g4
 	javac -cp $(ANTLRJAR) -d build generated/*.java
-	java -cp $(ANTLRJAR):build org.antlr.v4.gui.TestRig ifcc axiom -gui $(FILE)
+	java -cp $(ANTLRJAR):build org.antlr.v4.gui.TestRig ifcc.app axiom -gui $(FILE)
 
 ##########################################
 # delete all machine-generated files
 clean:
 	rm -rf build generated
-	rm -f ifcc
+	rm -f ifcc.app

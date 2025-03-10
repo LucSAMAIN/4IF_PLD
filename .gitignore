@@ -32,3 +32,6 @@
 *.app
 
 *.pdf
+*/ifcc-test-output
+*/generated/
+settings.json

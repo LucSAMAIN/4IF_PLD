@@ -1,0 +1,16 @@
+line 4:4 token recognition error at: 'p'
+line 4:5 token recognition error at: 'ri'
+line 4:7 token recognition error at: 'n'
+line 4:8 token recognition error at: 't'
+line 4:9 token recognition error at: 'f'
+line 4:11 token recognition error at: '"'
+line 4:12 token recognition error at: 'H'
+line 4:13 token recognition error at: 'e'
+line 4:14 token recognition error at: 'l'
+line 4:15 token recognition error at: 'l'
+line 4:16 token recognition error at: 'o'
+line 4:17 token recognition error at: '"'
+line 4:10 mismatched input '(' expecting 'return'
+error: syntax error during parsing
+
+exit status: 1

@@ -41,8 +41,9 @@ public:
     // Affiche la table des symboles pour debug
     void printSymbolTable() const;
 
-    // getterSymbolTable:
+    // getters:
     std::map<std::string, VariableInfo>& getSymbolTable(){return this->symbolTable;}
+    std::vector<std::string>& getErrors(){return this->errors;}
 
 private:
     std::map<std::string, VariableInfo> symbolTable;

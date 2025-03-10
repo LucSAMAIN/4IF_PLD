@@ -52,10 +52,20 @@ int main(int argn, const char **argv)
     // appel de la symbole table:
     SymbolTableVisitor symTable;
     symTable.visit(tree);
-    symTable.printSymbolTable();
+    if (!symTable.checkSymbolTable())
+    {
+        std::cout << "\n error: unused variable... \n";
+        std::cout << "\n errors during SymbolTable set up \n";
+        for (auto error : symTable.getErrors())
+        {
+            std::cout << error << "\n";
+        }
+        return 1;
+    }
+    
 
     CodeGenVisitor v(symTable.getSymbolTable());
     v.visit(tree);
-    
+
     return 0;
 }

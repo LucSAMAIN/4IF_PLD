@@ -124,8 +124,13 @@ antlrcpp::Any CodeGenVisitor::visitExpression(ifccParser::ExpressionContext *ctx
         std::string op = ctx->binary_operation()->getText();
         if(op == "+")
         {
-            // for an addition lets just use 'addq':
+            // for an addition lets just use 'addl':
             std::cout << "    addl %edx, %eax\n"; // je met dans rax car je me dis que pour l'assignement c'est la ou on pioche ?
+        }
+        else if(op == "-")
+        {
+            std::cout << "    subl %eax, %edx\n";    // %edx = %edx - %eax
+            std::cout << "    movl %edx, %eax\n";    // Déplacer le résultat dans %eax
         }
     }
     // case unary_suffixe op:

@@ -23,7 +23,6 @@ public:
     virtual antlrcpp::Any visitAndExpr(ifccParser::AndExprContext *ctx) override;
     virtual antlrcpp::Any visitXorExpr(ifccParser::XorExprContext *ctx) override;
     virtual antlrcpp::Any visitOrExpr(ifccParser::OrExprContext *ctx) override;
-    virtual antlrcpp::Any visitParExpr(ifccParser::ParExprContext *ctx) override;
 private:
     std::map<std::string, VarInfos> symbolTable;
 };;

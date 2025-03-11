@@ -19,7 +19,7 @@ antlrcpp::Any CodeGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx)
     if (ctx->expr())
     {
         visit(ctx->expr());
-        std::cout << "    movq %rax, " << symbolTable[ctx->ID()->getText()].offset << "(%rbp)\n";
+        std::cout << "    movl %eax, " << symbolTable[ctx->ID()->getText()].offset << "(%rbp)\n";
     }
     return 0;
 }
@@ -28,7 +28,7 @@ antlrcpp::Any CodeGenVisitor::visitAssign_stmt(ifccParser::Assign_stmtContext *c
 {
     visit(ctx->expr());
 
-    std::cout << "    movq %rax, " << symbolTable[ctx->ID()->getText()].offset << "(%rbp)\n";
+    std::cout << "    movl %eax, " << symbolTable[ctx->ID()->getText()].offset << "(%rbp)\n";
 
     return 0;
 }
@@ -45,74 +45,136 @@ antlrcpp::Any CodeGenVisitor::visitReturn_stmt(ifccParser::Return_stmtContext *c
 
 antlrcpp::Any CodeGenVisitor::visitConst(ifccParser::ConstContext *ctx)
 {
-    if (ctx->CONST()->getText() == "0")
+    if (ctx->CONST()->getText() == "0") // xor is faster than mov
     {
-        std::cout << "    xor %rax, %rax\n";
+        std::cout << "    xor %eax, %eax\n";
     }
     else
-    std::cout << "    movq $" << ctx->CONST()->getText() << ", %rax\n";
+    std::cout << "    movl $" << ctx->CONST()->getText() << ", %eax\n";
     return 0;
 }
 
 antlrcpp::Any CodeGenVisitor::visitIdUse(ifccParser::IdUseContext *ctx)
 {
-    std::cout << "    movq " << symbolTable[ctx->ID()->getText()].offset << "(%rbp), %rax\n";
+    std::cout << "    movl " << symbolTable[ctx->ID()->getText()].offset << "(%rbp), %eax\n";
     return 0;
 }
 
 antlrcpp::Any CodeGenVisitor::visitNotExpr(ifccParser::NotExprContext *ctx) {
     visit(ctx->primary());
-    std::cout << "    not %rax\n";
+    std::cout << "    not %eax\n";
+    std::cout << "    and $1, %eax\n";
     return 0;
 }
 
 antlrcpp::Any CodeGenVisitor::visitUnaryMinusExpr(ifccParser::UnaryMinusExprContext *ctx) {
     visit(ctx->primary());
-    std::cout << "    neg %rax\n";
+    std::cout << "    neg %eax\n";
     return 0;
 }
 
 antlrcpp::Any CodeGenVisitor::visitMulDivExpr(ifccParser::MulDivExprContext *ctx) {
-    visit(ctx->left());
-    std::cout << "    movq %rax, %rbx\n";
-    visit(ctx->right());
-    std::cout << "    movq %rbx, %rcx\n";
+    visit(ctx->left);
+    std::cout << "    movl %eax, %ebx\n";
+    visit(ctx->right);
     if (ctx->mOp()->STAR())
     {
-        std::cout << "    imul %rcx, %rax\n";
+        std::cout << "    imul %ebx, %eax\n";
     }
-    else
+    else if (ctx->mOp()->SLASH())
     {
+        std::cout << "    movl %eax, %ecx\n";
+        std::cout << "    movl %ebx, %eax\n";
         std::cout << "    cqo\n";
-        std::cout << "    idiv %rcx\n";
+        std::cout << "    idivl %ecx\n";
+    }
+    else if (ctx->mOp()->MOD())
+    {
+        std::cout << "    movl %eax, %ecx\n";
+        std::cout << "    movl %ebx, %eax\n";
+        std::cout << "    cqo\n";
+        std::cout << "    idivl %ecx\n";
+        std::cout << "    movl %edx, %eax\n";
     }
     return 0;
 }
 
 antlrcpp::Any CodeGenVisitor::visitAddSubExpr(ifccParser::AddSubExprContext *ctx) {
-    
+    visit(ctx->left);
+    std::cout << "    movl %eax, %ebx\n";
+    visit(ctx->right);
+    if (ctx->aOp()->PLUS())
+    {
+        std::cout << "    addl %ebx, %eax\n";
+    }
+    else if (ctx->aOp()->MINUS())
+    {
+        std::cout << "    subl %eax, %ebx\n";
+        std::cout << "    movl %ebx, %eax\n";
+    }
+    return 0;
 }
 
 antlrcpp::Any CodeGenVisitor::visitCompExpr(ifccParser::CompExprContext *ctx) {
-    
+    visit(ctx->left);
+    std::cout << "    movl %eax, %ebx\n";
+    visit(ctx->right);
+    std::cout << "    cmpl %ebx, %eax\n";
+    if (ctx->compOp()->LT())
+    {
+        std::cout << "    setl %al\n";
+    }
+    else if (ctx->compOp()->LE())
+    {
+        std::cout << "    setle %al\n";
+    }
+    else if (ctx->compOp()->GT())
+    {
+        std::cout << "    setg %al\n";
+    }
+    else if (ctx->compOp()->GE())
+    {
+        std::cout << "    setge %al\n";
+    }
+    return 0;
 }
 
 antlrcpp::Any CodeGenVisitor::visitEqExpr(ifccParser::EqExprContext *ctx) {
-    
+    visit(ctx->left);
+    std::cout << "    movl %eax, %ebx\n";
+    visit(ctx->right);
+    std::cout << "    cmpl %ebx, %eax\n";
+    if (ctx->eqOp()->EQ())
+    {
+        std::cout << "    sete %al\n";
+    }
+    else if (ctx->eqOp()->NEQ())
+    {
+        std::cout << "    setne %al\n";
+    }
+    return 0;
 }
 
 antlrcpp::Any CodeGenVisitor::visitAndExpr(ifccParser::AndExprContext *ctx) {
-    
+    visit(ctx->left);
+    std::cout << "    movl %eax, %ebx\n";
+    visit(ctx->right);
+    std::cout << "    andl %ebx, %eax\n";
+    return 0;
 }
 
 antlrcpp::Any CodeGenVisitor::visitXorExpr(ifccParser::XorExprContext *ctx) {
-    
+    visit(ctx->left);
+    std::cout << "    movl %eax, %ebx\n";
+    visit(ctx->right);
+    std::cout << "    xorl %ebx, %eax\n";
+    return 0;
 }
 
 antlrcpp::Any CodeGenVisitor::visitOrExpr(ifccParser::OrExprContext *ctx) {
-    
-}
-
-antlrcpp::Any CodeGenVisitor::visitParExpr(ifccParser::ParExprContext *ctx) {
-    
+    visit(ctx->left);
+    std::cout << "    movl %eax, %ebx\n";
+    visit(ctx->right);
+    std::cout << "    orl %ebx, %eax\n";
+    return 0;
 }

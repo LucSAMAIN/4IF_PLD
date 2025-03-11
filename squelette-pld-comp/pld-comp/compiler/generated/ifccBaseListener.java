@@ -99,6 +99,18 @@ public class ifccBaseListener implements ifccListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterBinary_operation(ifccParser.Binary_operationContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitBinary_operation(ifccParser.Binary_operationContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterType(ifccParser.TypeContext ctx) { }
 	/**
 	 * {@inheritDoc}

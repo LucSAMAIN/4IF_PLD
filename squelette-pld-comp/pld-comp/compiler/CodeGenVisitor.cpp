@@ -107,6 +107,12 @@ antlrcpp::Any CodeGenVisitor::visitExpression(ifccParser::ExpressionContext *ctx
         // on met dans rax la valeur temp
         std::cout << "    movq -" << offset << "(%rbp), %rax\n";
     }
+    // case binary op:
+    else if (ctx->binary_operation())
+    {
+        // push the result on eax:
+        visit(ctx->binary_operation());
+    }
 
     return 0;
 }
@@ -114,7 +120,7 @@ antlrcpp::Any CodeGenVisitor::visitExpression(ifccParser::ExpressionContext *ctx
 
 antlrcpp::Any CodeGenVisitor::visitBinary_operation(ifccParser::Binary_operationContext *ctx)
 {
-    
+    std::cout << "#not implemented yet\n";
 
     return 0;
 }

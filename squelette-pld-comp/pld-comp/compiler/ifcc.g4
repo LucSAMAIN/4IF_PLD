@@ -8,6 +8,7 @@ return_stmt: RETURN expression ';' ;
 
 statement : declaration ';'
           | assignment ';'
+          | expression ';' 
           ;
 
 declaration : type IDENTIFIER ('=' expression)?;
@@ -15,7 +16,11 @@ assignment : IDENTIFIER '=' expression;
 
 expression : CONST
            | IDENTIFIER
+           | expression binary_operation expression
+           | '(' expression ')'
            ;
+
+binary_operation : '+' | '-' ;
 
 
 type: 'int' | 'char' | 'void' ;

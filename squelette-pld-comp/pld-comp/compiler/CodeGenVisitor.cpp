@@ -36,12 +36,17 @@ antlrcpp::Any CodeGenVisitor::visitStatement(ifccParser::StatementContext *ctx)
     // case we have a declaration:
     if (ctx->declaration() != nullptr)
     {
-        this->visit(ctx->declaration());
+        visit(ctx->declaration());
     }
     // case we have an assignement
     else if (ctx->assignment() != nullptr)
     {
-        this->visit(ctx->assignment());
+        visit(ctx->assignment());
+    }
+    // a stand alone expression
+    else if (ctx->expression())
+    {
+        visit(ctx->expression());
     }
 
     return 0;
@@ -102,6 +107,14 @@ antlrcpp::Any CodeGenVisitor::visitExpression(ifccParser::ExpressionContext *ctx
         // on met dans rax la valeur temp
         std::cout << "    movq -" << offset << "(%rbp), %rax\n";
     }
+
+    return 0;
+}
+
+
+antlrcpp::Any CodeGenVisitor::visitBinary_operation(ifccParser::Binary_operationContext *ctx)
+{
+    
 
     return 0;
 }

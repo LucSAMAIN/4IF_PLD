@@ -15,14 +15,15 @@ public:
     T__0 = 1, T__1 = 2, T__2 = 3, T__3 = 4, T__4 = 5, T__5 = 6, T__6 = 7, 
     T__7 = 8, T__8 = 9, T__9 = 10, T__10 = 11, T__11 = 12, T__12 = 13, T__13 = 14, 
     T__14 = 15, T__15 = 16, T__16 = 17, T__17 = 18, T__18 = 19, T__19 = 20, 
-    T__20 = 21, T__21 = 22, T__22 = 23, RETURN = 24, CONST = 25, IDENTIFIER = 26, 
-    COMMENT = 27, DIRECTIVE = 28, WS = 29
+    T__20 = 21, T__21 = 22, T__22 = 23, T__23 = 24, T__24 = 25, T__25 = 26, 
+    T__26 = 27, T__27 = 28, RETURN = 29, CONST = 30, IDENTIFIER = 31, COMMENT = 32, 
+    DIRECTIVE = 33, WS = 34
   };
 
   enum {
     RuleAxiom = 0, RuleProg = 1, RuleReturn_stmt = 2, RuleStatement = 3, 
     RuleDeclaration = 4, RuleAssignment = 5, RuleExpression = 6, RuleBinary_operation = 7, 
-    RuleUnary_operation = 8, RuleType = 9
+    RuleUnary_operation_prefixe = 8, RuleUnary_operation_suffixe = 9, RuleType = 10
   };
 
   ifccParser(antlr4::TokenStream *input);
@@ -43,7 +44,8 @@ public:
   class AssignmentContext;
   class ExpressionContext;
   class Binary_operationContext;
-  class Unary_operationContext;
+  class Unary_operation_prefixeContext;
+  class Unary_operation_suffixeContext;
   class TypeContext; 
 
   class  AxiomContext : public antlr4::ParserRuleContext {
@@ -131,12 +133,13 @@ public:
   public:
     ExpressionContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
-    antlr4::tree::TerminalNode *CONST();
-    antlr4::tree::TerminalNode *IDENTIFIER();
-    Unary_operationContext *unary_operation();
     std::vector<ExpressionContext *> expression();
     ExpressionContext* expression(size_t i);
+    antlr4::tree::TerminalNode *CONST();
+    antlr4::tree::TerminalNode *IDENTIFIER();
+    Unary_operation_prefixeContext *unary_operation_prefixe();
     Binary_operationContext *binary_operation();
+    Unary_operation_suffixeContext *unary_operation_suffixe();
 
     virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
    
@@ -155,16 +158,27 @@ public:
 
   Binary_operationContext* binary_operation();
 
-  class  Unary_operationContext : public antlr4::ParserRuleContext {
+  class  Unary_operation_prefixeContext : public antlr4::ParserRuleContext {
   public:
-    Unary_operationContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    Unary_operation_prefixeContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
 
     virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
    
   };
 
-  Unary_operationContext* unary_operation();
+  Unary_operation_prefixeContext* unary_operation_prefixe();
+
+  class  Unary_operation_suffixeContext : public antlr4::ParserRuleContext {
+  public:
+    Unary_operation_suffixeContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Unary_operation_suffixeContext* unary_operation_suffixe();
 
   class  TypeContext : public antlr4::ParserRuleContext {
   public:

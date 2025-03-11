@@ -87,15 +87,25 @@ public interface ifccListener extends ParseTreeListener {
 	 */
 	void exitBinary_operation(ifccParser.Binary_operationContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link ifccParser#unary_operation}.
+	 * Enter a parse tree produced by {@link ifccParser#unary_operation_prefixe}.
 	 * @param ctx the parse tree
 	 */
-	void enterUnary_operation(ifccParser.Unary_operationContext ctx);
+	void enterUnary_operation_prefixe(ifccParser.Unary_operation_prefixeContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link ifccParser#unary_operation}.
+	 * Exit a parse tree produced by {@link ifccParser#unary_operation_prefixe}.
 	 * @param ctx the parse tree
 	 */
-	void exitUnary_operation(ifccParser.Unary_operationContext ctx);
+	void exitUnary_operation_prefixe(ifccParser.Unary_operation_prefixeContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link ifccParser#unary_operation_suffixe}.
+	 * @param ctx the parse tree
+	 */
+	void enterUnary_operation_suffixe(ifccParser.Unary_operation_suffixeContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link ifccParser#unary_operation_suffixe}.
+	 * @param ctx the parse tree
+	 */
+	void exitUnary_operation_suffixe(ifccParser.Unary_operation_suffixeContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link ifccParser#type}.
 	 * @param ctx the parse tree

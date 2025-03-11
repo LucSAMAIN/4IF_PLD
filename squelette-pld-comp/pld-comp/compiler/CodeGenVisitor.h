@@ -19,8 +19,10 @@ public:
         virtual antlrcpp::Any visitExpression(ifccParser::ExpressionContext *ctx) override;
         
         // 4.7
-        virtual antlrcpp::Any visitBinary_operation(ifccParser::Binary_operationContext *ctx) override;
-        virtual antlrcpp::Any visitUnary_operation(ifccParser::Unary_operationContext *ctx) override;
+        // Not needed: while in context we dont get anything interesting (left and right expression)...
+        // virtual antlrcpp::Any visitBinary_operation(ifccParser::Binary_operationContext *ctx) override;
+        // virtual antlrcpp::Any visitUnary_operation_prefixe(ifccParser::Unary_operation_prefixeContext *ctx) override;
+        // virtual antlrcpp::Any visitUnary_operation_suffixe(ifccParser::Unary_operation_suffixeContext *ctx) override;
 
 private:
         std::map<std::string, VariableInfo> symbolTable;

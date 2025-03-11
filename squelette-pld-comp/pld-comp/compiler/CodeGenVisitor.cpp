@@ -34,12 +34,12 @@ antlrcpp::Any CodeGenVisitor::visitReturn_stmt(ifccParser::Return_stmtContext *c
 antlrcpp::Any CodeGenVisitor::visitStatement(ifccParser::StatementContext *ctx)
 {
     // case we have a declaration:
-    if (ctx->declaration() != nullptr)
+    if (ctx->declaration())
     {
         visit(ctx->declaration());
     }
     // case we have an assignement
-    else if (ctx->assignment() != nullptr)
+    else if (ctx->assignment())
     {
         visit(ctx->assignment());
     }
@@ -60,19 +60,19 @@ antlrcpp::Any CodeGenVisitor::visitDeclaration(ifccParser::DeclarationContext *c
     int offset = symbolTable.at(varName).index;
 
     // Si la déclaration inclut une initialisation (int a = 5;)
-    if (ctx->expression() != nullptr)
+    if (ctx->expression())
     {
         // Évaluer l'expression (la valeur sera dans %rax)
         visit(ctx->expression());
 
         // Stocker la valeur de %rax à l'emplacement mémoire de la variable
-        std::cout << "    movq %rax, -" << offset << "(%rbp)\n";
+        std::cout << "    movl %eax, -" << offset << "(%rbp)\n";
     }
     // Sinon, c'est une simple déclaration (int a;)
     else
     {
         // Initialiser à 0
-        std::cout << "    movq $0, -" << offset << "(%rbp)\n";
+        std::cout << "    movl $0, -" << offset << "(%rbp)\n";
     }
 
     return 0;
@@ -85,60 +85,64 @@ antlrcpp::Any CodeGenVisitor::visitAssignment(ifccParser::AssignmentContext *ctx
 
     std::string varName = ctx->IDENTIFIER()->getText();
     int offset = symbolTable.at(varName).index;
-    std::cout << "    movq %rax, -" << offset << "(%rbp)\n";
+    std::cout << "    movl %eax, -" << offset << "(%rbp)\n";
 
     return 0;
 }
 
 antlrcpp::Any CodeGenVisitor::visitExpression(ifccParser::ExpressionContext *ctx)
+// we need a place to store the destination after evaluating our expression
 {
+    // le raw string de l'expression
     std::string exprText = ctx->getText();
+
     // case constant
-    if (ctx->CONST() != nullptr)
+    if (ctx->CONST())
     {
         int val = std::stoi(ctx->CONST()->getText());
         // on met dans rax la valeur temp
-        std::cout << "    movq $" << val << ", %rax\n";
+        std::cout << "    movl $" << val << ", %eax \n";
     }
     // case identifier
-    else if (ctx->IDENTIFIER() != nullptr)
+    else if (ctx->IDENTIFIER())
     {
         std::string varName = ctx->IDENTIFIER()->getText();
         int offset = symbolTable.at(varName).index;
         // on met dans rax la valeur temp
-        std::cout << "    movq -" << offset << "(%rbp), %rax\n";
+        std::cout << "    movl -" << offset << "(%rbp), %eax \n";
     }
     // case binary op:
     else if (ctx->binary_operation())
     {
-        // push the result on eax:
-        visit(ctx->binary_operation());
+        // first we get the left expression and put in '%rdx'
+        visit(ctx->expression(0));
+        std::cout << "    movl %eax, %edx \n";
+        // same for the right expression but in '%rax'
+        visit(ctx->expression(1));
+        
+        // we can then do the operation:
+        std::string op = ctx->binary_operation()->getText();
+        if(op == "+")
+        {
+            // for an addition lets just use 'addq':
+            std::cout << "    addl %edx, %eax\n"; // je met dans rax car je me dis que pour l'assignement c'est la ou on pioche ?
+        }
     }
-    // case unary op:
-    else if (ctx->unary_operation())
+    // case unary_suffixe op:
+    else if (ctx->unary_operation_suffixe())
     {
-        // push the result on eax:
-        visit(ctx->unary_operation());
+        std::cout << "unary_operation_suffixe not implemented yet\n";
+    }
+    // case unary_prefixe op:
+    else if (ctx->unary_operation_prefixe())
+    {
+        std::cout << "unary_operation_prefixe not implemented yet\n";
     }
     // case '(' expression ')':
     else if (exprText.size() >= 2 && exprText[0] == '(' && exprText[exprText.size() - 1] == ')')
     {
         visit(ctx->expression(0));
     }
-
-    return 0;
-}
-
-antlrcpp::Any CodeGenVisitor::visitBinary_operation(ifccParser::Binary_operationContext *ctx)
-{
-    std::cout << "#not implemented yet\n";
-
-    return 0;
-}
-
-antlrcpp::Any CodeGenVisitor::visitUnary_operation(ifccParser::Unary_operationContext *ctx)
-{
-    std::cout << "#not implemented yet\n";
 
     return 0;
 }

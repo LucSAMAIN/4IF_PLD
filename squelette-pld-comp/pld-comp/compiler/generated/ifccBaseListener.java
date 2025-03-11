@@ -111,13 +111,25 @@ public class ifccBaseListener implements ifccListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterUnary_operation(ifccParser.Unary_operationContext ctx) { }
+	@Override public void enterUnary_operation_prefixe(ifccParser.Unary_operation_prefixeContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitUnary_operation(ifccParser.Unary_operationContext ctx) { }
+	@Override public void exitUnary_operation_prefixe(ifccParser.Unary_operation_prefixeContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterUnary_operation_suffixe(ifccParser.Unary_operation_suffixeContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitUnary_operation_suffixe(ifccParser.Unary_operation_suffixeContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

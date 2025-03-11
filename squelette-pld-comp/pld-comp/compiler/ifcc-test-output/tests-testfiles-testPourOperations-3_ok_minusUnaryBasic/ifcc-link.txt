@@ -1,0 +1,4 @@
+asm-ifcc.s: Assembler messages:
+asm-ifcc.s:8: Error: no such instruction: `unary_operation_prefixe not implemented yet'
+
+exit status: 1

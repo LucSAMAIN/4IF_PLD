@@ -3,26 +3,26 @@ main:
 #prologue 
     pushq %rbp
     movq %rsp, %rbp
-    movq $1, %rax
-    movq %rax, -4(%rbp)
-    movq $2, %rax
-    movq %rax, -8(%rbp)
-#not implemented yet
-    movq %rax, -12(%rbp)
-    movq -12(%rbp), %rax
-#epilogue 
-    popq %rbp
-    ret
-.globl main
-main: 
-#prologue 
-    pushq %rbp
-    movq %rsp, %rbp
-    movq $1, %rax
-    movq %rax, -4(%rbp)
-#not implemented yet
-    movq %rax, -8(%rbp)
-    movq -8(%rbp), %rax
+    movl $2, %eax 
+    movl %eax, -4(%rbp)
+    movl $3, %eax 
+    movl %eax, -8(%rbp)
+    movl $5, %eax 
+    movl %eax, -12(%rbp)
+unary_operation_prefixe not implemented yet
+    movl %eax, -16(%rbp)
+    movl -4(%rbp), %eax 
+    movl %eax, %edx 
+    movl -8(%rbp), %eax 
+    addl %edx, %eax
+    movl %eax, %edx 
+    movl -12(%rbp), %eax 
+    addl %edx, %eax
+    movl %eax, %edx 
+    movl -16(%rbp), %eax 
+    addl %edx, %eax
+    movl %eax, -20(%rbp)
+    movl -20(%rbp), %eax 
 #epilogue 
     popq %rbp
     ret

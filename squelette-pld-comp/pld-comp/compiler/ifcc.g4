@@ -14,16 +14,19 @@ statement : declaration ';'
 declaration : type IDENTIFIER ('=' expression)?;
 assignment : IDENTIFIER '=' expression;
 
-expression : CONST
+expression : 
+            '(' expression ')'
+           | CONST
            | IDENTIFIER
-           | unary_operation expression
-           | expression binary_operation expression
-           | '(' expression ')'
+           | unary_operation_prefixe expression
+           | expression unary_operation_suffixe
+           | expression binary_operation expression 
            ;
 
 
 binary_operation : '+' | '-' | '*' | '/' | '%' | '==' | '!=' | '<' | '<=' | '>' | '>=' | '&&' | '||' ;
-unary_operation : '-' ;
+unary_operation_prefixe : '-' | '!' | '&' | '*' | 'sizeof' | '++' | '--' ;
+unary_operation_suffixe : '++' | '--' ;
 type: 'int' | 'char' | 'void' ;
 
 

@@ -12,24 +12,23 @@
 #include "SymbolTableGenVisitor.h"
 
 using namespace antlr4;
-using namespace std;
 
 int main(int argn, const char **argv)
 {
-    stringstream in;
+    std::stringstream in;
     if (argn == 2)
     {
-        ifstream lecture(argv[1]);
+        std::ifstream lecture(argv[1]);
         if (!lecture.good())
         {
-            cerr << "error: cannot read file: " << argv[1] << endl;
+            std::cerr << "error: cannot read file: " << argv[1] << "\n";
             exit(1);
         }
         in << lecture.rdbuf();
     }
     else
     {
-        cerr << "usage: ifcc path/to/file.c" << endl;
+        std::cerr << "usage: ifcc path/to/file.c\n";
         exit(1);
     }
 
@@ -45,7 +44,7 @@ int main(int argn, const char **argv)
 
     if (parser.getNumberOfSyntaxErrors() != 0)
     {
-        cerr << "error: syntax error during parsing" << endl;
+        std::cerr << "error: syntax error during parsing\n";
         exit(1);
     }
 

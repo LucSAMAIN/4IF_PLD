@@ -2,6 +2,7 @@
 
 antlrcpp::Any CodeGenVisitor::visitProg(ifccParser::ProgContext *ctx) 
 {
+    std::cout << ".text\n";
     std::cout<< ".globl main\n" ;
     std::cout<< "main: \n" ;
 
@@ -18,7 +19,7 @@ antlrcpp::Any CodeGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx)
     if (ctx->expr())
     {
         visit(ctx->expr());
-        std::cout << "    movq %rax, " << symbolTable[ctx->lValue()->ID()->getText()].offset << "(%rbp) # visit decl\n";
+        std::cout << "    movq %rax, " << symbolTable[ctx->ID()->getText()].offset << "(%rbp) # visit decl\n";
     }
     return 0;
 }
@@ -27,7 +28,7 @@ antlrcpp::Any CodeGenVisitor::visitAssign_stmt(ifccParser::Assign_stmtContext *c
 {
     visit(ctx->expr());
 
-    std::cout << "    movq %rax, " << symbolTable[ctx->lValue()->ID()->getText()].offset << "(%rbp) # visit assign\n";
+    std::cout << "    movq %rax, " << symbolTable[ctx->ID()->getText()].offset << "(%rbp) # visit assign\n";
 
     return 0;
 }
@@ -42,9 +43,10 @@ antlrcpp::Any CodeGenVisitor::visitReturn_stmt(ifccParser::Return_stmtContext *c
     return 0;
 }
 
-antlrcpp::Any CodeGenVisitor::visitInt(ifccParser::IntContext *ctx)
+antlrcpp::Any CodeGenVisitor::visitConst(ifccParser::ConstContext *ctx)
 {
-    std::cout << "    movq $" << ctx->INT()->getText() << ", %rax # visit int\n";
+    // cehck type before printing
+    std::cout << "    movq $" << ctx->CONST()->getText() << ", %rax # visit int\n";
     return 0;
 }
 

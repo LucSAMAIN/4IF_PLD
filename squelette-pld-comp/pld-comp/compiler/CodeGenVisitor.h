@@ -20,6 +20,7 @@ public:
         
         // 4.7
         virtual antlrcpp::Any visitBinary_operation(ifccParser::Binary_operationContext *ctx) override;
+        virtual antlrcpp::Any visitUnary_operation(ifccParser::Unary_operationContext *ctx) override;
 
 private:
         std::map<std::string, VariableInfo> symbolTable;

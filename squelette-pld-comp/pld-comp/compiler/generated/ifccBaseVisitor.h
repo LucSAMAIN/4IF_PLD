@@ -47,6 +47,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual antlrcpp::Any visitUnary_operation(ifccParser::Unary_operationContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual antlrcpp::Any visitType(ifccParser::TypeContext *ctx) override {
     return visitChildren(ctx);
   }

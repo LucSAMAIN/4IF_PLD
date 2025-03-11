@@ -13,14 +13,16 @@ class  ifccParser : public antlr4::Parser {
 public:
   enum {
     T__0 = 1, T__1 = 2, T__2 = 3, T__3 = 4, T__4 = 5, T__5 = 6, T__6 = 7, 
-    T__7 = 8, T__8 = 9, T__9 = 10, T__10 = 11, T__11 = 12, RETURN = 13, 
-    CONST = 14, IDENTIFIER = 15, COMMENT = 16, DIRECTIVE = 17, WS = 18
+    T__7 = 8, T__8 = 9, T__9 = 10, T__10 = 11, T__11 = 12, T__12 = 13, T__13 = 14, 
+    T__14 = 15, T__15 = 16, T__16 = 17, T__17 = 18, T__18 = 19, T__19 = 20, 
+    T__20 = 21, T__21 = 22, T__22 = 23, RETURN = 24, CONST = 25, IDENTIFIER = 26, 
+    COMMENT = 27, DIRECTIVE = 28, WS = 29
   };
 
   enum {
     RuleAxiom = 0, RuleProg = 1, RuleReturn_stmt = 2, RuleStatement = 3, 
     RuleDeclaration = 4, RuleAssignment = 5, RuleExpression = 6, RuleBinary_operation = 7, 
-    RuleType = 8
+    RuleUnary_operation = 8, RuleType = 9
   };
 
   ifccParser(antlr4::TokenStream *input);
@@ -41,6 +43,7 @@ public:
   class AssignmentContext;
   class ExpressionContext;
   class Binary_operationContext;
+  class Unary_operationContext;
   class TypeContext; 
 
   class  AxiomContext : public antlr4::ParserRuleContext {
@@ -130,6 +133,7 @@ public:
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *CONST();
     antlr4::tree::TerminalNode *IDENTIFIER();
+    Unary_operationContext *unary_operation();
     std::vector<ExpressionContext *> expression();
     ExpressionContext* expression(size_t i);
     Binary_operationContext *binary_operation();
@@ -150,6 +154,17 @@ public:
   };
 
   Binary_operationContext* binary_operation();
+
+  class  Unary_operationContext : public antlr4::ParserRuleContext {
+  public:
+    Unary_operationContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+
+    virtual antlrcpp::Any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Unary_operationContext* unary_operation();
 
   class  TypeContext : public antlr4::ParserRuleContext {
   public:

@@ -87,6 +87,16 @@ public interface ifccListener extends ParseTreeListener {
 	 */
 	void exitBinary_operation(ifccParser.Binary_operationContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link ifccParser#unary_operation}.
+	 * @param ctx the parse tree
+	 */
+	void enterUnary_operation(ifccParser.Unary_operationContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link ifccParser#unary_operation}.
+	 * @param ctx the parse tree
+	 */
+	void exitUnary_operation(ifccParser.Unary_operationContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link ifccParser#type}.
 	 * @param ctx the parse tree
 	 */

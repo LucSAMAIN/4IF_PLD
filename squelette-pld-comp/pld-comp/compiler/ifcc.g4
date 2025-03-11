@@ -16,13 +16,14 @@ assignment : IDENTIFIER '=' expression;
 
 expression : CONST
            | IDENTIFIER
+           | unary_operation expression
            | expression binary_operation expression
            | '(' expression ')'
            ;
 
-binary_operation : '+' | '-' ;
 
-
+binary_operation : '+' | '-' | '*' | '/' | '%' | '==' | '!=' | '<' | '<=' | '>' | '>=' | '&&' | '||' ;
+unary_operation : '-' ;
 type: 'int' | 'char' | 'void' ;
 
 

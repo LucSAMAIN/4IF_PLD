@@ -35,6 +35,8 @@ public:
 
     virtual antlrcpp::Any visitBinary_operation(ifccParser::Binary_operationContext *context) = 0;
 
+    virtual antlrcpp::Any visitUnary_operation(ifccParser::Unary_operationContext *context) = 0;
+
     virtual antlrcpp::Any visitType(ifccParser::TypeContext *context) = 0;
 
 

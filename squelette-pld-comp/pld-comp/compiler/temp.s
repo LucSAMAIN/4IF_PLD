@@ -7,8 +7,9 @@ main:
     movq %rax, -4(%rbp)
     movq $2, %rax
     movq %rax, -8(%rbp)
+#not implemented yet
     movq %rax, -12(%rbp)
-    movq $0, %rax
+    movq -12(%rbp), %rax
 #epilogue 
     popq %rbp
     ret
@@ -19,11 +20,9 @@ main:
     movq %rsp, %rbp
     movq $1, %rax
     movq %rax, -4(%rbp)
-    movq $2, %rax
-    movq %rax, -8(%rbp)
 #not implemented yet
-    movq %rax, -12(%rbp)
-    movq $0, %rax
+    movq %rax, -8(%rbp)
+    movq -8(%rbp), %rax
 #epilogue 
     popq %rbp
     ret

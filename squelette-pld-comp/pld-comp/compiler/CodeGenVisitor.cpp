@@ -92,6 +92,7 @@ antlrcpp::Any CodeGenVisitor::visitAssignment(ifccParser::AssignmentContext *ctx
 
 antlrcpp::Any CodeGenVisitor::visitExpression(ifccParser::ExpressionContext *ctx)
 {
+    std::string exprText = ctx->getText();
     // case constant
     if (ctx->CONST() != nullptr)
     {
@@ -113,12 +114,29 @@ antlrcpp::Any CodeGenVisitor::visitExpression(ifccParser::ExpressionContext *ctx
         // push the result on eax:
         visit(ctx->binary_operation());
     }
+    // case unary op:
+    else if (ctx->unary_operation())
+    {
+        // push the result on eax:
+        visit(ctx->unary_operation());
+    }
+    // case '(' expression ')':
+    else if (exprText.size() >= 2 && exprText[0] == '(' && exprText[exprText.size() - 1] == ')')
+    {
+        visit(ctx->expression(0));
+    }
 
     return 0;
 }
 
-
 antlrcpp::Any CodeGenVisitor::visitBinary_operation(ifccParser::Binary_operationContext *ctx)
+{
+    std::cout << "#not implemented yet\n";
+
+    return 0;
+}
+
+antlrcpp::Any CodeGenVisitor::visitUnary_operation(ifccParser::Unary_operationContext *ctx)
 {
     std::cout << "#not implemented yet\n";
 

@@ -3,12 +3,18 @@
 #include "antlr4-runtime.h"
 #include "generated/ifccBaseVisitor.h"
 #include "SymbolTableGenVisitor.h"
+#include "IR.h"
 
 class CodeGenVisitor : public ifccBaseVisitor
 {
 public:
-    CodeGenVisitor(std::map<std::string, VarInfos>& p_symbolTable) : symbolTable(p_symbolTable) {}
+    CodeGenVisitor(std::map<std::string, VarInfos>& p_symbolTable); 
+    virtual ~CodeGenVisitor();
+    
+    CFG* getCFG() { return cfg; }
+    
     virtual antlrcpp::Any visitProg(ifccParser::ProgContext *ctx) override;
+    virtual antlrcpp::Any visitBlock(ifccParser::BlockContext *ctx) override;
     virtual antlrcpp::Any visitReturn_stmt(ifccParser::Return_stmtContext *ctx) override;
     virtual antlrcpp::Any visitDecl_stmt(ifccParser::Decl_stmtContext *ctx) override;
     virtual antlrcpp::Any visitAssign_stmt(ifccParser::Assign_stmtContext *ctx) override;
@@ -23,6 +29,9 @@ public:
     virtual antlrcpp::Any visitAndExpr(ifccParser::AndExprContext *ctx) override;
     virtual antlrcpp::Any visitXorExpr(ifccParser::XorExprContext *ctx) override;
     virtual antlrcpp::Any visitOrExpr(ifccParser::OrExprContext *ctx) override;
+    
 private:
     std::map<std::string, VarInfos> symbolTable;
-};;
+    CFG* cfg;              // Le Control Flow Graph
+    BasicBlock* currentBB; // Le bloc de base courant
+};

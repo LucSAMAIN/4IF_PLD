@@ -10,6 +10,7 @@
 
 #include "CodeGenVisitor.h"
 #include "SymbolTableGenVisitor.h"
+#include "IR.h"
 
 using namespace antlr4;
 
@@ -67,6 +68,19 @@ int main(int argn, const char **argv)
 
     CodeGenVisitor cgv(stv.getSymbolTable());
     cgv.visit(tree);
+
+    // Récupération du CFG généré
+    CFG* cfg = cgv.getCFG();
+    
+    if (cfg) {
+        // Affichage de la représentation intermédiaire
+        std::cout << "// Programme en représentation intermédiaire (IR) véritable :\n";
+        cfg->gen_asm(std::cout);
+        
+        // Génération du code x86 à partir de l'IR
+        std::cout << "\n// Génération du code assembleur x86 à partir de l'IR :\n";
+        cfg->gen_x86(std::cout);
+    }
 
     return 0;
 }

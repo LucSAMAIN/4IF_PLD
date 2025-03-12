@@ -38,10 +38,10 @@ antlrcpp::Any SymbolTableGenVisitor::visitBlock(ifccParser::BlockContext *ctx) {
         if (ctx->stmt(i)->block_stmt() != nullptr) {
             scope += "_" + std::to_string(i);
             visit(ctx->stmt(i));
-            while (scope.back() != '_') {
+            while (scope.back() != '_') { // on sait pas a l'avance si i a plusieurs digits ou non (i = 15, 17698 ou 3)
                 scope.pop_back();
             }
-            scope.pop_back();
+            scope.pop_back(); // remove '_'
         }
         else {
             visit(ctx->stmt(i));

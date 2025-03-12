@@ -31,6 +31,7 @@ public:
     virtual ~SymbolTableGenVisitor() {}
 
     virtual antlrcpp::Any visitDecl_stmt(ifccParser::Decl_stmtContext *ctx) override;
+    virtual antlrcpp::Any visitAssign_stmt(ifccParser::Assign_stmtContext *ctx) override;
     virtual antlrcpp::Any visitIdUse(ifccParser::IdUseContext *ctx) override;
     virtual antlrcpp::Any visitBlock(ifccParser::BlockContext *ctx) override;
 

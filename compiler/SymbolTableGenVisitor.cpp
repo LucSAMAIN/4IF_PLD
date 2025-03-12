@@ -21,6 +21,24 @@ antlrcpp::Any SymbolTableGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext
     return 0;
 }
 
+antlrcpp::Any SymbolTableGenVisitor::visitAssign_stmt(ifccParser::Assign_stmtContext *ctx) {
+    std::string tried_scope = scope;
+    while (tried_scope != "" && symbolTable.find(tried_scope + '_' + ctx->ID()->getText()) == symbolTable.end()) {
+        while (tried_scope.size() != 0 && tried_scope.back() != '_') {
+            tried_scope.pop_back();
+        }
+        if (tried_scope.size() != 0) {
+            tried_scope.pop_back();
+        }
+    }
+    if (tried_scope.size() == 0) {
+        std::cerr << "error: variable not declared " << ctx->ID()->getText() << " in scope " << scope << "\n";
+        return 0;
+    }
+    visit(ctx->expr());
+    return 0;
+}
+
 antlrcpp::Any SymbolTableGenVisitor::visitIdUse(ifccParser::IdUseContext *ctx) {
     std::string tried_scope = scope;
     while (tried_scope != "" && symbolTable.find(tried_scope + '_' + ctx->ID()->getText()) == symbolTable.end()) {

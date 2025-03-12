@@ -322,10 +322,8 @@ void CFG::gen_asm_prologue(ostream& o) {
     o << "    movq %rsp, %rbp" << endl;
     
     // Allouer de l'espace pour les variables locales
-    int frameSize = 16 + ((-nextFreeSymbolIndex + 15) & ~15);  // Alignement sur 16 octets
-    if (frameSize > 16) {
-        o << "    subq $" << frameSize << ", %rsp" << endl;
-    }
+    int frameSize = ((-nextFreeSymbolIndex + 15) & ~15);  // Alignement sur 16 octets uniquement
+    o << "    subq $" << frameSize << ", %rsp" << endl;
 }
 
 void CFG::gen_asm_epilogue(ostream& o) {
@@ -351,10 +349,32 @@ void CFG::add_to_symbol_table(string name, Type t) {
 }
 
 string CFG::create_new_tempvar(Type t) {
+    string temp_name;
+    
+    // Créer d'abord un nom temporaire avec un préfixe spécial
     stringstream ss;
-    ss << "!tmp" << nextBBnumber++;
-    add_to_symbol_table(ss.str(), t);
-    return ss.str();
+    ss << "!tmp_placeholder_" << nextBBnumber++;
+    temp_name = ss.str();
+    
+    // Ajouter à la table des symboles pour obtenir l'index dans la pile
+    add_to_symbol_table(temp_name, t);
+    
+    // Récupérer l'index attribué
+    int stack_index = SymbolIndex[temp_name];
+    
+    // Créer le vrai nom avec l'index dans la pile
+    stringstream final_name;
+    final_name << "!tmp" << -stack_index;
+    
+    // Mettre à jour la table des symboles avec le nouveau nom
+    SymbolIndex[final_name.str()] = stack_index;
+    SymbolType[final_name.str()] = t;
+    
+    // Supprimer l'entrée temporaire
+    SymbolIndex.erase(temp_name);
+    SymbolType.erase(temp_name);
+    
+    return final_name.str();
 }
 
 int CFG::get_var_index(string name) {

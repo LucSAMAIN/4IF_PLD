@@ -4,6 +4,10 @@
 #include <string>
 #include <iostream>
 
+// Déclarations anticipées
+class BasicBlock;
+class CFG;
+
 // Classe de base pour toutes les opérations
 class Operation
 {
@@ -20,6 +24,9 @@ public:
     
     // Méthode pour obtenir le nom de l'opération (pour le débogage)
     virtual std::string get_operation_name() const = 0;
+
+    // Méthode pour générer une représentation textuelle de l'instruction IR
+    virtual void gen_asm(std::ostream& o) = 0;
 };
 
 // Sous-classe pour l'opération de chargement d'une constante
@@ -30,11 +37,14 @@ private:
     std::string dest;
     // Valeur constante à charger
     int value;
+    // Bloc de base parent
+    BasicBlock* bb;
 
 public:
-    LdConst(const std::string& dest_reg, int val);
+    LdConst(BasicBlock* bb, const std::string& dest_reg, int val);
     void generate_assembly(std::ostream& o) override;
     std::string get_operation_name() const override;
+    void gen_asm(std::ostream& o) override;
 };
 
 // Sous-classe pour l'opération de copie
@@ -43,11 +53,13 @@ class Copy : public Operation
 private:
     std::string dest;
     std::string src;
+    BasicBlock* bb;
 
 public:
-    Copy(const std::string& dest_reg, const std::string& src_reg);
+    Copy(BasicBlock* bb, const std::string& dest_reg, const std::string& src_reg);
     void generate_assembly(std::ostream& o) override;
     std::string get_operation_name() const override;
+    void gen_asm(std::ostream& o) override;
 };
 
 // Sous-classe pour l'opération d'addition
@@ -57,11 +69,13 @@ private:
     std::string dest;
     std::string op1;
     std::string op2;
+    BasicBlock* bb;
 
 public:
-    Add(const std::string& dest_reg, const std::string& operand1, const std::string& operand2);
+    Add(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2);
     void generate_assembly(std::ostream& o) override;
     std::string get_operation_name() const override;
+    void gen_asm(std::ostream& o) override;
 };
 
 // Sous-classe pour l'opération de soustraction
@@ -71,11 +85,13 @@ private:
     std::string dest;
     std::string op1;
     std::string op2;
+    BasicBlock* bb;
 
 public:
-    Sub(const std::string& dest_reg, const std::string& operand1, const std::string& operand2);
+    Sub(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2);
     void generate_assembly(std::ostream& o) override;
     std::string get_operation_name() const override;
+    void gen_asm(std::ostream& o) override;
 };
 
 // Sous-classe pour l'opération de multiplication
@@ -85,11 +101,13 @@ private:
     std::string dest;
     std::string op1;
     std::string op2;
+    BasicBlock* bb;
 
 public:
-    Mul(const std::string& dest_reg, const std::string& operand1, const std::string& operand2);
+    Mul(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2);
     void generate_assembly(std::ostream& o) override;
     std::string get_operation_name() const override;
+    void gen_asm(std::ostream& o) override;
 };
 
 // Sous-classe pour la lecture mémoire
@@ -98,11 +116,13 @@ class Rmem : public Operation
 private:
     std::string dest;
     std::string addr;
+    BasicBlock* bb;
 
 public:
-    Rmem(const std::string& dest_reg, const std::string& address);
+    Rmem(BasicBlock* bb, const std::string& dest_reg, const std::string& address);
     void generate_assembly(std::ostream& o) override;
     std::string get_operation_name() const override;
+    void gen_asm(std::ostream& o) override;
 };
 
 // Sous-classe pour l'écriture mémoire
@@ -111,11 +131,13 @@ class Wmem : public Operation
 private:
     std::string addr;
     std::string src;
+    BasicBlock* bb;
 
 public:
-    Wmem(const std::string& address, const std::string& src_reg);
+    Wmem(BasicBlock* bb, const std::string& address, const std::string& src_reg);
     void generate_assembly(std::ostream& o) override;
     std::string get_operation_name() const override;
+    void gen_asm(std::ostream& o) override;
 };
 
 // Sous-classe pour l'appel de fonction
@@ -123,11 +145,13 @@ class Call : public Operation
 {
 private:
     std::string func_name;
+    BasicBlock* bb;
 
 public:
-    Call(const std::string& function);
+    Call(BasicBlock* bb, const std::string& function);
     void generate_assembly(std::ostream& o) override;
     std::string get_operation_name() const override;
+    void gen_asm(std::ostream& o) override;
 };
 
 // Sous-classe pour la comparaison d'égalité
@@ -137,11 +161,13 @@ private:
     std::string dest;
     std::string op1;
     std::string op2;
+    BasicBlock* bb;
 
 public:
-    CmpEq(const std::string& dest_reg, const std::string& operand1, const std::string& operand2);
+    CmpEq(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2);
     void generate_assembly(std::ostream& o) override;
     std::string get_operation_name() const override;
+    void gen_asm(std::ostream& o) override;
 };
 
 // Sous-classe pour la comparaison "plus petit que"
@@ -151,11 +177,13 @@ private:
     std::string dest;
     std::string op1;
     std::string op2;
+    BasicBlock* bb;
 
 public:
-    CmpLt(const std::string& dest_reg, const std::string& operand1, const std::string& operand2);
+    CmpLt(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2);
     void generate_assembly(std::ostream& o) override;
     std::string get_operation_name() const override;
+    void gen_asm(std::ostream& o) override;
 };
 
 // Sous-classe pour la comparaison "plus petit ou égal à"
@@ -165,11 +193,13 @@ private:
     std::string dest;
     std::string op1;
     std::string op2;
+    BasicBlock* bb;
 
 public:
-    CmpLe(const std::string& dest_reg, const std::string& operand1, const std::string& operand2);
+    CmpLe(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2);
     void generate_assembly(std::ostream& o) override;
     std::string get_operation_name() const override;
+    void gen_asm(std::ostream& o) override;
 };
 
 #endif // OPERATION_H

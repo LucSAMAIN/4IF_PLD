@@ -53,165 +53,22 @@ void IRInstr::gen_asm(ostream &o) {
 
 // Génère du code assembleur x86 pour cette instruction IR
 void IRInstr::gen_x86(ostream &o) {
-    string reg_dst = params[0];
-    
-    switch(op) {
-        case ldconst:
-            o << "    movl $" << params[1] << ", " << bb->cfg->IR_reg_to_asm(reg_dst) << endl;
-            break;
-            
-        case copy:
-            if (params[1][0] == '%') {
-                // Copie depuis un registre
-                o << "    movl " << params[1] << ", " << bb->cfg->IR_reg_to_asm(reg_dst) << endl;
-            } else {
-                // Copie depuis une variable
-                o << "    movl " << bb->cfg->IR_reg_to_asm(params[1]) << ", " << bb->cfg->IR_reg_to_asm(reg_dst) << endl;
-            }
-            break;
-            
-        case add:
-            if (params[1][0] == '%' && params[2][0] == '%') {
-                // Les deux opérandes sont des registres
-                o << "    movl " << params[1] << ", " << bb->cfg->IR_reg_to_asm(reg_dst) << endl;
-                o << "    addl " << params[2] << ", " << bb->cfg->IR_reg_to_asm(reg_dst) << endl;
-            } else if (params[1][0] == '%') {
-                // Le premier est un registre, le second est une variable
-                o << "    movl " << params[1] << ", " << bb->cfg->IR_reg_to_asm(reg_dst) << endl;
-                o << "    addl " << bb->cfg->IR_reg_to_asm(params[2]) << ", " << bb->cfg->IR_reg_to_asm(reg_dst) << endl;
-            } else if (params[2][0] == '%') {
-                // Le premier est une variable, le second est un registre
-                o << "    movl " << bb->cfg->IR_reg_to_asm(params[1]) << ", " << bb->cfg->IR_reg_to_asm(reg_dst) << endl;
-                o << "    addl " << params[2] << ", " << bb->cfg->IR_reg_to_asm(reg_dst) << endl;
-            } else {
-                // Les deux sont des variables
-                o << "    movl " << bb->cfg->IR_reg_to_asm(params[1]) << ", " << bb->cfg->IR_reg_to_asm(reg_dst) << endl;
-                o << "    addl " << bb->cfg->IR_reg_to_asm(params[2]) << ", " << bb->cfg->IR_reg_to_asm(reg_dst) << endl;
-            }
-            break;
-            
-        case sub:
-            if (params[1][0] == '%' && params[2][0] == '%') {
-                // Les deux opérandes sont des registres
-                o << "    movl " << params[1] << ", " << bb->cfg->IR_reg_to_asm(reg_dst) << endl;
-                o << "    subl " << params[2] << ", " << bb->cfg->IR_reg_to_asm(reg_dst) << endl;
-            } else if (params[1][0] == '%') {
-                // Le premier est un registre, le second est une variable
-                o << "    movl " << params[1] << ", " << bb->cfg->IR_reg_to_asm(reg_dst) << endl;
-                o << "    subl " << bb->cfg->IR_reg_to_asm(params[2]) << ", " << bb->cfg->IR_reg_to_asm(reg_dst) << endl;
-            } else if (params[2][0] == '%') {
-                // Le premier est une variable, le second est un registre
-                o << "    movl " << bb->cfg->IR_reg_to_asm(params[1]) << ", " << bb->cfg->IR_reg_to_asm(reg_dst) << endl;
-                o << "    subl " << params[2] << ", " << bb->cfg->IR_reg_to_asm(reg_dst) << endl;
-            } else {
-                // Les deux sont des variables
-                o << "    movl " << bb->cfg->IR_reg_to_asm(params[1]) << ", " << bb->cfg->IR_reg_to_asm(reg_dst) << endl;
-                o << "    subl " << bb->cfg->IR_reg_to_asm(params[2]) << ", " << bb->cfg->IR_reg_to_asm(reg_dst) << endl;
-            }
-            break;
-            
-        case mul:
-            if (params[2][0] != '%') {
-                // Si le deuxième opérande n'est pas un registre, le charger dans %ebx
-                o << "    movl " << bb->cfg->IR_reg_to_asm(params[2]) << ", %ebx" << endl;
-                if (params[1][0] == '%') {
-                    o << "    movl " << params[1] << ", %eax" << endl;
-                } else {
-                    o << "    movl " << bb->cfg->IR_reg_to_asm(params[1]) << ", %eax" << endl;
-                }
-                o << "    imul %ebx, %eax" << endl;
-                o << "    movl %eax, " << bb->cfg->IR_reg_to_asm(reg_dst) << endl;
-            } else {
-                // Sinon, opération directe
-                if (params[1][0] == '%') {
-                    o << "    movl " << params[1] << ", %eax" << endl;
-                } else {
-                    o << "    movl " << bb->cfg->IR_reg_to_asm(params[1]) << ", %eax" << endl;
-                }
-                o << "    imul " << params[2] << ", %eax" << endl;
-                o << "    movl %eax, " << bb->cfg->IR_reg_to_asm(reg_dst) << endl;
-            }
-            break;
-            
-        case cmp_eq:
-            if (params[1][0] != '%') {
-                // Charger le premier opérande dans %eax si ce n'est pas un registre
-                o << "    movl " << bb->cfg->IR_reg_to_asm(params[1]) << ", %eax" << endl;
-            } else {
-                o << "    movl " << params[1] << ", %eax" << endl;
-            }
-            
-            if (params[2][0] != '%') {
-                // Charger le deuxième opérande dans %ebx si ce n'est pas un registre
-                o << "    movl " << bb->cfg->IR_reg_to_asm(params[2]) << ", %ebx" << endl;
-                o << "    cmpl %ebx, %eax" << endl;
-            } else {
-                o << "    cmpl " << params[2] << ", %eax" << endl;
-            }
-            
-            o << "    sete %al" << endl;
-            o << "    movzbl %al, %eax" << endl;
-            o << "    movl %eax, " << bb->cfg->IR_reg_to_asm(reg_dst) << endl;
-            break;
-            
-        case cmp_lt:
-            if (params[1][0] != '%') {
-                // Charger le premier opérande dans %eax si ce n'est pas un registre
-                o << "    movl " << bb->cfg->IR_reg_to_asm(params[1]) << ", %eax" << endl;
-            } else {
-                o << "    movl " << params[1] << ", %eax" << endl;
-            }
-            
-            if (params[2][0] != '%') {
-                // Charger le deuxième opérande dans %ebx si ce n'est pas un registre
-                o << "    movl " << bb->cfg->IR_reg_to_asm(params[2]) << ", %ebx" << endl;
-                o << "    cmpl %ebx, %eax" << endl;
-            } else {
-                o << "    cmpl " << params[2] << ", %eax" << endl;
-            }
-            
-            o << "    setl %al" << endl;
-            o << "    movzbl %al, %eax" << endl;
-            o << "    movl %eax, " << bb->cfg->IR_reg_to_asm(reg_dst) << endl;
-            break;
-            
-        case cmp_le:
-            if (params[1][0] != '%') {
-                // Charger le premier opérande dans %eax si ce n'est pas un registre
-                o << "    movl " << bb->cfg->IR_reg_to_asm(params[1]) << ", %eax" << endl;
-            } else {
-                o << "    movl " << params[1] << ", %eax" << endl;
-            }
-            
-            if (params[2][0] != '%') {
-                // Charger le deuxième opérande dans %ebx si ce n'est pas un registre
-                o << "    movl " << bb->cfg->IR_reg_to_asm(params[2]) << ", %ebx" << endl;
-                o << "    cmpl %ebx, %eax" << endl;
-            } else {
-                o << "    cmpl " << params[2] << ", %eax" << endl;
-            }
-            
-            o << "    setle %al" << endl;
-            o << "    movzbl %al, %eax" << endl;
-            o << "    movl %eax, " << bb->cfg->IR_reg_to_asm(reg_dst) << endl;
-            break;
-            
-        default:
-            o << "    # Opération non implémentée: " << op << endl;
-    }
+    // Ne génère plus de code assembleur - seule la nouvelle architecture est utilisée
+    // Un commentaire est ajouté pour la notification
+    o << "    # Architecture obsolète : utilisez les nouvelles classes d'opérations" << endl;
 }
 
 // Implémentation de BasicBlock
 BasicBlock::BasicBlock(CFG* cfg, string entry_label) :
-    exit_true(nullptr), exit_false(nullptr), label(entry_label), cfg(cfg), instrs() {}
+    exit_true(nullptr), exit_false(nullptr), label(entry_label), cfg(cfg), operations() {}
 
 // Génère une représentation textuelle du bloc de base
 void BasicBlock::gen_asm(ostream& o) {
     o << "BASIC_BLOCK " << label << ":" << endl;
     
-    // Générer le code pour toutes les instructions
-    for (IRInstr* instr : instrs) {
-        instr->gen_asm(o);
+    // Générer uniquement le code pour les nouvelles opérations
+    for (Operation* op : operations) {
+        op->gen_asm(o);
     }
     
     // Générer les sauts
@@ -231,9 +88,9 @@ void BasicBlock::gen_asm(ostream& o) {
 void BasicBlock::gen_x86(ostream& o) {
     o << "." << label << ":" << endl;
     
-    // Générer le code pour toutes les instructions
-    for (IRInstr* instr : instrs) {
-        instr->gen_x86(o);
+    // Générer uniquement le code pour les nouvelles opérations
+    for (Operation* op : operations) {
+        op->generate_assembly(o);
     }
     
     // Générer les sauts
@@ -254,8 +111,103 @@ void BasicBlock::gen_x86(ostream& o) {
 }
 
 void BasicBlock::add_IRInstr(IRInstr::Operation op, Type t, vector<string> params) {
-    IRInstr* instr = new IRInstr(this, op, t, params);
-    instrs.push_back(instr);
+    // Ne plus ajouter à l'ancienne architecture
+    // Créer uniquement avec la nouvelle architecture orientée objet
+    try {
+        switch (op) {
+            case IRInstr::ldconst:
+                add_ldconst(params[0], stoi(params[1]));
+                break;
+            case IRInstr::copy:
+                add_copy(params[0], params[1]);
+                break;
+            case IRInstr::add:
+                add_add(params[0], params[1], params[2]);
+                break;
+            case IRInstr::sub:
+                add_sub(params[0], params[1], params[2]);
+                break;
+            case IRInstr::mul:
+                add_mul(params[0], params[1], params[2]);
+                break;
+            case IRInstr::cmp_eq:
+                add_cmp_eq(params[0], params[1], params[2]);
+                break;
+            case IRInstr::cmp_lt:
+                add_cmp_lt(params[0], params[1], params[2]);
+                break;
+            case IRInstr::cmp_le:
+                add_cmp_le(params[0], params[1], params[2]);
+                break;
+            default:
+                // Opération non implémentée dans la nouvelle architecture
+                cerr << "Opération non supportée dans la nouvelle architecture: " << op << endl;
+                break;
+        }
+    } catch (const exception& e) {
+        cerr << "Erreur lors de la conversion: " << e.what() << endl;
+    }
+}
+
+// Méthode générique pour ajouter n'importe quelle opération
+void BasicBlock::add_operation(Operation* op) {
+    operations.push_back(op);
+}
+
+// Nouvelles méthodes pour ajouter des opérations spécifiques
+void BasicBlock::add_ldconst(const string& dest, int val) {
+    LdConst* op = new LdConst(this, dest, val);
+    add_operation(op);
+}
+
+void BasicBlock::add_copy(const string& dest, const string& src) {
+    Copy* op = new Copy(this, dest, src);
+    add_operation(op);
+}
+
+void BasicBlock::add_add(const string& dest, const string& op1, const string& op2) {
+    Add* op = new Add(this, dest, op1, op2);
+    add_operation(op);
+}
+
+void BasicBlock::add_sub(const string& dest, const string& op1, const string& op2) {
+    Sub* op = new Sub(this, dest, op1, op2);
+    add_operation(op);
+}
+
+void BasicBlock::add_mul(const string& dest, const string& op1, const string& op2) {
+    Mul* op = new Mul(this, dest, op1, op2);
+    add_operation(op);
+}
+
+void BasicBlock::add_rmem(const string& dest, const string& addr) {
+    Rmem* op = new Rmem(this, dest, addr);
+    add_operation(op);
+}
+
+void BasicBlock::add_wmem(const string& addr, const string& src) {
+    Wmem* op = new Wmem(this, addr, src);
+    add_operation(op);
+}
+
+void BasicBlock::add_call(const string& func_name) {
+    Call* op = new Call(this, func_name);
+    add_operation(op);
+}
+
+void BasicBlock::add_cmp_eq(const string& dest, const string& op1, const string& op2) {
+    CmpEq* op = new CmpEq(this, dest, op1, op2);
+    add_operation(op);
+}
+
+void BasicBlock::add_cmp_lt(const string& dest, const string& op1, const string& op2) {
+    CmpLt* op = new CmpLt(this, dest, op1, op2);
+    add_operation(op);
+}
+
+void BasicBlock::add_cmp_le(const string& dest, const string& op1, const string& op2) {
+    CmpLe* op = new CmpLe(this, dest, op1, op2);
+    add_operation(op);
 }
 
 // Implémentation de CFG

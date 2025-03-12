@@ -88,14 +88,31 @@ class BasicBlock {
 	void gen_asm(ostream &o); /**< Representation textuelle du bloc de base */
 	void gen_x86(ostream &o); /**< x86 assembly code generation for this basic block */
 
+	// Méthode originale pour ajouter une instruction IRInstr (pour compatibilité)
 	void add_IRInstr(IRInstr::Operation op, Type t, vector<string> params);
+	
+	// Nouvelles méthodes pour ajouter des opérations spécifiques
+	void add_ldconst(const string& dest, int val);
+	void add_copy(const string& dest, const string& src);
+	void add_add(const string& dest, const string& op1, const string& op2);
+	void add_sub(const string& dest, const string& op1, const string& op2);
+	void add_mul(const string& dest, const string& op1, const string& op2);
+	void add_rmem(const string& dest, const string& addr);
+	void add_wmem(const string& addr, const string& src);
+	void add_call(const string& func_name);
+	void add_cmp_eq(const string& dest, const string& op1, const string& op2);
+	void add_cmp_lt(const string& dest, const string& op1, const string& op2);
+	void add_cmp_le(const string& dest, const string& op1, const string& op2);
+	
+	// Méthode générique pour ajouter n'importe quelle opération
+	void add_operation(Operation* op);
 
 	// No encapsulation whatsoever here. Feel free to do better.
 	BasicBlock* exit_true;  /**< pointer to the next basic block, true branch. If nullptr, return from procedure */ 
 	BasicBlock* exit_false; /**< pointer to the next basic block, false branch. If null_ptr, the basic block ends with an unconditional jump */
 	string label; /**< label of the BB, also will be the label in the generated code */
 	CFG* cfg; /** < the CFG where this block belongs */
-	vector<IRInstr*> instrs; /** < the instructions themselves. */
+	vector<Operation*> operations; /** < the operations with the new design. */
   string test_var_name;  /** < when generating IR code for an if(expr) or while(expr) etc,
 													 store here the name of the variable that holds the value of expr */
  protected:

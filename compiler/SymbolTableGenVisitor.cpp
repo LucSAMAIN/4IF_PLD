@@ -3,7 +3,7 @@
 #include "SymbolTableGenVisitor.h"
 
 antlrcpp::Any SymbolTableGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx) {
-    if (symbolTable.find(ctx->ID()->getText()) != symbolTable.end()) {
+    if (symbolTable.find(scope + '_' + ctx->ID()->getText()) != symbolTable.end()) {
         std::cerr << "error: variable name already declared " << ctx->ID()->getText() << "\n";
         return 0;
     }
@@ -14,14 +14,44 @@ antlrcpp::Any SymbolTableGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext
         offsetTable[funcName] -= 4;
         symbolTable[ctx->ID()->getText()] = {Type::INT, offsetTable[funcName], true, false};
     }
+
+    if (ctx->expr()) {
+        visit(ctx->expr());
+    }
     return 0;
 }
 
 antlrcpp::Any SymbolTableGenVisitor::visitIdUse(ifccParser::IdUseContext *ctx) {
-    if (symbolTable.find(ctx->ID()->getText()) == symbolTable.end()) {
-        std::cerr << "error: undeclared variable " << ctx->ID()->getText() << "\n";
+    std::string tried_scope = scope;
+    while (tried_scope != "" && symbolTable.find(tried_scope + '_' + ctx->ID()->getText()) == symbolTable.end()) {
+        while (tried_scope.size() != 0 && tried_scope.back() != '_') {
+            tried_scope.pop_back();
+        }
+        if (tried_scope.size() != 0) {
+            tried_scope.pop_back();
+        }
+    }
+    if (tried_scope.size() == 0) {
+        std::cerr << "error: variable not declared " << ctx->ID()->getText() << " in scope " << scope << "\n";
         return 0;
     }
-    symbolTable[ctx->ID()->getText()].used = true;
+    symbolTable[tried_scope + '_' + ctx->ID()->getText()].used = true;
+    return 0;
+}
+
+antlrcpp::Any SymbolTableGenVisitor::visitBlock(ifccParser::BlockContext *ctx) {
+    for (int i = 0; i < ctx->stmt().size(); i++) {
+        if (ctx->stmt(i)->block_stmt() != nullptr) {
+            scope += "_" + std::to_string(i);
+            visit(ctx->stmt(i));
+            while (scope.back() != '_') {
+                scope.pop_back();
+            }
+            scope.pop_back();
+        }
+        else {
+            visit(ctx->stmt(i));
+        }
+    }
     return 0;
 }

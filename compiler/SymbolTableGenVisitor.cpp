@@ -34,8 +34,26 @@ antlrcpp::Any SymbolTableGenVisitor::visitAssign_stmt(ifccParser::Assign_stmtCon
 }
 
 antlrcpp::Any SymbolTableGenVisitor::visitIdUse(ifccParser::IdUseContext *ctx) {
+    /*
+        On a (x = a), on veut donc update la symbol table de a pour dire qu'elle est utilisé
+        dans notre programme.
+        On doit donc trouver où elle se trouve...
+        Autrement dit:
+        int main()
+        {
+            int x = 1;
+
+            {
+                int a = x;
+            }
+            return 0;
+        }
+        Au moment ou on fait a = x on veut indiquer que x est bien utilisé, mais on ne sait pas ou la trouver... 
+    */
     std::string tried_scope = scope;
+    // On parcourt notre scope pour savoir dans quel contexte se trouve l'IDUse!
     while (tried_scope != "" && symbolTable.find(tried_scope + '_' + ctx->ID()->getText()) == symbolTable.end()) {
+        // on update le scope:
         while (tried_scope.size() != 0 && tried_scope.back() != '_') {
             tried_scope.pop_back();
         }

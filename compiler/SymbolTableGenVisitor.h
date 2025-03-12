@@ -12,7 +12,6 @@ typedef struct VarInfos
     int offset;
     bool declared;
     bool used;
-    std::string scope;
 } VarInfos;
 
 class SymbolTableGenVisitor : public ifccBaseVisitor
@@ -25,6 +24,7 @@ public:
 
     virtual antlrcpp::Any visitDecl_stmt(ifccParser::Decl_stmtContext *ctx) override;
     virtual antlrcpp::Any visitIdUse(ifccParser::IdUseContext *ctx) override;
+    virtual antlrcpp::Any visitBlock(ifccParser::BlockContext *ctx) override;
 private:
     std::map<std::string, VarInfos> symbolTable;
     std::string scope;

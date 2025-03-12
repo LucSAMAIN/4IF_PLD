@@ -53,16 +53,16 @@ int main(int argn, const char **argv)
 
     // for (auto const &var : stv.getSymbolTable())
     // {
-    //     cout << var.first << " : " << var.second.type << " at " << var.second.offset;
+    //     std::cout << var.first << " : " << var.second.type << " offset: " << var.second.offset;
     //     if (var.second.used)
     //     {
-    //         cout << " (used)";
+    //         std::cout << " (used)";
     //     }
     //     if (var.second.declared)
     //     {
-    //         cout << " (declared)";
+    //         std::cout << " (declared)";
     //     }
-    //     cout << "\n";
+    //     std::cout << "\n";
     // }
 
     CodeGenVisitor cgv(stv.getSymbolTable());

@@ -18,8 +18,8 @@ return_stmt : RETURN expr ;
 block_stmt : block ;
 
 expr : primary # primaryExpr
-     | NOT primary # notExpr
-     | MINUS primary # unaryMinusExpr
+     | <assoc=right>NOT primary # notExpr
+     | <assoc=right>MINUS primary # unaryMinusExpr
      | left=expr mOp right=expr # mulDivExpr
      | left=expr aOp right=expr # addSubExpr
      | left=expr compOp right=expr # compExpr
@@ -28,6 +28,7 @@ expr : primary # primaryExpr
      | left=expr XOR right=expr # xorExpr
      | left=expr OR right=expr # orExpr
      ;
+
 primary : ID # idUse
         | CONST # const
         | LPAR expr RPAR # parExpr

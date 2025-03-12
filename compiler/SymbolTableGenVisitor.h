@@ -12,12 +12,13 @@ typedef struct VarInfos
     int offset;
     bool declared;
     bool used;
+    std::string scope;
 } VarInfos;
 
 class SymbolTableGenVisitor : public ifccBaseVisitor
 {
 public:
-    SymbolTableGenVisitor() : symbolTable(), scope(""), offset(0) {}
+    SymbolTableGenVisitor() : symbolTable(), scope("main"), offset(0) {}
     virtual ~SymbolTableGenVisitor() {}
 
     std::map<std::string, VarInfos>& getSymbolTable() { return symbolTable; }

@@ -10,7 +10,7 @@ Operation::~Operation() {}
 LdConst::LdConst(BasicBlock* bb, const std::string& dest_reg, int val) 
     : dest(dest_reg), value(val), bb(bb) {}
 
-void LdConst::generate_assembly(std::ostream& o) {
+void LdConst::gen_x86(std::ostream& o) {
     o << "    movl $" << value << ", " << bb->cfg->IR_reg_to_asm(dest) << std::endl;
 }
 
@@ -26,7 +26,7 @@ void LdConst::gen_asm(std::ostream& o) {
 Copy::Copy(BasicBlock* bb, const std::string& dest_reg, const std::string& src_reg) 
     : dest(dest_reg), src(src_reg), bb(bb) {}
 
-void Copy::generate_assembly(std::ostream& o) {
+void Copy::gen_x86(std::ostream& o) {
     if (src[0] == '%') {
         // Copie depuis un registre
         o << "    movl " << src << ", " << bb->cfg->IR_reg_to_asm(dest) << std::endl;
@@ -48,7 +48,7 @@ void Copy::gen_asm(std::ostream& o) {
 Add::Add(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2) 
     : dest(dest_reg), op1(operand1), op2(operand2), bb(bb) {}
 
-void Add::generate_assembly(std::ostream& o) {
+void Add::gen_x86(std::ostream& o) {
     if (op1[0] == '%' && op2[0] == '%') {
         // Les deux opérandes sont des registres
         o << "    movl " << op1 << ", " << bb->cfg->IR_reg_to_asm(dest) << std::endl;
@@ -80,7 +80,7 @@ void Add::gen_asm(std::ostream& o) {
 Sub::Sub(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2) 
     : dest(dest_reg), op1(operand1), op2(operand2), bb(bb) {}
 
-void Sub::generate_assembly(std::ostream& o) {
+void Sub::gen_x86(std::ostream& o) {
     if (op1[0] == '%' && op2[0] == '%') {
         // Les deux opérandes sont des registres
         o << "    movl " << op1 << ", " << bb->cfg->IR_reg_to_asm(dest) << std::endl;
@@ -112,7 +112,7 @@ void Sub::gen_asm(std::ostream& o) {
 Mul::Mul(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2) 
     : dest(dest_reg), op1(operand1), op2(operand2), bb(bb) {}
 
-void Mul::generate_assembly(std::ostream& o) {
+void Mul::gen_x86(std::ostream& o) {
     if (op2[0] != '%') {
         // Si le deuxième opérande n'est pas un registre, le charger dans %ebx
         o << "    movl " << bb->cfg->IR_reg_to_asm(op2) << ", %ebx" << std::endl;
@@ -147,7 +147,7 @@ void Mul::gen_asm(std::ostream& o) {
 Rmem::Rmem(BasicBlock* bb, const std::string& dest_reg, const std::string& address) 
     : dest(dest_reg), addr(address), bb(bb) {}
 
-void Rmem::generate_assembly(std::ostream& o) {
+void Rmem::gen_x86(std::ostream& o) {
     o << "    movl " << bb->cfg->IR_reg_to_asm(addr) << ", " << bb->cfg->IR_reg_to_asm(dest) << std::endl;
 }
 
@@ -163,7 +163,7 @@ void Rmem::gen_asm(std::ostream& o) {
 Wmem::Wmem(BasicBlock* bb, const std::string& address, const std::string& src_reg) 
     : addr(address), src(src_reg), bb(bb) {}
 
-void Wmem::generate_assembly(std::ostream& o) {
+void Wmem::gen_x86(std::ostream& o) {
     o << "    movl " << bb->cfg->IR_reg_to_asm(src) << ", " << bb->cfg->IR_reg_to_asm(addr) << std::endl;
 }
 
@@ -178,7 +178,7 @@ void Wmem::gen_asm(std::ostream& o) {
 // Implémentation de Call
 Call::Call(BasicBlock* bb, const std::string& function) : func_name(function), bb(bb) {}
 
-void Call::generate_assembly(std::ostream& o) {
+void Call::gen_x86(std::ostream& o) {
     o << "    call " << func_name << std::endl;
 }
 
@@ -194,7 +194,7 @@ void Call::gen_asm(std::ostream& o) {
 CmpEq::CmpEq(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2) 
     : dest(dest_reg), op1(operand1), op2(operand2), bb(bb) {}
 
-void CmpEq::generate_assembly(std::ostream& o) {
+void CmpEq::gen_x86(std::ostream& o) {
     if (op1[0] != '%') {
         // Charger le premier opérande dans %eax si ce n'est pas un registre
         o << "    movl " << bb->cfg->IR_reg_to_asm(op1) << ", %eax" << std::endl;
@@ -227,7 +227,7 @@ void CmpEq::gen_asm(std::ostream& o) {
 CmpLt::CmpLt(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2) 
     : dest(dest_reg), op1(operand1), op2(operand2), bb(bb) {}
 
-void CmpLt::generate_assembly(std::ostream& o) {
+void CmpLt::gen_x86(std::ostream& o) {
     if (op1[0] != '%') {
         // Charger le premier opérande dans %eax si ce n'est pas un registre
         o << "    movl " << bb->cfg->IR_reg_to_asm(op1) << ", %eax" << std::endl;
@@ -260,7 +260,7 @@ void CmpLt::gen_asm(std::ostream& o) {
 CmpLe::CmpLe(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2) 
     : dest(dest_reg), op1(operand1), op2(operand2), bb(bb) {}
 
-void CmpLe::generate_assembly(std::ostream& o) {
+void CmpLe::gen_x86(std::ostream& o) {
     if (op1[0] != '%') {
         // Charger le premier opérande dans %eax si ce n'est pas un registre
         o << "    movl " << bb->cfg->IR_reg_to_asm(op1) << ", %eax" << std::endl;

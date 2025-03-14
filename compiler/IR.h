@@ -9,7 +9,7 @@
 // Declarations from the parser -- replace with your own
 #include "type.h"
 #include "symbole.h"
-#include "operation.h"
+#include "Operation.h"
 
 class BasicBlock;
 class CFG;
@@ -23,14 +23,16 @@ class IRInstr {
    
 	/**  constructor */
 	IRInstr(BasicBlock* bb_, Operation op, Type t, vector<string> params);
+
+	// Destructor
+	// ?? a faire ?
 	
 	/** Actual code generation */
 	void gen_asm(ostream &o); /**< Representation textuelle de l'instruction IR */
-	void gen_x86(ostream &o); /**< x86 assembly code generation for this IR instruction */
 	
  private:
 	BasicBlock* bb; /**< The BB this instruction belongs to, which provides a pointer to the CFG this instruction belong to */
-	Operation op;
+	Operation* op;
 	Type t;
 	vector<string> params; /**< For 3-op instrs: d, x, y; for ldconst: d, c;  For call: label, d, params;  for wmem and rmem: choose yourself */
 	// if you subclass IRInstr, each IRInstr subclass has its parameters and the previous (very important) comment becomes useless: it would be a better design. 
@@ -74,7 +76,7 @@ class BasicBlock {
 	void gen_x86(ostream &o); /**< x86 assembly code generation for this basic block */
 
 	// Méthode originale pour ajouter une instruction IRInstr (pour compatibilité)
-	void add_IRInstr(IRInstr::Operation op, Type t, vector<string> params);
+	void add_IRInstr(Operation op, Type t, vector<string> params);
 	
 	// Méthode générique pour ajouter n'importe quelle opération
 	void add_operation(Operation* op);

@@ -22,12 +22,6 @@ void IRInstr::gen_asm(ostream &o) {
     */
 }
 
-// Génère du code assembleur x86 pour cette instruction IR
-void IRInstr::gen_x86(ostream &o) {
-    /*
-        De même ici
-    */
-}
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -71,31 +65,6 @@ void BasicBlock::gen_asm(ostream& o) {
     }
 }
 
-// Génère du code assembleur x86 pour ce bloc de base
-void BasicBlock::gen_x86(ostream& o) {
-    o << "." << label << ":" << endl;
-    
-    // Générer uniquement le code pour les nouvelles opérations
-    for (Operation* op : operations) {
-        op->gen_x86(o);
-    }
-    
-    // Générer les sauts
-    if (exit_true == nullptr && exit_false == nullptr) {
-        // Épilogue de la fonction
-        o << "    movq %rbp, %rsp" << endl;
-        o << "    popq %rbp" << endl;
-        o << "    ret" << endl;
-    } else if (exit_false == nullptr) {
-        // Saut inconditionnel
-        o << "    jmp ." << exit_true->label << endl;
-    } else {
-        // Saut conditionnel
-        o << "    cmpl $0, " << cfg->IR_reg_to_asm(test_var_name) << endl;
-        o << "    je ." << exit_false->label << endl;
-        o << "    jmp ." << exit_true->label << endl;
-    }
-}
 
 void BasicBlock::add_IRInstr(IRInstr::Operation op, Type t, vector<string> params) {
     // Ne plus ajouter à l'ancienne architecture
@@ -170,16 +139,6 @@ void CFG::gen_asm(ostream& o) {
     }
 }
 
-// Génère du code assembleur x86 à partir du CFG
-void CFG::gen_x86(ostream& o) {
-    // Prologue
-    gen_asm_prologue(o);
-    
-    // Générer le code pour tous les blocs de base
-    for (BasicBlock* bb : bbs) {
-        bb->gen_x86(o);
-    }
-}
 
 void CFG::gen_asm_prologue(ostream& o) {
     o << ".text" << endl;

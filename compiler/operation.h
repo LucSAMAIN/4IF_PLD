@@ -38,8 +38,6 @@ public:
     // Destructeur virtuel pour permettre la destruction propre des objets de sous-classes
     virtual ~Operation();
     
-    // Méthode virtuelle pure à implémenter par chaque sous-classe
-    virtual void gen_x86(std::ostream& o) = 0;
     
     // Méthode pour obtenir le nom de l'opération (pour le débogage)
     virtual std::string get_operation_name() const = 0;
@@ -61,7 +59,6 @@ private:
 
 public:
     LdConst(BasicBlock* bb, const std::string& dest_reg, int val);
-    void gen_x86(std::ostream& o) override;
     std::string get_operation_name() const override;
     void gen_asm(std::ostream& o) override;
 };
@@ -76,7 +73,6 @@ private:
 
 public:
     Copy(BasicBlock* bb, const std::string& dest_reg, const std::string& src_reg);
-    void gen_x86(std::ostream& o) override;
     std::string get_operation_name() const override;
     void gen_asm(std::ostream& o) override;
 };
@@ -92,7 +88,6 @@ private:
 
 public:
     Add(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2);
-    void gen_x86(std::ostream& o) override;
     std::string get_operation_name() const override;
     void gen_asm(std::ostream& o) override;
 };
@@ -108,7 +103,6 @@ private:
 
 public:
     Sub(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2);
-    void gen_x86(std::ostream& o) override;
     std::string get_operation_name() const override;
     void gen_asm(std::ostream& o) override;
 };
@@ -124,7 +118,6 @@ private:
 
 public:
     Mul(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2);
-    void gen_x86(std::ostream& o) override;
     std::string get_operation_name() const override;
     void gen_asm(std::ostream& o) override;
 };
@@ -139,7 +132,6 @@ private:
 
 public:
     Rmem(BasicBlock* bb, const std::string& dest_reg, const std::string& address);
-    void gen_x86(std::ostream& o) override;
     std::string get_operation_name() const override;
     void gen_asm(std::ostream& o) override;
 };
@@ -154,7 +146,6 @@ private:
 
 public:
     Wmem(BasicBlock* bb, const std::string& address, const std::string& src_reg);
-    void gen_x86(std::ostream& o) override;
     std::string get_operation_name() const override;
     void gen_asm(std::ostream& o) override;
 };
@@ -168,7 +159,6 @@ private:
 
 public:
     Call(BasicBlock* bb, const std::string& function);
-    void gen_x86(std::ostream& o) override;
     std::string get_operation_name() const override;
     void gen_asm(std::ostream& o) override;
 };
@@ -184,7 +174,6 @@ private:
 
 public:
     CmpEq(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2);
-    void gen_x86(std::ostream& o) override;
     std::string get_operation_name() const override;
     void gen_asm(std::ostream& o) override;
 };
@@ -200,7 +189,6 @@ private:
 
 public:
     CmpLt(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2);
-    void gen_x86(std::ostream& o) override;
     std::string get_operation_name() const override;
     void gen_asm(std::ostream& o) override;
 };
@@ -216,7 +204,6 @@ private:
 
 public:
     CmpLe(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2);
-    void gen_x86(std::ostream& o) override;
     std::string get_operation_name() const override;
     void gen_asm(std::ostream& o) override;
 };

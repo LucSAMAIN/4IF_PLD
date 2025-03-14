@@ -9,6 +9,7 @@
 #include "generated/ifccBaseVisitor.h"
 
 #include "CodeGenVisitor.h"
+#include "IRGenVisitor.h"
 #include "SymbolTableGenVisitor.h"
 #include "IR.h"
 
@@ -66,7 +67,7 @@ int main(int argn, const char **argv)
     //     cout << "\n";
     // }
 
-    CodeGenVisitor cgv(stv.getSymbolTable());
+    IRGenVisitor cgv(stv.getSymbolTable());
     cgv.visit(tree);
 
     // Récupération du CFG généré

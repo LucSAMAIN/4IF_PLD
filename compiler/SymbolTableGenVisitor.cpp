@@ -12,10 +12,10 @@ antlrcpp::Any SymbolTableGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext
     std::getline(ss_scope, funcName, '_');
     if (ctx->type()->getText() == "int") {
         offsetTable[funcName] -= 4;
-        symbolTable[ctx->ID()->getText()] = {Type::INT, offsetTable[funcName], true, false};
+        symbolTable[scope + '_' + ctx->ID()->getText()] = {Type::INT, offsetTable[funcName], true, false};
     }
-
-    if (ctx->expr()) {
+    
+    if (ctx->expr() != nullptr) {
         visit(ctx->expr());
     }
     return 0;

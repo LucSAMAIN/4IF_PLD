@@ -36,6 +36,7 @@ public:
     virtual antlrcpp::Any visitBlock(ifccParser::BlockContext *ctx) override;
 
     std::map<std::string, VarInfos> symbolTable;
+    std::map<std::string, int> offsetTable;
     std::string scope;
     std::map<std::string, int> offsetTable;
 };

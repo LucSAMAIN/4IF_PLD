@@ -16,13 +16,7 @@ enum class Type {
     INT8_T
 }; 
 
-Type fromStringToType(std::string s)
-{   
-    if (s == "CHAR")
-        return Type::CHAR;
-    else
-        return Type::INT;
-}
+Type fromStringToType(std::string s);
 
 typedef struct VarInfos
 {

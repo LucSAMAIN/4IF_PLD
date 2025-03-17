@@ -2,6 +2,14 @@
 
 #include "SymbolTableGenVisitor.h"
 
+Type fromStringToType(std::string s)
+{   
+    if (s == "CHAR")
+        return Type::CHAR;
+    else
+        return Type::INT;
+}
+
 antlrcpp::Any SymbolTableGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx) {
     if (symbolTable.find(scope + '_' + ctx->ID()->getText()) != symbolTable.end()) {
         std::cerr << "error: variable name already declared " << ctx->ID()->getText() << "\n";

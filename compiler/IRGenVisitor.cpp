@@ -6,7 +6,7 @@
 
 
 IRGenVisitor::IRGenVisitor(SymbolTableGenVisitor& symbolTableGenVisitor) 
-    : symbolTableGenVisitor(symbolTableGenVisitor), cfg(nullptr), currentBB(nullptr) {}
+    : symbolTableGenVisitor(symbolTableGenVisitor), cfg(nullptr), currentBB(nullptr), scope() {}
 
 IRGenVisitor::~IRGenVisitor() {
     // Le CFG doit être libéré par le main
@@ -18,13 +18,12 @@ antlrcpp::Any IRGenVisitor::visitProg(ifccParser::ProgContext *ctx)
     // Initialisation du CFG et du bloc de base
     cfg = new CFG(symbolTableGenVisitor);
     currentBB = new BasicBlock(cfg, "main");
+    scope = "main";
     cfg->add_bb(currentBB);
     cfg->current_bb = currentBB;
     
     // Visite du bloc principal
     visit(ctx->block());
-
-    // L'affichage de l'IR est maintenant géré uniquement dans main.cpp
     
     return 0;
 }
@@ -34,8 +33,18 @@ antlrcpp::Any IRGenVisitor::visitBlock(ifccParser::BlockContext *ctx)
     // PAS OUBLIER SI PLUSIEURS BLOCKS IMBRIQUES
 
     // Visiter tous les statements dans le bloc
-    for (ifccParser::StmtContext* stmt : ctx->stmt()) {
-        visit(stmt);
+    for (int i = 0; i < ctx->stmt().size(); i++) {
+        if (ctx->stmt(i)->block_stmt() != nullptr) {
+            scope += "_" + std::to_string(i);
+            visit(ctx->stmt(i));
+            while (scope.back() != '_') {
+                scope.pop_back();
+            }
+            scope.pop_back();
+        }
+        else {
+            visit(ctx->stmt(i));
+        }
     }
     return 0;
 }
@@ -45,9 +54,7 @@ antlrcpp::Any IRGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx)
 {
     
     // Ajouter la variable à la table des symboles du CFG
-    std::string typeString = ctx->type()->getText();
-    Type type = fromStringToType(typeString);
-    std::string nomVar = ctx->ID()->getText();
+    std::string nomVar = scope + ctx->ID()->getText();
     // cfg->add_to_symbol_table(nomVar, type);
     // elle est déjà dedans chef
     
@@ -69,13 +76,9 @@ antlrcpp::Any IRGenVisitor::visitAssign_stmt(ifccParser::Assign_stmtContext *ctx
     visit(ctx->expr());
     
     // Obtenir le type de la variable
-    std::string varNom = ctx->ID()->getText();
-    Type varType = cfg->get_var_type(varNom);
+    std::string varNom = scope + ctx->ID()->getText();
     
-    // Créer une variable temporaire pour stocker le résultat
-    std::string temp = cfg->create_new_tempvar(varType);
-    
-    Operation *op = new Copy(currentBB, varNom, temp);  // bb, dst, src
+    Operation *op = new Copy(currentBB, varNom, "!reg");  // bb, dst, src
     IRInstr *instruction = new IRInstr(cfg->current_bb, op);
     cfg->current_bb->add_IRInstr(instruction);
     
@@ -97,19 +100,11 @@ antlrcpp::Any IRGenVisitor::visitReturn_stmt(ifccParser::Return_stmtContext *ctx
 
 antlrcpp::Any IRGenVisitor::visitConst(ifccParser::ConstContext *ctx)
 {
-    // Créer une variable temporaire pour stocker la constante
-    std::string temp = cfg->create_new_tempvar(Type::INT);
     
     // Charger la constante dans la variable temporaire
-    Operation *op_const = new LdConst(cfg->current_bb, temp, std::stoi(ctx->CONST()->getText()));  // bb, dst, src
+    Operation *op_const = new LdConst(cfg->current_bb, "!reg", std::stoi(ctx->CONST()->getText()));  // bb, dst, src
     IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
     currentBB->add_IRInstr(instruction_const);
-    
-    // Copier la variable temporaire dans %eax
-    std::vector<std::string> params_copy = {"%eax", temp};
-    Operation* op_copy = new Copy(currentBB, "%eax", temp);
-    IRInstr *instruction_copy = new IRInstr(cfg->current_bb, op_copy);
-    currentBB->add_IRInstr(instruction_copy);
     
     return 0;
 }

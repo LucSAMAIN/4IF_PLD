@@ -16,7 +16,7 @@ std::string LdConst::get_operation_name() const {
 }
 
 void LdConst::gen_x86(std::ostream& o) {
-    o << "    movl $" << value << ", " << dest << "\n";
+    o << "    movl $" << value << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
 }
 
 // Implémentation de Copy
@@ -29,7 +29,7 @@ std::string Copy::get_operation_name() const {
 }
 
 void Copy::gen_x86(std::ostream& o) {
-    o << "    movl " << src << ", " << dest << "\n";
+    o << "    movl " << bb->cfg->IR_reg_to_x86(src) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
 }
 
 // Implémentation de Add

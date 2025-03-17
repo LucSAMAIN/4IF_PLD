@@ -17,7 +17,7 @@ antlrcpp::Any IRGenVisitor::visitProg(ifccParser::ProgContext *ctx)
 {
     // Initialisation du CFG et du bloc de base
     cfg = new CFG(symbolTableGenVisitor);
-    currentBB = new BasicBlock(cfg, "main");
+    currentBB = new BasicBlock(cfg, cfg->new_BB_name());
     scope = "main";
     cfg->add_bb(currentBB);
     cfg->current_bb = currentBB;

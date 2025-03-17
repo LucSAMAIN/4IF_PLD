@@ -60,7 +60,7 @@ antlrcpp::Any IRGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx)
         // Évaluation de l'expression
         visit(ctx->expr());
 
-        Operation *op = new Copy(currentBB, nomVar, "!reg");  // bb, dst, src
+        Operation *op = new Copy(cfg->current_bb, nomVar, "!reg");  // bb, dst, src
         IRInstr *instruction = new IRInstr(cfg->current_bb, op);
         cfg->current_bb->add_IRInstr(instruction);
     }
@@ -75,7 +75,7 @@ antlrcpp::Any IRGenVisitor::visitAssign_stmt(ifccParser::Assign_stmtContext *ctx
     // Obtenir le type de la variable
     std::string varNom = scope + ctx->ID()->getText();
     
-    Operation *op = new Copy(currentBB, varNom, "!reg");  // bb, dst, src
+    Operation *op = new Copy(cfg->current_bb, varNom, "!reg");  // bb, dst, src
     IRInstr *instruction = new IRInstr(cfg->current_bb, op);
     cfg->current_bb->add_IRInstr(instruction);
     
@@ -87,8 +87,8 @@ antlrcpp::Any IRGenVisitor::visitReturn_stmt(ifccParser::Return_stmtContext *ctx
     // Évaluation de l'expression de retour
     visit(ctx->expr());
     
-    currentBB->exit_true = cfg->end_block;
-    currentBB->exit_false = nullptr;
+    cfg->current_bb->exit_true = cfg->end_block;
+    cfg->current_bb->exit_false = nullptr;
     
     return 0;
 }
@@ -97,7 +97,7 @@ antlrcpp::Any IRGenVisitor::visitConst(ifccParser::ConstContext *ctx)
 {
     Operation *op_const = new LdConst(cfg->current_bb, "!reg", std::stoi(ctx->CONST()->getText()));  // bb, dst, src
     IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
-    currentBB->add_IRInstr(instruction_const);
+    cfg->current_bb->add_IRInstr(instruction_const);
     
     return 0;
 }

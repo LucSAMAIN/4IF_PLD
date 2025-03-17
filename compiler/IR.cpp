@@ -14,10 +14,8 @@ IRInstr::IRInstr(BasicBlock* bb_, Operation *op) :
     bb(bb_), op(op) {}
 
 // Génère une représentation textuelle de l'instruction IR
-void IRInstr::gen_x86(ostream &o) {    
-    /*
-        Remplacez le switch case qu'il y avait avant.
-    */
+void IRInstr::gen_x86(ostream &o) {
+    op->gen_x86(o);
 }
 
 
@@ -32,34 +30,38 @@ void IRInstr::gen_x86(ostream &o) {
 
 // Implémentation de BasicBlock
 BasicBlock::BasicBlock(CFG* cfg, string entry_label) :
-    exit_true(nullptr), exit_false(nullptr), label(entry_label), cfg(cfg), instructions() {}
+    exit_true(nullptr), exit_false(nullptr), label(entry_label), cfg(cfg), instructions()
+{
+
+}
 
 
 
-
+void BasicBlock::add_IRInstr(IRInstr *instruction) {
+    instructions.push_back(instruction);
+}
 
 
 
 
 // Génère une représentation textuelle du bloc de base
-void BasicBlock::gen_asm(ostream& o) {
-    o << "BASIC_BLOCK " << label << ":" << endl;
+void BasicBlock::gen_x86(ostream& o) {
+    o << label << ":\n";
     
-    // Générer uniquement le code pour les nouvelles opérations
-    for (Operation* op : operations) {
-        op->gen_asm(o);
+    for (IRInstr* instr : instructions) {
+        instr->gen_x86(o);
     }
     
     // Générer les sauts
     if (exit_true == nullptr && exit_false == nullptr) {
-        o << "    RETURN" << endl;
+        o << "    RETURN" << "\n";
     } else if (exit_false == nullptr) {
         // Saut inconditionnel
-        o << "    JUMP " << exit_true->label << endl;
+        o << "    JUMP " << exit_true->label << "\n";
     } else {
         // Saut conditionnel
-        o << "    JUMP_IF_ZERO " << test_var_name << " -> " << exit_false->label << endl;
-        o << "    JUMP " << exit_true->label << endl;
+        o << "    JUMP_IF_ZERO " << test_var_name << " -> " << exit_false->label << "\n";
+        o << "    JUMP " << exit_true->label << "\n";
     }
 }
 
@@ -68,23 +70,12 @@ void BasicBlock::add_IRInstr(IRInstr *instruction) {
     this->instructions.push_back(instruction);
 }
 
-
-
-
-
-// Méthode générique pour ajouter n'importe quelle opération
-void BasicBlock::add_operation(Operation* op) {
-    operations.push_back(op);
-}
-
-
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////// NIVEAU CFG //////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
 
 // Implémentation de CFG
-CFG::CFG(DefFonction* ast) : ast(ast), current_bb(nullptr), nextFreeSymbolIndex(0), nextBBnumber(0) {}
 
 void CFG::add_bb(BasicBlock* bb) {
     bbs.push_back(bb);
@@ -99,52 +90,37 @@ string CFG::IR_reg_to_asm(string reg) {
         return "$" + reg;
     } else {
         // C'est une variable
-        return to_string(SymbolIndex[reg]) + "(%rbp)";
+        return stv.symbolTable[reg].offset + "(%rbp)";
     }
 }
 
 // Génère une représentation textuelle du CFG
-void CFG::gen_asm(ostream& o) {
-    // En-tête
-    o << "CFG pour la fonction " << ast->getName() << ":" << endl;
-    
-    // Informations sur la table des symboles
-    o << "Table des symboles:" << endl;
-    for (auto const& [name, index] : SymbolIndex) {
-        o << "  " << name << " à l'offset " << index << " (type: ";
-        switch(SymbolType[name]) {
-            case Type::INT: o << "INT"; break;
-            case Type::CHAR: o << "CHAR"; break;
-            case Type::VOID: o << "VOID"; break;
-            default: o << "UNKNOWN"; break;
-        }
-        o << ")" << endl;
-    }
-    
+void CFG::gen_x86(ostream& o) {
     // Générer le code pour tous les blocs de base
-    o << "Blocs de base:" << endl;
     for (BasicBlock* bb : bbs) {
-        bb->gen_asm(o);
+        bb->gen_x86(o);
     }
 }
 
 
-void CFG::gen_asm_prologue(ostream& o) {
-    o << ".text" << endl;
-    o << ".globl " << ast->getName() << endl;
-    o << ast->getName() << ":" << endl;
-    o << "    pushq %rbp" << endl;
-    o << "    movq %rsp, %rbp" << endl;
+void CFG::gen_x86_prologue(ostream& o) {
+    o << ".text" << "\n";
+    if (functionName == "main") {
+        o << ".globl main\n";
+    }
+    o << ast->getName() << ":" << "\n";
+    o << "    pushq %rbp" << "\n";
+    o << "    movq %rsp, %rbp" << "\n";
     
     // Allouer de l'espace pour les variables locales
     int frameSize = ((-nextFreeSymbolIndex + 15) & ~15);  // Alignement sur 16 octets uniquement
-    o << "    subq $" << frameSize << ", %rsp" << endl;
+    o << "    subq $" << frameSize << ", %rsp" << "\n";
 }
 
 void CFG::gen_asm_epilogue(ostream& o) {
-    o << "    movq %rbp, %rsp" << endl;
-    o << "    popq %rbp" << endl;
-    o << "    ret" << endl;
+    o << "    movq %rbp, %rsp" << "\n";
+    o << "    popq %rbp" << "\n";
+    o << "    ret" << "\n";
 }
 
 void CFG::add_to_symbol_table(string name, Type t) {
@@ -163,35 +139,29 @@ void CFG::add_to_symbol_table(string name, Type t) {
     }
 }
 
-string CFG::create_new_tempvar(Type t) {
-    string temp_name;
-    
+string CFG::create_new_tempvar(Type t) {    
     // Récupérer l'offset:
-    int offset = stv.offsetTable[current_bb->label];
+    int offset = 0;
+    if (t == Type::INT) {
+        stv.offsetTable[functionName] -= 4;
+        offset = stv.offsetTable[functionName];
+    }
     
-    // Récupérer l'index attribué
-    int stack_index = stv.SymbolTable[temp_name].offset;
-    
-    // Créer le vrai nom avec l'index dans la pile
-    stringstream final_name;
-    final_name << "!tmp" << -stack_index;
-    final_name = final_name.str();
+    // Créer le vrai nom avec l'offset dans la pile
+    string temp_name("!tmp"+offset);
 
     // Mettre à jour la table des symboles avec le nouveau nom
-    stv.SymbolTable[final_name].offset = stack_index;
-    stv.SymbolTable[final_name].type = t;
-    stv.SymbolTable[final_name].declared = true;
-    stv.SymbolTable[final_name].used = false;
+    stv.symbolTable[temp_name].offset = offset;
+    stv.symbolTable[temp_name].type = t;
+    stv.symbolTable[temp_name].declared = true;
+    stv.symbolTable[temp_name].used = false;
     
-    // Supprimer l'entrée temporaire
-    stv.SymbolTable.erase(temp_name);
-    
-    return final_name.str();
+    return temp_name;
 }
 
-int CFG::get_var_index(string name) {
-    if (stv.SymbolTable.find(name) != stv.SymbolTable.end()) {
-        return stv.SymbolTable[name];
+int CFG::get_var_offset(string name) {
+    if (stv.symbolTable.find(name) != stv.symbolTable.end()) {
+        return stv.symbolTable[name].offset;
     }
     return 0;  // Erreur, la variable n'existe pas
 }
@@ -205,6 +175,6 @@ Type CFG::get_var_type(string name) {
 
 string CFG::new_BB_name() {
     stringstream ss;
-    ss << "BB" << nextBBnumber++;
+    ss << functionName << bbs.size(); // je pense ça passe car on ajoute le block direct dans la liste après
     return ss.str();
 } 

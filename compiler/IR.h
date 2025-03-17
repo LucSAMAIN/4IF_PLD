@@ -97,10 +97,6 @@ public:
 	CFG(SymbolTableGenVisitor& p_stv) : stv(p_stv), current_bb(nullptr), nexTmpNumber(0), bbs(), functionName("main") {}
 	
 	void add_bb(BasicBlock* bb);
-	std::string fromScopeToFunctionName(std::string scope)
-	{
-
-	}
 
 	// x86 code generation: could be encapsulated in a processor class in a retargetable compiler
 	void gen_x86(std::ostream& o); /**< x86 assembly code generation for the whole CFG */
@@ -111,7 +107,7 @@ public:
 	// symbol table methods
 	void add_to_symbol_table(std::string name, Type t);
 	std::string create_new_tempvar(Type t);
-	int get_var_index(std::string name);
+	int get_var_offset(std::string name);
 	Type get_var_type(std::string name);
 
 	// basic block management
@@ -122,7 +118,7 @@ protected:
 	
 	SymbolTableGenVisitor& stv; /**< the visitor for the symbol table */
 	int nexTmpNumber; /**< just for naming */
-	std::vector <BasicBlock*> bbs; /**< all the basic blocks of this CFG*/
+	std::vector<BasicBlock*> bbs; /**< all the basic blocks of this CFG*/
 	std::string functionName;
 };
 

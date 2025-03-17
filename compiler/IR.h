@@ -120,7 +120,6 @@ protected:
 	
 	SymbolTableGenVisitor& stv; /**< the visitor for the symbol table */
 	int nexTmpNumber; /**< just for naming */
-	
 	std::vector <BasicBlock*> bbs; /**< all the basic blocks of this CFG*/
 };
 

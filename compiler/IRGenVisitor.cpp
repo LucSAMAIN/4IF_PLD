@@ -19,7 +19,7 @@ antlrcpp::Any IRGenVisitor::visitProg(ifccParser::ProgContext *ctx)
     cfg = new CFG(symbolTableGenVisitor);
     currentBB = new BasicBlock(cfg, "main");
     cfg->add_bb(currentBB);
-    cfg->current_bb = currentBB
+    cfg->current_bb = currentBB;
     
     // Visite du bloc principal
     visit(ctx->block());
@@ -61,7 +61,7 @@ antlrcpp::Any IRGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx)
 
         Operation *op = new Copy(currentBB, nomVar, temp);  // bb, dst, src
         IRInstr *instruction = new IRInstr(cfg->current_bb, op);
-        cfg->current_bb->add_IRInstr(op);
+        cfg->current_bb->add_IRInstr(instruction);
     }
     return 0;
 }
@@ -72,18 +72,15 @@ antlrcpp::Any IRGenVisitor::visitAssign_stmt(ifccParser::Assign_stmtContext *ctx
     visit(ctx->expr());
     
     // Obtenir le type de la variable
-    Type varType = cfg->get_var_type(ctx->ID()->getText());
+    std::string varNom = ctx->ID()->getText();
+    Type varType = cfg->get_var_type(varNom);
     
     // Créer une variable temporaire pour stocker le résultat
     std::string temp = cfg->create_new_tempvar(varType);
     
-    // Copier le résultat de l'expression dans la variable temporaire
-    std::vector<std::string> param_copy = {temp, "%eax"};
-    currentBB->add_IRInstr(IRInstr::copy, varType, param_copy);
-    
-    // Copier la variable temporaire dans la variable assignée
-    std::vector<std::string> params = {ctx->ID()->getText(), temp};
-    currentBB->add_IRInstr(IRInstr::copy, varType, params);
+    Operation *op = new Copy(currentBB, varNom, temp);  // bb, dst, src
+    IRInstr *instruction = new IRInstr(cfg->current_bb, op);
+    cfg->current_bb->add_IRInstr(instruction);
     
     return 0;
 }

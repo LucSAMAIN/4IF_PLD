@@ -14,9 +14,7 @@ IRInstr::IRInstr(BasicBlock* bb_, Operation *op) :
     bb(bb_), op(op) {}
 
 // Génère une représentation textuelle de l'instruction IR
-void IRInstr::gen_x86(ostream &o) {
-    string reg_dst = params[0];
-    
+void IRInstr::gen_x86(ostream &o) {    
     /*
         Remplacez le switch case qu'il y avait avant.
     */
@@ -34,7 +32,7 @@ void IRInstr::gen_x86(ostream &o) {
 
 // Implémentation de BasicBlock
 BasicBlock::BasicBlock(CFG* cfg, string entry_label) :
-    exit_true(nullptr), exit_false(nullptr), label(entry_label), cfg(cfg), operations() {}
+    exit_true(nullptr), exit_false(nullptr), label(entry_label), cfg(cfg), instructions() {}
 
 
 
@@ -204,8 +202,8 @@ int CFG::get_var_index(string name) {
 }
 
 Type CFG::get_var_type(string name) {
-    if (SymbolType.find(name) != SymbolType.end()) {
-        return SymbolType[name];
+    if (stv.symbolTable.find(name) != stv.symbolTable.end()) {
+        return stv.symbolTable[name].type;
     }
     return Type::INT;  // Par défaut
 }

@@ -94,15 +94,13 @@ public:
  */
 class CFG {
 public:
-	CFG(SymbolTableGenVisitor& p_stv) : stv(p_stv), current_bb(nullptr), nexTmpNumber(0), bbs(), functionName("main") {}
+	CFG(SymbolTableGenVisitor& p_stv);
 	
 	void add_bb(BasicBlock* bb);
 
 	// x86 code generation: could be encapsulated in a processor class in a retargetable compiler
 	void gen_x86(std::ostream& o); /**< x86 assembly code generation for the whole CFG */
 	std::string IR_reg_to_x86(std::string reg); /**< helper method: inputs a IR reg or input variable, returns e.g. "-24(%rbp)" for the proper value of 24 */
-	void gen_x86_prologue(std::ostream& o);
-	void gen_x86_epilogue(std::ostream& o);
 
 	// symbol table methods
 	// void add_to_symbol_table(std::string name, Type t); pas besoin car visiteur symbol table
@@ -113,9 +111,8 @@ public:
 	// basic block management
 	std::string new_BB_name();
 	BasicBlock* current_bb;
-
-protected:
-	
+	BasicBlock* start_block;
+	BasicBlock* end_block;
 	SymbolTableGenVisitor& stv; /**< the visitor for the symbol table */
 	int nexTmpNumber; /**< just for naming */
 	std::vector<BasicBlock*> bbs; /**< all the basic blocks of this CFG*/

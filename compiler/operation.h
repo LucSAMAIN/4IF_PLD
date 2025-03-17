@@ -46,6 +46,32 @@ public:
     virtual void gen_x86(std::ostream& o) = 0;
 };
 
+// Sous-classe pour le prologue d'une fonction
+class Prologue : public Operation
+{
+private:
+    // Bloc de base parent
+    BasicBlock* bb;
+
+public:
+    Prologue(BasicBlock* bb);
+    std::string get_operation_name() const override;
+    void gen_x86(std::ostream& o) override;
+};
+
+// Sous-classe pour l'épilogue d'une fonction
+class Epilogue : public Operation
+{
+private:
+    // Bloc de base parent
+    BasicBlock* bb;
+
+public:
+    Epilogue(BasicBlock* bb);
+    std::string get_operation_name() const override;
+    void gen_x86(std::ostream& o) override;
+};
+
 // Sous-classe pour l'opération de chargement d'une constante
 class LdConst : public Operation
 {

@@ -30,15 +30,15 @@ void IRInstr::gen_x86(ostream &o) {
 
 // Implémentation de BasicBlock
 BasicBlock::BasicBlock(CFG* cfg, string entry_label) :
-    exit_true(nullptr), exit_false(nullptr), label(entry_label), cfg(cfg), instructions()
+    exit_true(nullptr), exit_false(nullptr), label(entry_label), cfg(cfg), instructions(), test_var_name()
 {
-
 }
 
 
 
 void BasicBlock::add_IRInstr(IRInstr *instruction) {
     instructions.push_back(instruction);
+    
 }
 
 
@@ -60,6 +60,27 @@ void BasicBlock::gen_x86(ostream& o) {
 
 // Implémentation de CFG
 
+CFG::CFG(SymbolTableGenVisitor& p_stv) : stv(p_stv), current_bb(nullptr), start_block(nullptr), end_block(nullptr), nexTmpNumber(0), bbs(), functionName("main") {
+    // Ajouter le bloc de base initial
+    start_block = new BasicBlock(this, functionName);
+    Operation* op_start = new Prologue(start_block);
+    IRInstr* instr_start = new IRInstr(start_block, op_start);
+    start_block->add_IRInstr(instr_start);
+
+    std::cout << "#création current\n";
+    current_bb = new BasicBlock(this, new_BB_name());
+    start_block->exit_true = current_bb;
+
+    end_block = new BasicBlock(this, functionName + "_epilogue");
+    Operation* op_end = new Epilogue(end_block);
+    IRInstr* instr_end = new IRInstr(end_block, op_end);
+    end_block->add_IRInstr(instr_end);
+
+    add_bb(start_block);
+    add_bb(current_bb);
+    add_bb(end_block);
+}
+
 void CFG::add_bb(BasicBlock* bb) {
     bbs.push_back(bb);
 }
@@ -78,35 +99,10 @@ string CFG::IR_reg_to_x86(string reg) {
 
 // Génère une représentation textuelle du CFG
 void CFG::gen_x86(ostream& o) {
-    gen_x86_prologue(o);
     // Générer le code pour tous les blocs de base
     for (BasicBlock* bb : bbs) {
         bb->gen_x86(o);
     }
-
-    gen_x86_epilogue(o);
-}
-
-
-void CFG::gen_x86_prologue(ostream& o) {
-    if (functionName == "main") {
-        o << ".text" << "\n";
-        o << ".globl main\n";
-    }
-    o << functionName << ":" << "\n";
-    o << "    pushq %rbp" << "\n";
-    o << "    movq %rsp, %rbp" << "\n";
-    
-    // Allouer de l'espace pour les variables locales
-    int frameSize = ((-stv.offsetTable[functionName] + 15) & ~15);  // Alignement sur 16 octets uniquement
-    o << "    subq $" << frameSize << ", %rsp" << "\n";
-}
-
-void CFG::gen_x86_epilogue(ostream& o) {
-    o << functionName << "_epilogue:\n";
-    o << "    movq %rbp, %rsp\n";
-    o << "    popq %rbp\n";
-    o << "    ret\n";
 }
 
 // void CFG::add_to_symbol_table(string name, Type t) {

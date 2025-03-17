@@ -17,10 +17,7 @@ antlrcpp::Any IRGenVisitor::visitProg(ifccParser::ProgContext *ctx)
 {
     // Initialisation du CFG et du bloc de base
     cfg = new CFG(symbolTableGenVisitor);
-    currentBB = new BasicBlock(cfg, cfg->new_BB_name());
     scope = "main";
-    cfg->add_bb(currentBB);
-    cfg->current_bb = currentBB;
     
     // Visite du bloc principal
     visit(ctx->block());
@@ -90,9 +87,7 @@ antlrcpp::Any IRGenVisitor::visitReturn_stmt(ifccParser::Return_stmtContext *ctx
     // Évaluation de l'expression de retour
     visit(ctx->expr());
     
-    // La valeur de retour est déjà dans !reg, donc on n'a pas besoin de la déplacer
-    // Marquer la fin du bloc en définissant exit_true et exit_false à nullptr
-    currentBB->exit_true = nullptr;
+    currentBB->exit_true = cfg->end_block;
     currentBB->exit_false = nullptr;
     
     return 0;
@@ -100,8 +95,6 @@ antlrcpp::Any IRGenVisitor::visitReturn_stmt(ifccParser::Return_stmtContext *ctx
 
 antlrcpp::Any IRGenVisitor::visitConst(ifccParser::ConstContext *ctx)
 {
-    
-    // Charger la constante dans la variable temporaire
     Operation *op_const = new LdConst(cfg->current_bb, "!reg", std::stoi(ctx->CONST()->getText()));  // bb, dst, src
     IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
     currentBB->add_IRInstr(instruction_const);

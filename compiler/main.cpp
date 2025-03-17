@@ -76,6 +76,8 @@ int main(int argn, const char **argv)
     if (cfg) {        
         // Génération du code x86 à partir de l'IR
         std::cout << "\n# Génération du code assembleur x86 à partir de l'IR :\n";
+        std::cout << ".text\n";
+        std::cout << ".globl main\n";
         cfg->gen_x86(std::cout);
     }
 

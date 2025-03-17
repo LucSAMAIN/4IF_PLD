@@ -1,5 +1,5 @@
 #include "IRGenVisitor.h"
-#include "Operation.h"
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -14,7 +14,6 @@ IRGenVisitor::~IRGenVisitor() {
 antlrcpp::Any IRGenVisitor::visitProg(ifccParser::ProgContext *ctx) 
 {
     // Initialisation du CFG et du bloc de base
-    DefFonction* mainFunc = new DefFonction("main", Type::INT);
     cfg = new CFG(mainFunc);
     currentBB = new BasicBlock(cfg, "main");
     cfg->add_bb(currentBB);

@@ -2,7 +2,6 @@
 
 #include "antlr4-runtime.h"
 #include "generated/ifccBaseVisitor.h"
-#include "SymbolTableGenVisitor.h"
 #include "IR.h"
 
 class IRGenVisitor : public ifccBaseVisitor

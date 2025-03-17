@@ -9,17 +9,17 @@
 // Declarations from the parser -- replace with your own
 #include "generated/ifccParser.h"
 #include "SymbolTableGenVisitor.h"
-#include "Operation.h"
+#include "operation.h"
 
-class BasicBlock;
 class CFG;
+class BasicBlock;
 
 //! The class for one 3-address instruction
 class IRInstr {
 public:
 
 	/**  constructor */
-	IRInstr(BasicBlock* bb_, Operation op, Type t, vector<string> params);
+	IRInstr(BasicBlock* bb_, Operation op, Type t, std::vector<std::string> params);
 
 	// Destructor
 	// ?? a faire ?
@@ -31,7 +31,7 @@ private:
 	BasicBlock* bb; /**< The BB this instruction belongs to, which provides a pointer to the CFG this instruction belong to */
 	Operation* op;
 	Type t;
-	vector<string> params; /**< For 3-op instrs: d, x, y; for ldconst: d, c;  For call: label, d, params;  for wmem and rmem: choose yourself */
+	std::vector<std::string> params; /**< For 3-op instrs: d, x, y; for ldconst: d, c;  For call: label, d, params;  for wmem and rmem: choose yourself */
 	// if you subclass IRInstr, each IRInstr subclass has its parameters and the previous (very important) comment becomes useless: it would be a better design. 
 };
 
@@ -68,19 +68,19 @@ Possible optimization:
 
 class BasicBlock {
 public:
-	BasicBlock(CFG* cfg, string entry_label);
+	BasicBlock(CFG* cfg, std::string entry_label);
 	void gen_x86(ostream &o); /**< x86 assembly code generation for this basic block */
 
 	// Méthode originale pour ajouter une instruction IRInstr (pour compatibilité)
-	void add_IRInstr(Operation op, Type t, vector<string> params);
+	void add_IRInstr(Operation op, Type t, std::vector<std::string> params);
 
 	// No encapsulation whatsoever here. Feel free to do better.
 	BasicBlock* exit_true;  /**< pointer to the next basic block, true branch. If nullptr, return from procedure */ 
 	BasicBlock* exit_false; /**< pointer to the next basic block, false branch. If null_ptr, the basic block ends with an unconditional jump */
-	string label; /**< label of the BB, also will be the label in the generated code */
+	std::string label; /**< label of the BB, also will be the label in the generated code */
 	CFG* cfg; /** < the CFG where this block belongs */
-	vector<Operation*> operations; /** < the operations with the new design. */
-	string test_var_name;  /** < when generating IR code for an if(expr) or while(expr) etc,
+	std::vector<Operation*> operations; /** < the operations with the new design. */
+	std::string test_var_name;  /** < when generating IR code for an if(expr) or while(expr) etc,
 								store here the name of the variable that holds the value of expr */
 protected:
 
@@ -100,34 +100,34 @@ protected:
  */
 class CFG {
 public:
-	CFG(ifcc::ParseTree* p_ast, SymbolTableGenVisitor* p_stv) : ast(p_ast), stv(p_stv), current_bb(nullptr), nextBBnumber(0), bbs() {};
+	CFG(antlr4::tree::ParseTree& p_ast, SymbolTableGenVisitor& p_stv) : ast(p_ast), stv(p_stv), current_bb(nullptr), nextBBnumber(0), bbs() {}
 
-	DefFonction* ast; /**< The AST this CFG comes from */
+	antlr4::tree::ParseTree& ast; /**< The AST this CFG comes from */
 	
 	void add_bb(BasicBlock* bb);
 
 	// x86 code generation: could be encapsulated in a processor class in a retargetable compiler
 	void gen_x86(ostream& o); /**< x86 assembly code generation for the whole CFG */
-	string IR_reg_to_asm(string reg); /**< helper method: inputs a IR reg or input variable, returns e.g. "-24(%rbp)" for the proper value of 24 */
+	std::string IR_reg_to_asm(std::string reg); /**< helper method: inputs a IR reg or input variable, returns e.g. "-24(%rbp)" for the proper value of 24 */
 	void gen_x86_prologue(ostream& o);
 	void gen_x86_epilogue(ostream& o);
 
 	// symbol table methods
-	void add_to_symbol_table(string name, Type t);
-	string create_new_tempvar(Type t);
-	int get_var_index(string name);
-	Type get_var_type(string name);
+	void add_to_symbol_table(std::string name, Type t);
+	std::string create_new_tempvar(Type t);
+	int get_var_index(std::string name);
+	Type get_var_type(std::string name);
 
 	// basic block management
-	string new_BB_name();
+	std::string new_BB_name();
 	BasicBlock* current_bb;
 
 protected:
 	
-	SymbolTableGenVisitor* stv; /**< the visitor for the symbol table */
+	SymbolTableGenVisitor& stv; /**< the visitor for the symbol table */
 	int nextBBnumber; /**< just for naming */
 	
-	vector <BasicBlock*> bbs; /**< all the basic blocks of this CFG*/
+	std::vector <BasicBlock*> bbs; /**< all the basic blocks of this CFG*/
 };
 
 

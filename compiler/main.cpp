@@ -76,11 +76,11 @@ int main(int argn, const char **argv)
     if (cfg) {
         // Affichage de la représentation intermédiaire
         std::cout << "// Programme en représentation intermédiaire (IR) véritable :\n";
-        cfg->gen_asm(std::cout);
+        // cfg->gen_asm(std::cout);
         
         // Génération du code x86 à partir de l'IR
         std::cout << "\n// Génération du code assembleur x86 à partir de l'IR :\n";
-        cfg->gen_x86(std::cout);
+        // cfg->gen_x86(std::cout);
     }
 
     return 0;

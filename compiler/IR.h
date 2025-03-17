@@ -4,9 +4,7 @@
 #include <vector>
 #include <string>
 #include <iostream>
-#include <initializer_list>
 
-// Declarations from the parser -- replace with your own
 #include "generated/ifccParser.h"
 #include "SymbolTableGenVisitor.h"
 #include "operation.h"

@@ -18,9 +18,7 @@ enum class Type {
 
 Type fromStringToType(std::string s)
 {   
-    if (s == "INT")
-        return Type::INT;
-    else if (s == "CHAR")
+    if (s == "CHAR")
         return Type::CHAR;
     else
         return Type::INT;

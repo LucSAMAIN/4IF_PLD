@@ -105,6 +105,7 @@ antlrcpp::Any IRGenVisitor::visitConst(ifccParser::ConstContext *ctx)
     
     // Charger la constante dans la variable temporaire
     Operation *op = new LdConst(cfg->current_bb, temp, std::stoi(ctx->CONST()->getText()));  // bb, dst, src
+    IRInstr *instruction = new IRInstr(cfg->current_bb, op);
     currentBB->add_IRInstr(IRInstr::ldconst, Type::INT, params);
     
     // Copier la variable temporaire dans %eax

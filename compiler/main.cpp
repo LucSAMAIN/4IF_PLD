@@ -53,19 +53,23 @@ int main(int argn, const char **argv)
     SymbolTableGenVisitor stv;
     stv.visit(tree);
 
-    // for (auto const &var : stv.getSymbolTable())
-    // {
-    //     std::cout << var.first << " : " << var.second.type << " offset: " << var.second.offset;
-    //     if (var.second.used)
-    //     {
-    //         std::cout << " (used)";
-    //     }
-    //     if (var.second.declared)
-    //     {
-    //         std::cout << " (declared)";
-    //     }
-    //     std::cout << "\n";
-    // }
+    for (auto const &var : stv.symbolTable)
+    {
+        std::cout << "# " << var.first << " : type " << (int)var.second.type << " offset: " << var.second.offset;
+        if (var.second.used)
+        {
+            std::cout << " (used)";
+        }
+        if (var.second.declared)
+        {
+            std::cout << " (declared)";
+        }
+        std::cout << "\n";
+    }
+    for (auto const &var : stv.offsetTable)
+    {
+        std::cout << "# " << var.first << " : " << var.second << "\n";
+    }
 
     IRGenVisitor cgv(stv);
     cgv.visit(tree);

@@ -51,7 +51,7 @@ antlrcpp::Any IRGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx)
 {
     
     // Ajouter la variable à la table des symboles du CFG
-    std::string nomVar = scope + ctx->ID()->getText();
+    std::string nomVar = scope + "_" + ctx->ID()->getText();
     // cfg->add_to_symbol_table(nomVar, type);
     // elle est déjà dedans chef
     
@@ -73,7 +73,7 @@ antlrcpp::Any IRGenVisitor::visitAssign_stmt(ifccParser::Assign_stmtContext *ctx
     visit(ctx->expr());
     
     // Obtenir le type de la variable
-    std::string varNom = scope + ctx->ID()->getText();
+    std::string varNom = scope + "_" + ctx->ID()->getText();
     
     Operation *op = new Copy(cfg->current_bb, varNom, "!reg");  // bb, dst, src
     IRInstr *instruction = new IRInstr(cfg->current_bb, op);
@@ -102,17 +102,16 @@ antlrcpp::Any IRGenVisitor::visitConst(ifccParser::ConstContext *ctx)
     return 0;
 }
 
-// antlrcpp::Any IRGenVisitor::visitIdUse(ifccParser::IdUseContext *ctx)
-// {
-//     // Obtenir le type de la variable
-//     Type varType = cfg->get_var_type(ctx->ID()->getText());
-    
-//     // Copier la variable dans %eax
-//     std::vector<std::string> params = {"%eax", ctx->ID()->getText()};
-//     currentBB->add_IRInstr(IRInstr::copy, varType, params);
-    
-//     return 0;
-// }
+antlrcpp::Any IRGenVisitor::visitIdUse(ifccParser::IdUseContext *ctx)
+{
+    std::string nomVar = scope + "_" + ctx->ID()->getText();
+
+    Operation *op = new Copy(cfg->current_bb, "!reg", nomVar);  // bb, dst, src
+    IRInstr *instruction = new IRInstr(cfg->current_bb, op);
+    cfg->current_bb->add_IRInstr(instruction);
+
+    return 0;
+}
 
 // antlrcpp::Any IRGenVisitor::visitNotExpr(ifccParser::NotExprContext *ctx) {
 //     // Évaluation de l'expression primaire

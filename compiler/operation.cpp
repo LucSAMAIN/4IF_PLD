@@ -21,7 +21,7 @@ void Prologue::gen_x86(std::ostream& o) {
     o << "    movq %rsp, %rbp" << "\n";
     
     // Allouer de l'espace pour les variables locales
-    int frameSize = ((bb->cfg->stv.offsetTable[bb->cfg->functionName] + 15) & ~15);  // Alignement sur 16 octets uniquement
+    int frameSize = ((-bb->cfg->stv.offsetTable[bb->cfg->functionName] + 15) & ~15);  // Alignement sur 16 octets uniquement
     o << "    subq $" << frameSize << ", %rsp" << "\n";
 }
 

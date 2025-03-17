@@ -67,7 +67,6 @@ CFG::CFG(SymbolTableGenVisitor& p_stv) : stv(p_stv), current_bb(nullptr), start_
     IRInstr* instr_start = new IRInstr(start_block, op_start);
     start_block->add_IRInstr(instr_start);
 
-    std::cout << "#création current\n";
     current_bb = new BasicBlock(this, new_BB_name());
     start_block->exit_true = current_bb;
 
@@ -93,7 +92,7 @@ string CFG::IR_reg_to_x86(string reg) {
         return "$" + reg;
     } else {
         // C'est une variable
-        return stv.symbolTable[reg].offset + "(%rbp)";
+        return to_string(stv.symbolTable[reg].offset) + "(%rbp)";
     }
 }
 

@@ -1,3 +1,5 @@
+#include <sstream>
+
 #include "SymbolTableGenVisitor.h"
 
 antlrcpp::Any SymbolTableGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx) {
@@ -5,10 +7,13 @@ antlrcpp::Any SymbolTableGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext
         std::cerr << "error: variable name already declared " << ctx->ID()->getText() << "\n";
         return 0;
     }
+    std::string funcName;
+    std::istringstream ss_scope(scope);
+    std::getline(ss_scope, funcName, '_');
     if (ctx->type()->getText() == "int") {
-        offset -= 4;
+        offsetTable[funcName] -= 4;
+        symbolTable[ctx->ID()->getText()] = {Type::INT, offsetTable[funcName], true, false};
     }
-    symbolTable[ctx->ID()->getText()] = {ctx->type()->getText(), offset, true, false};
     return 0;
 }
 

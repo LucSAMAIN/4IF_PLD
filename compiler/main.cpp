@@ -67,7 +67,7 @@ int main(int argn, const char **argv)
     //     cout << "\n";
     // }
 
-    IRGenVisitor cgv(stv.getSymbolTable());
+    IRGenVisitor cgv(stv.symbolTable);
     cgv.visit(tree);
 
     // Récupération du CFG généré

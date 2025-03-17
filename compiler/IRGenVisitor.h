@@ -3,11 +3,12 @@
 #include "antlr4-runtime.h"
 #include "generated/ifccBaseVisitor.h"
 #include "IR.h"
+#incldue "SymbolTableGenVisitor.h"
 
 class IRGenVisitor : public ifccBaseVisitor
 {
 public:
-    IRGenVisitor(std::map<std::string, VarInfos>& p_symbolTable); 
+    IRGenVisitor(SymbolTableGenVisitor& symbolTableGenVisitor); 
     virtual ~IRGenVisitor();
     
     CFG* getCFG() { return cfg; }
@@ -30,7 +31,7 @@ public:
     virtual antlrcpp::Any visitOrExpr(ifccParser::OrExprContext *ctx) override;
     
 private:
-    std::map<std::string, VarInfos> symbolTable;
+    SymbolTableGenVisitor symbolTableGenVisitor;
     CFG* cfg;              // Le Control Flow Graph
     BasicBlock* currentBB; // Le bloc de base courant
 };

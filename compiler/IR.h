@@ -25,14 +25,11 @@ public:
 	// ?? a faire ?
 
 	/** Actual code generation */
-	void gen_x86(ostream &o); /**< Representation textuelle de l'instruction IR */
+	void gen_x86(std::ostream &o); /**< Representation textuelle de l'instruction IR */
 
 private:
 	BasicBlock* bb; /**< The BB this instruction belongs to, which provides a pointer to the CFG this instruction belong to */
-	Operation* op;
-	Type t;
-	std::vector<std::string> params; /**< For 3-op instrs: d, x, y; for ldconst: d, c;  For call: label, d, params;  for wmem and rmem: choose yourself */
-	// if you subclass IRInstr, each IRInstr subclass has its parameters and the previous (very important) comment becomes useless: it would be a better design. 
+	Operation* op;	// if you subclass IRInstr, each IRInstr subclass has its parameters and the previous (very important) comment becomes useless: it would be a better design. 
 };
 
 
@@ -69,17 +66,17 @@ Possible optimization:
 class BasicBlock {
 public:
 	BasicBlock(CFG* cfg, std::string entry_label);
-	void gen_x86(ostream &o); /**< x86 assembly code generation for this basic block */
+	void gen_x86(std::ostream &o); /**< x86 assembly code generation for this basic block */
 
 	// Méthode originale pour ajouter une instruction IRInstr (pour compatibilité)
-	void add_IRInstr(Operation op, Type t, std::vector<std::string> params);
+	void add_IRInstr(Operation op);
 
 	// No encapsulation whatsoever here. Feel free to do better.
 	BasicBlock* exit_true;  /**< pointer to the next basic block, true branch. If nullptr, return from procedure */ 
 	BasicBlock* exit_false; /**< pointer to the next basic block, false branch. If null_ptr, the basic block ends with an unconditional jump */
 	std::string label; /**< label of the BB, also will be the label in the generated code */
 	CFG* cfg; /** < the CFG where this block belongs */
-	std::vector<Operation*> operations; /** < the operations with the new design. */
+	std::vector<IRInstr*> instructions; /** < the operations with the new design. */
 	std::string test_var_name;  /** < when generating IR code for an if(expr) or while(expr) etc,
 								store here the name of the variable that holds the value of expr */
 protected:
@@ -100,17 +97,15 @@ protected:
  */
 class CFG {
 public:
-	CFG(antlr4::tree::ParseTree& p_ast, SymbolTableGenVisitor& p_stv) : ast(p_ast), stv(p_stv), current_bb(nullptr), nextBBnumber(0), bbs() {}
-
-	antlr4::tree::ParseTree& ast; /**< The AST this CFG comes from */
+	CFG(SymbolTableGenVisitor& p_stv) : stv(p_stv), current_bb(nullptr), nextBBnumber(0), bbs() {}
 	
 	void add_bb(BasicBlock* bb);
 
 	// x86 code generation: could be encapsulated in a processor class in a retargetable compiler
-	void gen_x86(ostream& o); /**< x86 assembly code generation for the whole CFG */
+	void gen_x86(std::ostream& o); /**< x86 assembly code generation for the whole CFG */
 	std::string IR_reg_to_asm(std::string reg); /**< helper method: inputs a IR reg or input variable, returns e.g. "-24(%rbp)" for the proper value of 24 */
-	void gen_x86_prologue(ostream& o);
-	void gen_x86_epilogue(ostream& o);
+	void gen_x86_prologue(std::ostream& o);
+	void gen_x86_epilogue(std::ostream& o);
 
 	// symbol table methods
 	void add_to_symbol_table(std::string name, Type t);
@@ -125,7 +120,7 @@ public:
 protected:
 	
 	SymbolTableGenVisitor& stv; /**< the visitor for the symbol table */
-	int nextBBnumber; /**< just for naming */
+	int nexTmpNumber; /**< just for naming */
 	
 	std::vector <BasicBlock*> bbs; /**< all the basic blocks of this CFG*/
 };

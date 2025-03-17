@@ -16,6 +16,19 @@ enum class Type {
     INT8_T
 }; 
 
+Type fromStringToType(std::string s)
+{
+    switch (s)
+    {
+        case "INT":
+            return Type::INT;
+        case "CHAR":
+            return Type::CHAR;
+        default:
+            return Type::INT;
+    }
+}
+
 typedef struct VarInfos
 {
     Type type;

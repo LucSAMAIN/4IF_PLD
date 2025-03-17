@@ -17,7 +17,7 @@ std::string LdConst::get_operation_name() const {
 
 void LdConst::gen_x86(std::ostream& o) {
     o << "    LDCONST " << value << " -> " << dest << std::endl;
-}
+}   
 
 // Implémentation de Copy
 Copy::Copy(BasicBlock* bb, const std::string& dest_reg, const std::string& src_reg) 

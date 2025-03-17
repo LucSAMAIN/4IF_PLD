@@ -66,14 +66,12 @@ void BasicBlock::gen_asm(ostream& o) {
 }
 
 
-void BasicBlock::add_IRInstr(IRInstr::Operation op, Type t, vector<string> params) {
+void BasicBlock::add_IRInstr(IRInstr::Operation op) {
     // Ne plus ajouter à l'ancienne architecture
     // Créer uniquement avec la nouvelle architecture orientée objet
     try {
-            /*
-            Remplacez le switch case qu'il y avait avant.
-            */
-        }
+
+        
     } catch (const exception& e) {
         cerr << "Erreur lors de la conversion: " << e.what() << endl;
     }
@@ -159,7 +157,7 @@ void CFG::gen_asm_epilogue(ostream& o) {
 }
 
 void CFG::add_to_symbol_table(string name, Type t) {
-    if (SymbolIndex.find(name) == SymbolIndex.end()) {
+    if (stv.symbolTable.find(name) == stv.symbolTable.end()) {
         // Suivant le type, allocate un certain nombre d'octets
         if (t == Type::INT || t == Type::INT32_T) {
             nextFreeSymbolIndex -= 4;  // 4 octets pour un int
@@ -179,33 +177,34 @@ string CFG::create_new_tempvar(Type t) {
     
     // Créer d'abord un nom temporaire avec un préfixe spécial
     stringstream ss;
-    ss << "!tmp_placeholder_" << nextBBnumber++;
+    ss << "!tmp_" << nexTmpNumber++;
     temp_name = ss.str();
     
     // Ajouter à la table des symboles pour obtenir l'index dans la pile
     add_to_symbol_table(temp_name, t);
     
     // Récupérer l'index attribué
-    int stack_index = SymbolIndex[temp_name];
+    int stack_index = stv.SymbolTable[temp_name].offset;
     
     // Créer le vrai nom avec l'index dans la pile
     stringstream final_name;
     final_name << "!tmp" << -stack_index;
     
     // Mettre à jour la table des symboles avec le nouveau nom
-    SymbolIndex[final_name.str()] = stack_index;
-    SymbolType[final_name.str()] = t;
+    stv.SymbolTable[final_name.str()].offset = stack_index;
+    stv.SymbolTable[final_name.str()].type = t;
+    stv.SymbolTable[final_name.str()].declared = true;
+    stv.SymbolTable[final_name.str()].used = false;
     
     // Supprimer l'entrée temporaire
-    SymbolIndex.erase(temp_name);
-    SymbolType.erase(temp_name);
+    stv.SymbolTable.erase(temp_name);
     
     return final_name.str();
 }
 
 int CFG::get_var_index(string name) {
-    if (SymbolIndex.find(name) != SymbolIndex.end()) {
-        return SymbolIndex[name];
+    if (stv.SymbolTable.find(name) != stv.SymbolTable.end()) {
+        return stv.SymbolTable[name];
     }
     return 0;  // Erreur, la variable n'existe pas
 }

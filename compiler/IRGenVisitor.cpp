@@ -3,9 +3,11 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include "type.h"
 
-IRGenVisitor::IRGenVisitor(std::map<std::string, VarInfos>& p_symbolTable) 
-    : symbolTable(p_symbolTable), cfg(nullptr), currentBB(nullptr) {}
+
+IRGenVisitor::IRGenVisitor(SymbolTableGenVisitor& symbolTableGenVisitor) 
+    : symbolTableGenVisitor(symbolTableGenVisitor), cfg(nullptr), currentBB(nullptr) {}
 
 IRGenVisitor::~IRGenVisitor() {
     // Le CFG doit être libéré par le main
@@ -15,10 +17,10 @@ IRGenVisitor::~IRGenVisitor() {
 antlrcpp::Any IRGenVisitor::visitProg(ifccParser::ProgContext *ctx) 
 {
     // Initialisation du CFG et du bloc de base
-    cfg = new CFG(mainFunc);
+    cfg = new CFG(symbolTableGenVisitor);
     currentBB = new BasicBlock(cfg, "main");
     cfg->add_bb(currentBB);
-    cfg->current_bb = currentBB;
+    cfg->current_bb = currentBB
     
     // Visite du bloc principal
     visit(ctx->block());
@@ -30,6 +32,8 @@ antlrcpp::Any IRGenVisitor::visitProg(ifccParser::ProgContext *ctx)
 
 antlrcpp::Any IRGenVisitor::visitBlock(ifccParser::BlockContext *ctx)
 {
+    // PAS OUBLIER SI PLUSIEURS BLOCKS IMBRIQUES
+
     // Visiter tous les statements dans le bloc
     for (auto stmt : ctx->stmt()) {
         visit(stmt);
@@ -37,30 +41,27 @@ antlrcpp::Any IRGenVisitor::visitBlock(ifccParser::BlockContext *ctx)
     return 0;
 }
 
+
 antlrcpp::Any IRGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx)
 {
-    // Convertir le type de la variable
-    Type varType = Type::INT; // Par défaut, on considère que toutes les variables sont de type int
-
-    // Ajouter la variable à la table des symboles du CFG
-    cfg->add_to_symbol_table(ctx->ID()->getText(), varType);
     
-    if (ctx->expr())
+    // Ajouter la variable à la table des symboles du CFG
+    std::string typeString = ctx->type()->getText()
+    Type type = fromStringToType(typeString);
+    std::string nomVar = ctx->ID()->getText();
+    cfg->add_to_symbol_table(nomVar, type);
+    
+    if (ctx->expr()) // si déclaration + assignement direct
     {
         // Évaluation de l'expression
         visit(ctx->expr());
         
         // Créer une variable temporaire pour stocker le résultat
+        // Et renvoie son blaze
         std::string temp = cfg->create_new_tempvar(varType);
-        
-        // Copier le résultat de l'expression dans la variable temporaire
-        std::vector<std::string> param_copy = {temp, "%eax"};
 
-        Operation *op = new Copy(currentBB, ctx->ID()->getText(), temp); 
-        currentBB->add_IRInstr(op, varType, param_copy);
-        
-        // Copier la variable temporaire dans la variable déclarée
-        std::vector<std::string> params = {ctx->ID()->getText(), temp};
+        Operation *op = new Copy(currentBB, nomVar, temp);  // bb, dst, src
+        cfg->currentBB->add_IRInstr(op);
         
         currentBB->add_IRInstr(IRInstr::copy, varType, params);
     }

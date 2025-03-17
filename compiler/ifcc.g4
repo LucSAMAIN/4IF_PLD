@@ -11,6 +11,7 @@ stmt : decl_stmt SEMICOLON
      | return_stmt SEMICOLON
      | block_stmt
      ;
+     
 decl_stmt : type ID (ASSIGN expr)? ;
 assign_stmt : ID ASSIGN expr ;
 expr_stmt : expr ;

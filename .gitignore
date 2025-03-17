@@ -36,3 +36,12 @@
 */generated/
 settings.json
 */ifcc
+
+# Compiled IR files
+*.ir
+*.ir.txt
+*.ir.asm
+*.ir.x86
+*.ir.pdf
+
+./compiler/build/

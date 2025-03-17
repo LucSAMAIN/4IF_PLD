@@ -19,7 +19,7 @@ class IRInstr {
 public:
 
 	/**  constructor */
-	IRInstr(BasicBlock* bb_, Operation op, Type t, std::vector<std::string> params);
+	IRInstr(BasicBlock* bb_, Operation *op);
 
 	// Destructor
 	// ?? a faire ?
@@ -69,7 +69,7 @@ public:
 	void gen_x86(std::ostream &o); /**< x86 assembly code generation for this basic block */
 
 	// Méthode originale pour ajouter une instruction IRInstr (pour compatibilité)
-	void add_IRInstr(Operation op);
+	void add_IRInstr(IRInstr *instruction);
 
 	// No encapsulation whatsoever here. Feel free to do better.
 	BasicBlock* exit_true;  /**< pointer to the next basic block, true branch. If nullptr, return from procedure */ 
@@ -79,7 +79,6 @@ public:
 	std::vector<IRInstr*> instructions; /** < the operations with the new design. */
 	std::string test_var_name;  /** < when generating IR code for an if(expr) or while(expr) etc,
 								store here the name of the variable that holds the value of expr */
-protected:
 
 };
 

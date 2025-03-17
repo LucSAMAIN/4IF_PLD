@@ -10,11 +10,11 @@ using namespace std;
 ////////////////////////////////////////////////////////////////////////////////
 
 // Constructeur de IRInstr
-IRInstr::IRInstr(BasicBlock* bb_, Operation op, Type t, vector<string> params) :
-    bb(bb_), op(op), t(t), params(params) {}
+IRInstr::IRInstr(BasicBlock* bb_, Operation *op) :
+    bb(bb_), op(op) {}
 
 // Génère une représentation textuelle de l'instruction IR
-void IRInstr::gen_asm(ostream &o) {
+void IRInstr::gen_x86(ostream &o) {
     string reg_dst = params[0];
     
     /*
@@ -66,15 +66,8 @@ void BasicBlock::gen_asm(ostream& o) {
 }
 
 
-void BasicBlock::add_IRInstr(IRInstr::Operation op) {
-    // Ne plus ajouter à l'ancienne architecture
-    // Créer uniquement avec la nouvelle architecture orientée objet
-    try {
-
-        
-    } catch (const exception& e) {
-        cerr << "Erreur lors de la conversion: " << e.what() << endl;
-    }
+void BasicBlock::add_IRInstr(IRInstr *instruction) {
+    this->instructions.push_back(instruction);
 }
 
 
@@ -189,12 +182,13 @@ string CFG::create_new_tempvar(Type t) {
     // Créer le vrai nom avec l'index dans la pile
     stringstream final_name;
     final_name << "!tmp" << -stack_index;
-    
+    final_name = final_name.str();
+
     // Mettre à jour la table des symboles avec le nouveau nom
-    stv.SymbolTable[final_name.str()].offset = stack_index;
-    stv.SymbolTable[final_name.str()].type = t;
-    stv.SymbolTable[final_name.str()].declared = true;
-    stv.SymbolTable[final_name.str()].used = false;
+    stv.SymbolTable[final_name].offset = stack_index;
+    stv.SymbolTable[final_name].type = t;
+    stv.SymbolTable[final_name].declared = true;
+    stv.SymbolTable[final_name].used = false;
     
     // Supprimer l'entrée temporaire
     stv.SymbolTable.erase(temp_name);

@@ -45,7 +45,7 @@ antlrcpp::Any IRGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx)
 {
     
     // Ajouter la variable à la table des symboles du CFG
-    std::string typeString = ctx->type()->getText()
+    std::string typeString = ctx->type()->getText();
     Type type = fromStringToType(typeString);
     std::string nomVar = ctx->ID()->getText();
     cfg->add_to_symbol_table(nomVar, type);
@@ -57,12 +57,11 @@ antlrcpp::Any IRGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx)
         
         // Créer une variable temporaire pour stocker le résultat
         // Et renvoie son blaze
-        std::string temp = cfg->create_new_tempvar(varType);
+        std::string temp = cfg->create_new_tempvar(type);
 
         Operation *op = new Copy(currentBB, nomVar, temp);  // bb, dst, src
-        cfg->currentBB->add_IRInstr(op);
-        
-        currentBB->add_IRInstr(IRInstr::copy, varType, params);
+        IRInstr *instruction = new IRInstr(cfg->current_bb, op);
+        cfg->current_bb->add_IRInstr(op);
     }
     return 0;
 }

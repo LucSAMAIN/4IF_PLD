@@ -34,7 +34,7 @@ antlrcpp::Any IRGenVisitor::visitBlock(ifccParser::BlockContext *ctx)
     // PAS OUBLIER SI PLUSIEURS BLOCKS IMBRIQUES
 
     // Visiter tous les statements dans le bloc
-    for (auto stmt : ctx->stmt()) {
+    for (ifccParser::StmtContext* stmt : ctx->stmt()) {
         visit(stmt);
     }
     return 0;
@@ -48,18 +48,15 @@ antlrcpp::Any IRGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx)
     std::string typeString = ctx->type()->getText();
     Type type = fromStringToType(typeString);
     std::string nomVar = ctx->ID()->getText();
-    cfg->add_to_symbol_table(nomVar, type);
+    // cfg->add_to_symbol_table(nomVar, type);
+    // elle est déjà dedans chef
     
     if (ctx->expr()) // si déclaration + assignement direct
     {
         // Évaluation de l'expression
         visit(ctx->expr());
-        
-        // Créer une variable temporaire pour stocker le résultat
-        // Et renvoie son blaze
-        std::string temp = cfg->create_new_tempvar(type);
 
-        Operation *op = new Copy(currentBB, nomVar, temp);  // bb, dst, src
+        Operation *op = new Copy(currentBB, nomVar, "!reg");  // bb, dst, src
         IRInstr *instruction = new IRInstr(cfg->current_bb, op);
         cfg->current_bb->add_IRInstr(instruction);
     }
@@ -90,7 +87,7 @@ antlrcpp::Any IRGenVisitor::visitReturn_stmt(ifccParser::Return_stmtContext *ctx
     // Évaluation de l'expression de retour
     visit(ctx->expr());
     
-    // La valeur de retour est déjà dans %eax, donc on n'a pas besoin de la déplacer
+    // La valeur de retour est déjà dans !reg, donc on n'a pas besoin de la déplacer
     // Marquer la fin du bloc en définissant exit_true et exit_false à nullptr
     currentBB->exit_true = nullptr;
     currentBB->exit_false = nullptr;

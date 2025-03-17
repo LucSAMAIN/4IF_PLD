@@ -100,12 +100,12 @@ public:
 
 	// x86 code generation: could be encapsulated in a processor class in a retargetable compiler
 	void gen_x86(std::ostream& o); /**< x86 assembly code generation for the whole CFG */
-	std::string IR_reg_to_asm(std::string reg); /**< helper method: inputs a IR reg or input variable, returns e.g. "-24(%rbp)" for the proper value of 24 */
+	std::string IR_reg_to_x86(std::string reg); /**< helper method: inputs a IR reg or input variable, returns e.g. "-24(%rbp)" for the proper value of 24 */
 	void gen_x86_prologue(std::ostream& o);
 	void gen_x86_epilogue(std::ostream& o);
 
 	// symbol table methods
-	void add_to_symbol_table(std::string name, Type t);
+	// void add_to_symbol_table(std::string name, Type t); pas besoin car visiteur symbol table
 	std::string create_new_tempvar(Type t);
 	int get_var_offset(std::string name);
 	Type get_var_type(std::string name);

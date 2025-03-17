@@ -68,30 +68,30 @@ void Copy::gen_x86(std::ostream& o) {
 }
 
 // Implémentation de Add
-// Add::Add(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2) 
-//     : Operation(), dest(dest_reg), op1(operand1), op2(operand2), bb(bb) {}
+Add::Add(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2) 
+    : Operation(), dest(dest_reg), op1(operand1), op2(operand2), bb(bb) {}
 
 
-// std::string Add::get_operation_name() const {
-//     return "add";
-// }
+std::string Add::get_operation_name() const {
+    return "add";
+}
 
-// void Add::gen_x86(std::ostream& o) {
-//     o << "    ADD " << op1 << ", " << op2 << " -> " << dest << "\n";
-// }
+void Add::gen_x86(std::ostream& o) {
+    o << "    addl " << op1 << ", " << op2 << " -> " << dest << "\n";
+}
 
-// // Implémentation de Sub
-// Sub::Sub(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2) 
-//     : Operation(), dest(dest_reg), op1(operand1), op2(operand2), bb(bb) {}
+// Implémentation de Sub
+Sub::Sub(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2) 
+    : Operation(), dest(dest_reg), op1(operand1), op2(operand2), bb(bb) {}
 
 
-// std::string Sub::get_operation_name() const {
-//     return "sub";
-// }
+std::string Sub::get_operation_name() const {
+    return "sub";
+}
 
-// void Sub::gen_x86(std::ostream& o) {
-//     o << "    SUB " << op1 << ", " << op2 << " -> " << dest << "\n";
-// }
+void Sub::gen_x86(std::ostream& o) {
+    o << "    SUB " << op1 << ", " << op2 << " -> " << dest << "\n";
+}
 
 // // Implémentation de Mul
 // Mul::Mul(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2) 

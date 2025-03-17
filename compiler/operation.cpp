@@ -15,7 +15,7 @@ std::string LdConst::get_operation_name() const {
     return "ldconst";
 }
 
-void LdConst::gen_asm(std::ostream& o) {
+void LdConst::gen_x86(std::ostream& o) {
     o << "    LDCONST " << value << " -> " << dest << std::endl;
 }
 
@@ -28,7 +28,7 @@ std::string Copy::get_operation_name() const {
     return "copy";
 }
 
-void Copy::gen_asm(std::ostream& o) {
+void Copy::gen_x86(std::ostream& o) {
     o << "    COPY " << src << " -> " << dest << std::endl;
 }
 
@@ -41,7 +41,7 @@ std::string Add::get_operation_name() const {
     return "add";
 }
 
-void Add::gen_asm(std::ostream& o) {
+void Add::gen_x86(std::ostream& o) {
     o << "    ADD " << op1 << ", " << op2 << " -> " << dest << std::endl;
 }
 
@@ -54,7 +54,7 @@ std::string Sub::get_operation_name() const {
     return "sub";
 }
 
-void Sub::gen_asm(std::ostream& o) {
+void Sub::gen_x86(std::ostream& o) {
     o << "    SUB " << op1 << ", " << op2 << " -> " << dest << std::endl;
 }
 
@@ -67,7 +67,7 @@ std::string Mul::get_operation_name() const {
     return "mul";
 }
 
-void Mul::gen_asm(std::ostream& o) {
+void Mul::gen_x86(std::ostream& o) {
     o << "    MUL " << op1 << ", " << op2 << " -> " << dest << std::endl;
 }
 
@@ -80,7 +80,7 @@ std::string Rmem::get_operation_name() const {
     return "rmem";
 }
 
-void Rmem::gen_asm(std::ostream& o) {
+void Rmem::gen_x86(std::ostream& o) {
     o << "    RMEM " << addr << " -> " << dest << std::endl;
 }
 
@@ -94,7 +94,7 @@ std::string Wmem::get_operation_name() const {
     return "wmem";
 }
 
-void Wmem::gen_asm(std::ostream& o) {
+void Wmem::gen_x86(std::ostream& o) {
     o << "    WMEM " << src << " -> " << addr << std::endl;
 }
 
@@ -107,7 +107,7 @@ std::string Call::get_operation_name() const {
     return "call";
 }
 
-void Call::gen_asm(std::ostream& o) {
+void Call::gen_x86(std::ostream& o) {
     o << "    CALL " << func_name << std::endl;
 }
 
@@ -121,7 +121,7 @@ std::string CmpEq::get_operation_name() const {
     return "cmp_eq";
 }
 
-void CmpEq::gen_asm(std::ostream& o) {
+void CmpEq::gen_x86(std::ostream& o) {
     o << "    CMP_EQ " << op1 << ", " << op2 << " -> " << dest << std::endl;
 }
 
@@ -134,7 +134,7 @@ std::string CmpLt::get_operation_name() const {
     return "cmp_lt";
 }
 
-void CmpLt::gen_asm(std::ostream& o) {
+void CmpLt::gen_x86(std::ostream& o) {
     o << "    CMP_LT " << op1 << ", " << op2 << " -> " << dest << std::endl;
 }
 
@@ -148,6 +148,6 @@ std::string CmpLe::get_operation_name() const {
     return "cmp_le";
 }
 
-void CmpLe::gen_asm(std::ostream& o) {
+void CmpLe::gen_x86(std::ostream& o) {
     o << "    CMP_LE " << op1 << ", " << op2 << " -> " << dest << std::endl;
 }

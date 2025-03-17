@@ -9,6 +9,7 @@ IRGenVisitor::IRGenVisitor(std::map<std::string, VarInfos>& p_symbolTable)
 
 IRGenVisitor::~IRGenVisitor() {
     // Le CFG doit être libéré par le main
+    // Car on le réutilise
 }
 
 antlrcpp::Any IRGenVisitor::visitProg(ifccParser::ProgContext *ctx) 

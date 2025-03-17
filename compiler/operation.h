@@ -43,7 +43,7 @@ public:
     virtual std::string get_operation_name() const = 0;
 
     // Méthode pour générer une représentation textuelle de l'instruction IR
-    virtual void gen_asm(std::ostream& o) = 0;
+    virtual void gen_x86(std::ostream& o) = 0;
 };
 
 // Sous-classe pour l'opération de chargement d'une constante
@@ -60,7 +60,7 @@ private:
 public:
     LdConst(BasicBlock* bb, const std::string& dest_reg, int val);
     std::string get_operation_name() const override;
-    void gen_asm(std::ostream& o) override;
+    void gen_x86(std::ostream& o) override;
 };
 
 // Sous-classe pour l'opération de copie
@@ -74,7 +74,7 @@ private:
 public:
     Copy(BasicBlock* bb, const std::string& dest_reg, const std::string& src_reg);
     std::string get_operation_name() const override;
-    void gen_asm(std::ostream& o) override;
+    void gen_x86(std::ostream& o) override;
 };
 
 // Sous-classe pour l'opération d'addition
@@ -89,7 +89,7 @@ private:
 public:
     Add(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2);
     std::string get_operation_name() const override;
-    void gen_asm(std::ostream& o) override;
+    void gen_x86(std::ostream& o) override;
 };
 
 // Sous-classe pour l'opération de soustraction
@@ -104,7 +104,7 @@ private:
 public:
     Sub(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2);
     std::string get_operation_name() const override;
-    void gen_asm(std::ostream& o) override;
+    void gen_x86(std::ostream& o) override;
 };
 
 // Sous-classe pour l'opération de multiplication
@@ -119,7 +119,7 @@ private:
 public:
     Mul(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2);
     std::string get_operation_name() const override;
-    void gen_asm(std::ostream& o) override;
+    void gen_x86(std::ostream& o) override;
 };
 
 // Sous-classe pour la lecture mémoire
@@ -133,7 +133,7 @@ private:
 public:
     Rmem(BasicBlock* bb, const std::string& dest_reg, const std::string& address);
     std::string get_operation_name() const override;
-    void gen_asm(std::ostream& o) override;
+    void gen_x86(std::ostream& o) override;
 };
 
 // Sous-classe pour l'écriture mémoire
@@ -147,7 +147,7 @@ private:
 public:
     Wmem(BasicBlock* bb, const std::string& address, const std::string& src_reg);
     std::string get_operation_name() const override;
-    void gen_asm(std::ostream& o) override;
+    void gen_x86(std::ostream& o) override;
 };
 
 // Sous-classe pour l'appel de fonction
@@ -160,7 +160,7 @@ private:
 public:
     Call(BasicBlock* bb, const std::string& function);
     std::string get_operation_name() const override;
-    void gen_asm(std::ostream& o) override;
+    void gen_x86(std::ostream& o) override;
 };
 
 // Sous-classe pour la comparaison d'égalité
@@ -175,7 +175,7 @@ private:
 public:
     CmpEq(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2);
     std::string get_operation_name() const override;
-    void gen_asm(std::ostream& o) override;
+    void gen_x86(std::ostream& o) override;
 };
 
 // Sous-classe pour la comparaison "plus petit que"
@@ -190,7 +190,7 @@ private:
 public:
     CmpLt(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2);
     std::string get_operation_name() const override;
-    void gen_asm(std::ostream& o) override;
+    void gen_x86(std::ostream& o) override;
 };
 
 // Sous-classe pour la comparaison "plus petit ou égal à"
@@ -205,7 +205,7 @@ private:
 public:
     CmpLe(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2);
     std::string get_operation_name() const override;
-    void gen_asm(std::ostream& o) override;
+    void gen_x86(std::ostream& o) override;
 };
 
 #endif // OPERATION_H

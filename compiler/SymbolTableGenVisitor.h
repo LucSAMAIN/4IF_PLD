@@ -17,16 +17,13 @@ enum class Type {
 }; 
 
 Type fromStringToType(std::string s)
-{
-    switch (s)
-    {
-        case "INT":
-            return Type::INT;
-        case "CHAR":
-            return Type::CHAR;
-        default:
-            return Type::INT;
-    }
+{   
+    if (s == "INT")
+        return Type::INT;
+    else if (s == "CHAR")
+        return Type::CHAR;
+    else
+        return Type::INT;
 }
 
 typedef struct VarInfos

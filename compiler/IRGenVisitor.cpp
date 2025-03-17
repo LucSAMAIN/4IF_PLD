@@ -3,7 +3,6 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include "type.h"
 
 
 IRGenVisitor::IRGenVisitor(SymbolTableGenVisitor& symbolTableGenVisitor) 

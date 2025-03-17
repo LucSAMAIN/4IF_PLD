@@ -166,13 +166,8 @@ void CFG::add_to_symbol_table(string name, Type t) {
 string CFG::create_new_tempvar(Type t) {
     string temp_name;
     
-    // Créer d'abord un nom temporaire avec un préfixe spécial
-    stringstream ss;
-    ss << "!tmp_" << nexTmpNumber++;
-    temp_name = ss.str();
-    
-    // Ajouter à la table des symboles pour obtenir l'index dans la pile
-    add_to_symbol_table(temp_name, t);
+    // Récupérer l'offset:
+    int offset = stv.offsetTable[current_bb->label];
     
     // Récupérer l'index attribué
     int stack_index = stv.SymbolTable[temp_name].offset;

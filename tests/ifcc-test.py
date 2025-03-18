@@ -14,6 +14,16 @@
 #
 #
 
+import re
+
+def natural_sort_key(s):
+    """
+    Fonction qui retourne une clé pour le tri naturel des chaînes
+    contenant des nombres.
+    """
+    return [int(text) if text.isdigit() else text.lower()
+            for text in re.split(r'(\d+)', s)]
+
 import argparse
 import glob
 import os
@@ -164,10 +174,11 @@ if args.debug:
 ## TEST step: actually compile all test-cases with both compilers
 
 nbOk = 0
-for jobname in jobs:
+jobs = sorted(jobs, key=natural_sort_key)
+for i, jobname in enumerate(jobs):
     os.chdir(orig_cwd)
 
-    print('TEST-CASE: '+jobname)
+    print(f'TEST-CASE {i+1}/{len(jobs)}: {jobname}')
     os.chdir(jobname)
     
     ## Reference compiler = GCC

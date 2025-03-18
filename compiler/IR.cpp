@@ -90,16 +90,28 @@ void CFG::add_bb(BasicBlock* bb) {
     bbs.push_back(bb);
 }
 
-string CFG::IR_reg_to_x86(string reg) {
+string CFG::IR_reg_to_x86(string &reg) {
     if (reg == "!reg") {
         return "%eax";
-    } else if (isdigit(reg[0]) || (reg[0] == '-' && reg.size() > 1 && isdigit(reg[1]))) {
-        // C'est une constante numérique
-        return "$" + reg;
-    } else {
-        // C'est une variable
-        return to_string(stv.symbolTable[reg].offset) + "(%rbp)";
+    } else if (reg == "!regLecture"){
+        return "%ebx";
     }
+    std::cerr << "Erreur conversion registre IR to x86, le registre renseigné n'existe pas\n"; 
+    return "";
+}
+
+std::string CFG::IR_addr_to_x86(std::string &addr)
+{
+    if (addr.substr(0, 3) == "RBP") {
+        size_t pos = addr.find("-");
+        
+        if (pos != std::string::npos) {
+            std::string offset = addr.substr(pos);
+            return offset + "(%rbp)";
+        }
+    }
+    std::cerr << "Erreur conversion adresse IR to x86\n"; 
+    return ""
 }
 
 // Génère une représentation textuelle du CFG

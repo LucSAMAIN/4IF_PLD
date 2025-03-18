@@ -106,32 +106,31 @@ void Sub::gen_x86(std::ostream& o) {
 //     o << "    MUL " << op1 << ", " << op2 << " -> " << dest << "\n";
 // }
 
-// // Implémentation de Rmem
-// Rmem::Rmem(BasicBlock* bb, const std::string& dest_reg, const std::string& address) 
-//     : Operation(), dest(dest_reg), addr(address), bb(bb) {}
+// Implémentation de Rmem
+Rmem::Rmem(BasicBlock* bb, const std::string& dest_reg, const std::string& address) 
+    : Operation(), dest(dest_reg), addr(address), bb(bb) {}
 
 
-// std::string Rmem::get_operation_name() const {
-//     return "rmem";
-// }
+std::string Rmem::get_operation_name() const {
+    return "rmem";
+}
 
-// void Rmem::gen_x86(std::ostream& o) {
-//     o << "    RMEM " << addr << " -> " << dest << "\n";
-// }
+void Rmem::gen_x86(std::ostream& o) {
+    o << "    movl " << bb->cfg->IR_addr_to_x86(addr) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+}
 
-// // Implémentation de Wmem
-// Wmem::Wmem(BasicBlock* bb, const std::string& address, const std::string& src_reg) 
-//     : Operation(), addr(address), src(src_reg), bb(bb) {}
+// Implémentation de Wmem
+Wmem::Wmem(BasicBlock* bb, const std::string& address, const std::string& src_reg) 
+    : Operation(), addr(address), src(src_reg), bb(bb) {}
 
 
+std::string Wmem::get_operation_name() const {
+    return "wmem";
+}
 
-// std::string Wmem::get_operation_name() const {
-//     return "wmem";
-// }
-
-// void Wmem::gen_x86(std::ostream& o) {
-//     o << "    WMEM " << src << " -> " << addr << "\n";
-// }
+void Wmem::gen_x86(std::ostream& o) {
+    o << "    movl " << bb->cfg->IR_reg_to_x86(src) << ", " << bb->cfg->IR_addr_to_x86(addr) << "\n";
+}
 
 // // Implémentation de Call
 // Call::Call(BasicBlock* bb, const std::string& function) : func_name(function), bb(bb) {}

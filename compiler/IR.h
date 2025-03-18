@@ -95,7 +95,8 @@ public:
 class CFG {
 public:
 	CFG(SymbolTableGenVisitor& p_stv);
-	
+	~CFG();
+
 	void add_bb(BasicBlock* bb);
 
 	// x86 code generation: could be encapsulated in a processor class in a retargetable compiler

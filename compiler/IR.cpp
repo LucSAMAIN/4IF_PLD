@@ -80,6 +80,12 @@ CFG::CFG(SymbolTableGenVisitor& p_stv) : stv(p_stv), current_bb(nullptr), start_
     add_bb(end_block);
 }
 
+CFG::~CFG()
+{
+    for (auto block : bbs)
+        delete block;
+}
+
 void CFG::add_bb(BasicBlock* bb) {
     bbs.push_back(bb);
 }

@@ -5,38 +5,31 @@
 main:
     pushq %rbp
     movq %rsp, %rbp
-    subq $48, %rsp
+    subq $32, %rsp
 main0:
     movl $1, %eax
     movl %eax, -4(%rbp)
     movl $2, %eax
-    movl %eax, -8(%rbp)
+    movl %eax, %ecx
     movl -4(%rbp), %eax
-    movl -8(%rbp), %ecx
     subl %ecx, %eax
-    movl %eax, -12(%rbp)
+    movl %eax, -8(%rbp)
     movl $3, %eax
+    movl -8(%rbp), %ebx
+    addl %ebx, %eax
+    movl %eax, -12(%rbp)
+    movl $4, %eax
+    movl %eax, %ecx
+    movl -12(%rbp), %eax
+    subl %ecx, %eax
     movl %eax, -16(%rbp)
-    movl -12(%rbp), %ebx
-    movl -16(%rbp), %eax
+    movl $5, %eax
+    movl -16(%rbp), %ebx
     addl %ebx, %eax
     movl %eax, -20(%rbp)
-    movl $4, %eax
-    movl %eax, -24(%rbp)
-    movl -20(%rbp), %eax
-    movl -24(%rbp), %ecx
-    subl %ecx, %eax
-    movl %eax, -28(%rbp)
-    movl $5, %eax
-    movl %eax, -32(%rbp)
-    movl -28(%rbp), %ebx
-    movl -32(%rbp), %eax
-    addl %ebx, %eax
-    movl %eax, -36(%rbp)
     movl $6, %eax
-    movl %eax, -40(%rbp)
-    movl -36(%rbp), %eax
-    movl -40(%rbp), %ecx
+    movl %eax, %ecx
+    movl -20(%rbp), %eax
     subl %ecx, %eax
 main_epilogue:
     movq %rbp, %rsp

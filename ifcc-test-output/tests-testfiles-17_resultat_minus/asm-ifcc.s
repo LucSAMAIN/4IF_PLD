@@ -9,7 +9,7 @@
 main:
     pushq %rbp
     movq %rsp, %rbp
-    subq $32, %rsp
+    subq $16, %rsp
 main0:
     movl $5, %eax
     movl %eax, -4(%rbp)
@@ -18,9 +18,8 @@ main0:
     movl -4(%rbp), %eax
     movl %eax, -16(%rbp)
     movl -8(%rbp), %eax
-    movl %eax, -20(%rbp)
+    movl %eax, %ecx
     movl -16(%rbp), %eax
-    movl -20(%rbp), %ecx
     subl %ecx, %eax
     movl %eax, -12(%rbp)
     movl -12(%rbp), %eax

@@ -10,6 +10,8 @@ main:
     movq %rsp, %rbp
     subq $16, %rsp
 main0:
+    movl $1, %eax
+    movl %eax, -4(%rbp)
     movl -4(%rbp), %eax
     movl %eax, -8(%rbp)
     movl -8(%rbp), %eax

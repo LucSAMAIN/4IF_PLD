@@ -196,44 +196,39 @@ antlrcpp::Any IRGenVisitor::visitIdUse(ifccParser::IdUseContext *ctx)
 // }
 
 antlrcpp::Any IRGenVisitor::visitAddSubExpr(ifccParser::AddSubExprContext *ctx) {
-    // Évaluation de l'expression droite qu'on place dans le registre universel !reg
-    visit(ctx->left);
-    
-    // Créer une variable temporaire pour stocker le résultat de l'opérande gauche
-    std::string temp_left = cfg->create_new_tempvar(Type::INT);
-    std::string address_left = "RBP" + std::to_string(cfg->stv.symbolTable[temp_left].offset); 
-    
-    // Copier le résultat de l'expression dans la variable temporaire
-    Operation *wmem_left = new Wmem(cfg->current_bb, address_left, "!reg");
-    IRInstr *instruction_left = new IRInstr(cfg->current_bb, wmem_left);
-    cfg->current_bb->add_IRInstr(instruction_left);
-    
-
-
-
 
     // Évaluation de l'expression droite qu'on place dans le registre universel !reg
     visit(ctx->right);
+    std::string temp_right = cfg->create_new_tempvar(Type::INT);
+    std::string address_right = "RBP" + std::to_string(cfg->stv.symbolTable[temp_right].offset); 
+    
+    // Copier le résultat de l'expression dans la variable temporaire
+    Operation *wmem_right = new Wmem(cfg->current_bb, address_right, "!reg");
+    IRInstr *instruction_right = new IRInstr(cfg->current_bb, wmem_right);
+    cfg->current_bb->add_IRInstr(instruction_right);
+
+
+    // Évaluation de l'expression left qu'on place dans le registre universel !reg
+    visit(ctx->left);
+    
+
+    
     
     
     // Appliquer l'opération selon l'opérateur
     if (ctx->aOp()->PLUS()) {
-        Operation *rmem_left = new Rmem(cfg->current_bb, "!regLeft", address_left);
-        IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
-        cfg->current_bb->add_IRInstr(instruction_read_left);
+        Operation *rmem_right = new Rmem(cfg->current_bb, "!regRight", address_right);
+        IRInstr *instruction_read_right = new IRInstr(cfg->current_bb, rmem_right);
+        cfg->current_bb->add_IRInstr(instruction_read_right);
 
-        Operation *operation_add = new Add(cfg->current_bb, "!reg", "!regLeft", "!reg");
+        Operation *operation_add = new Add(cfg->current_bb, "!reg", "!regRight", "!reg");
         IRInstr *instruction_add = new IRInstr(cfg->current_bb, operation_add);
         cfg->current_bb->add_IRInstr(instruction_add);
     }
     else if (ctx->aOp()->MINUS()) {
-        Operation *copy_to_regRight = new Copy(cfg->current_bb, "!regRight", "!reg");
-        IRInstr *instruction_copy = new IRInstr(cfg->current_bb, copy_to_regRight);
-        cfg->current_bb->add_IRInstr(instruction_copy);
-
-        Operation *rmem_left = new Rmem(cfg->current_bb, "!reg", address_left);
-        IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
-        cfg->current_bb->add_IRInstr(instruction_read_left);
+        Operation *rmem_right = new Rmem(cfg->current_bb, "!regRight", address_right);
+        IRInstr *instruction_read_right = new IRInstr(cfg->current_bb, rmem_right);
+        cfg->current_bb->add_IRInstr(instruction_read_right);
 
         Operation *operation_sub = new Sub(cfg->current_bb, "!reg", "!reg", "!regRight");
         IRInstr *instruction_sub = new IRInstr(cfg->current_bb, operation_sub);

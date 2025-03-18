@@ -27,18 +27,18 @@ antlrcpp::Any IRGenVisitor::visitProg(ifccParser::ProgContext *ctx)
 
 antlrcpp::Any IRGenVisitor::visitBlock(ifccParser::BlockContext *ctx)
 {
-    // PAS OUBLIER SI PLUSIEURS BLOCKS IMBRIQUES
-
     // Visiter tous les statements dans le bloc
     for (int i = 0; i < ctx->stmt().size(); i++) {
+        // Cas pour un block
         if (ctx->stmt(i)->block_stmt() != nullptr) {
             scope += "_" + std::to_string(i);
-            visit(ctx->stmt(i));
+            visit(ctx->stmt(i)); // Appel récursif on va visiter ce block
             while (scope.back() != '_') {
                 scope.pop_back();
             }
             scope.pop_back();
         }
+        // Cas si juste un statement
         else {
             visit(ctx->stmt(i));
         }
@@ -48,19 +48,19 @@ antlrcpp::Any IRGenVisitor::visitBlock(ifccParser::BlockContext *ctx)
 
 
 antlrcpp::Any IRGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx)
-{
-    
-    // Ajouter la variable à la table des symboles du CFG
-    std::string nomVar = scope + "_" + ctx->ID()->getText();
-    // cfg->add_to_symbol_table(nomVar, type);
-    // elle est déjà dedans chef
-    
+{ 
+    // On a rien besoin de faire si c'est uniquement une déclaration...
+    // Car c'est déjà géré par la symbol table.
+
     if (ctx->expr()) // si déclaration + assignement direct
     {
-        // Évaluation de l'expression
+        // On récupère le nom de la variable en question
+        std::string nomVar = scope + "_" + ctx->ID()->getText();
+
+        // Évaluation de l'expression qu'on place dans le registre universel !reg
         visit(ctx->expr());
 
-        Operation *op = new Copy(cfg->current_bb, nomVar, "!reg");  // bb, dst, src
+        Operation *op = new Copy(cfg->current_bb, nomVar, "!reg");  // block, dst, src
         IRInstr *instruction = new IRInstr(cfg->current_bb, op);
         cfg->current_bb->add_IRInstr(instruction);
     }
@@ -69,13 +69,13 @@ antlrcpp::Any IRGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx)
 
 antlrcpp::Any IRGenVisitor::visitAssign_stmt(ifccParser::Assign_stmtContext *ctx)
 {
-    // Évaluation de l'expression
+    // On récupère le nom de la variable en question
+    std::string nomVar = scope + "_" + ctx->ID()->getText();
+
+    // Évaluation de l'expression qu'on place dans le registre universel !reg
     visit(ctx->expr());
-    
-    // Obtenir le type de la variable
-    std::string varNom = scope + "_" + ctx->ID()->getText();
-    
-    Operation *op = new Copy(cfg->current_bb, varNom, "!reg");  // bb, dst, src
+
+    Operation *op = new Copy(cfg->current_bb, nomVar, "!reg");  // block, dst, src
     IRInstr *instruction = new IRInstr(cfg->current_bb, op);
     cfg->current_bb->add_IRInstr(instruction);
     
@@ -84,10 +84,10 @@ antlrcpp::Any IRGenVisitor::visitAssign_stmt(ifccParser::Assign_stmtContext *ctx
 
 antlrcpp::Any IRGenVisitor::visitReturn_stmt(ifccParser::Return_stmtContext *ctx)
 {
-    // Évaluation de l'expression de retour
+    // Évaluation de l'expression qu'on place dans le registre universel !reg
     visit(ctx->expr());
     
-    cfg->current_bb->exit_true = cfg->end_block;
+    cfg->current_bb->exit_true = cfg->end_block; // default exit
     cfg->current_bb->exit_false = nullptr;
     
     return 0;

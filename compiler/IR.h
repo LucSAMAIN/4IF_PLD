@@ -114,7 +114,6 @@ public:
 	BasicBlock* start_block;
 	BasicBlock* end_block;
 	SymbolTableGenVisitor& stv; /**< the visitor for the symbol table */
-	int nexTmpNumber; /**< just for naming */
 	std::vector<BasicBlock*> bbs; /**< all the basic blocks of this CFG*/
 	std::string functionName;
 };

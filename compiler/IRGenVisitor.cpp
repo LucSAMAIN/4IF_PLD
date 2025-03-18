@@ -55,9 +55,9 @@ antlrcpp::Any IRGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx)
         if (ctx->decl_element(i)->expr()) // si déclaration + assignement direct
         {
             std::string nomVar = scope + "_" + ctx->decl_element(i)->ID()->getText();
-            std::cout << "# nomVar " << i << " : " << nomVar << "\n";
+            // std::cout << "# nomVar " << i << " : " << nomVar << "\n";
             std::string address = "RBP" + std::to_string(cfg->stv.symbolTable[nomVar].offset);
-            std::cout << "# address " << address << "\n";
+            // std::cout << "# address " << address << "\n";
 
             // Évaluation de l'expression qu'on place dans le registre universel !reg
             visit(ctx->decl_element(i)->expr());

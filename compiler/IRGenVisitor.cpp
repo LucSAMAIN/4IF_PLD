@@ -225,8 +225,6 @@ antlrcpp::Any IRGenVisitor::visitAddSubExpr(ifccParser::AddSubExprContext *ctx) 
 //     return 0;
 // }
 
-<<<<<<< HEAD
-=======
 antlrcpp::Any IRGenVisitor::visitAddSubExpr(ifccParser::AddSubExprContext *ctx) {
     // Évaluation de l'expression droite qu'on place dans le registre universel !reg
     visit(ctx->left);
@@ -285,7 +283,6 @@ antlrcpp::Any IRGenVisitor::visitAddSubExpr(ifccParser::AddSubExprContext *ctx) 
     return 0;
 }
 
->>>>>>> d56f979 (ajout de test, ADD SUB ok !)
 // antlrcpp::Any IRGenVisitor::visitCompExpr(ifccParser::CompExprContext *ctx) {
 //     // Évaluation de l'opérande gauche
 //     visit(ctx->left);

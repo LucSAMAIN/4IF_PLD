@@ -34,6 +34,12 @@ BasicBlock::BasicBlock(CFG* cfg, string entry_label) :
 {
 }
 
+BasicBlock::~BasicBlock() {
+    for (IRInstr* instr : instructions) {
+        delete instr;
+    }
+}
+
 
 
 void BasicBlock::add_IRInstr(IRInstr *instruction) {

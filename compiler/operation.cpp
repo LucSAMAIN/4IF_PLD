@@ -77,7 +77,28 @@ std::string Add::get_operation_name() const {
 }
 
 void Add::gen_x86(std::ostream& o) {
-    o << "    addl " << op1 << ", " << op2 << " -> " << dest << "\n";
+    if (op1 == "!reg") {
+        if (op2 == "!regLecture") {
+            o << "    addl " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(op1) << "\n";
+        }
+        else {
+            o << "    addl " << bb->cfg->IR_addr_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(op1) << "\n";
+        }
+    }
+    else {
+        if (op2 == "!reg") {
+            if (op1 == "!regLecture") {
+                o << "    addl " << bb->cfg->IR_reg_to_x86(op1) << ", " << bb->cfg->IR_reg_to_x86(op2) << "\n";
+            }
+            else {
+                o << "    addl " << bb->cfg->IR_addr_to_x86(op1) << ", " << bb->cfg->IR_reg_to_x86(op2) << "\n";
+            }
+        }
+        else {
+            o << "    movl " << bb->cfg->IR_addr_to_x86(op1) << ", " << bb->cfg->IR_reg_to_x86("!reg") << "\n";
+            o << "    addl " << bb->cfg->IR_addr_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86("!reg") << "\n";
+        }
+    }
 }
 
 // Implémentation de Sub
@@ -90,7 +111,36 @@ std::string Sub::get_operation_name() const {
 }
 
 void Sub::gen_x86(std::ostream& o) {
-    o << "    SUB " << op1 << ", " << op2 << " -> " << dest << "\n";
+    if (op1 == "!reg") {
+        if (op2 == "!regLecture") {
+            o << "    subl " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(op1) << "\n";
+        }
+        else {
+            o << "    subl " << bb->cfg->IR_addr_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(op1) << "\n";
+        }
+    }
+    else {
+        if (op1 == "!regLecture") {
+            if (op2 == "!reg") {
+                o << "    subl " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(op1) << "\n";
+                o << "    movl " << bb->cfg->IR_reg_to_x86(op1) << ", " << bb->cfg->IR_reg_to_x86(op2) << "\n";
+            }
+            else {
+                o << "    movl " << bb->cfg->IR_reg_to_x86(op1) << ", " << bb->cfg->IR_reg_to_x86("!reg") << "\n";
+                o << "    subl " << bb->cfg->IR_addr_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86("!reg") << "\n";
+            }
+        }
+        else {
+            if (op2 == "!reg") {
+                o << "    subl " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_addr_to_x86(op1) << "\n";
+                o << "    movl " << bb->cfg->IR_addr_to_x86(op1) << ", " << bb->cfg->IR_reg_to_x86("!reg") << "\n";
+            }
+            else {
+                o << "    movl " << bb->cfg->IR_addr_to_x86(op1) << ", " << bb->cfg->IR_reg_to_x86("!reg") << "\n";
+                o << "    subl " << bb->cfg->IR_addr_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86("!reg") << "\n";
+            }
+        }
+    }
 }
 
 // // Implémentation de Mul

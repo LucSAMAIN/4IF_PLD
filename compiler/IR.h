@@ -101,8 +101,8 @@ public:
 
 	// x86 code generation: could be encapsulated in a processor class in a retargetable compiler
 	void gen_x86(std::ostream& o); /**< x86 assembly code generation for the whole CFG */
-	std::string IR_reg_to_x86(std::string &reg); /**< helper method: inputs a IR reg or input variable, returns e.g. "-24(%rbp)" for the proper value of 24 */
-	std::string IR_addr_to_x86 (std::string &Iraddr);
+	std::string IR_reg_to_x86(const std::string &reg); /**< helper method: inputs a IR reg or input variable, returns e.g. "-24(%rbp)" for the proper value of 24 */
+	std::string IR_addr_to_x86 (const std::string &Iraddr);
 
 	// symbol table methods
 	// void add_to_symbol_table(std::string name, Type t); pas besoin car visiteur symbol table

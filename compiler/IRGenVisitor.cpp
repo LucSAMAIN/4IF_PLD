@@ -118,6 +118,37 @@ antlrcpp::Any IRGenVisitor::visitIdUse(ifccParser::IdUseContext *ctx)
     return 0;
 }
 
+antlrcpp::Any IRGenVisitor::visitAddSubExpr(ifccParser::AddSubExprContext *ctx) {
+    // Évaluation de l'opérande gauche
+    visit(ctx->left);
+    
+    // Créer une variable temporaire pour stocker le résultat de l'opérande gauche
+    std::string temp_left = cfg->create_new_tempvar(Type::INT);
+    std::string address_left = "RBP" + std::to_string(cfg->stv.symbolTable[temp_left].offset); 
+
+    // Copier le résultat de l'expression dans la variable temporaire
+    Operation *op_left = new Wmem(cfg->current_bb, address_left, "!reg");  // bb, dst, src
+    IRInstr *instruction_left = new IRInstr(cfg->current_bb, op_left);
+    cfg->current_bb->add_IRInstr(instruction_left);
+    
+    // Évaluation de l'opérande droite
+    visit(ctx->right);
+    
+    // Appliquer l'opération selon l'opérateur
+    if (ctx->aOp()->PLUS()) {
+        Operation *op_add = new Add(cfg->current_bb, "!reg", address_left, "!reg");  // bb, dst, op1, op2
+        IRInstr *instr_add = new IRInstr(cfg->current_bb, op_add);
+        cfg->current_bb->add_IRInstr(instr_add);
+    }
+    else if (ctx->aOp()->MINUS()) {
+        Operation *op_sub = new Sub(cfg->current_bb, "!reg", address_left, "!reg");  // bb, dst, op1, op2
+        IRInstr *instr_sub = new IRInstr(cfg->current_bb, op_sub);
+        cfg->current_bb->add_IRInstr(instr_sub);
+    }
+    
+    return 0;
+}
+
 // antlrcpp::Any IRGenVisitor::visitNotExpr(ifccParser::NotExprContext *ctx) {
 //     // Évaluation de l'expression primaire
 //     visit(ctx->primary());
@@ -189,41 +220,6 @@ antlrcpp::Any IRGenVisitor::visitIdUse(ifccParser::IdUseContext *ctx)
 //         // Ici, on se contente de faire une multiplication pour la démonstration
 //         std::vector<std::string> params = {"%eax", temp_left, temp_right};
 //         currentBB->add_IRInstr(IRInstr::mul, Type::INT, params);
-//     }
-    
-//     return 0;
-// }
-
-// antlrcpp::Any IRGenVisitor::visitAddSubExpr(ifccParser::AddSubExprContext *ctx) {
-//     // Évaluation de l'opérande gauche
-//     visit(ctx->left);
-    
-//     // Créer une variable temporaire pour stocker le résultat de l'opérande gauche
-//     std::string temp_left = cfg->create_new_tempvar(Type::INT);
-    
-//     // Copier le résultat de l'expression dans la variable temporaire
-//     Operation *op = new Copy(cfg->current_bb, temp_left, "!reg");  // bb, dst, src
-//     IRInstr *instruction = new IRInstr(cfg->current_bb, op);
-//     cfg->current_bb->add_IRInstr(instruction);
-    
-//     // Évaluation de l'opérande droite
-//     visit(ctx->right);
-    
-//     // Créer une variable temporaire pour stocker le résultat de l'opérande droite
-//     std::string temp_right = cfg->create_new_tempvar(Type::INT);
-    
-//     // Copier le résultat de l'expression dans la variable temporaire
-//     std::vector<std::string> param_copy_right = {temp_right, "%eax"};
-//     currentBB->add_IRInstr(IRInstr::copy, Type::INT, param_copy_right);
-    
-//     // Appliquer l'opération selon l'opérateur
-//     if (ctx->aOp()->PLUS()) {
-//         std::vector<std::string> params = {"%eax", temp_left, temp_right};
-//         currentBB->add_IRInstr(IRInstr::add, Type::INT, params);
-//     }
-//     else if (ctx->aOp()->MINUS()) {
-//         std::vector<std::string> params = {"%eax", temp_left, temp_right};
-//         currentBB->add_IRInstr(IRInstr::sub, Type::INT, params);
 //     }
     
 //     return 0;

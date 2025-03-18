@@ -90,7 +90,7 @@ void CFG::add_bb(BasicBlock* bb) {
     bbs.push_back(bb);
 }
 
-string CFG::IR_reg_to_x86(string &reg) {
+string CFG::IR_reg_to_x86(const string &reg) {
     if (reg == "!reg") {
         return "%eax";
     } else if (reg == "!regLecture") {
@@ -100,7 +100,7 @@ string CFG::IR_reg_to_x86(string &reg) {
     return "";
 }
 
-std::string CFG::IR_addr_to_x86(std::string &addr)
+std::string CFG::IR_addr_to_x86(const std::string &addr)
 {
     // std::cout << "# addr IR_addr_to_x86 " << addr << "\n";
     if (addr.substr(0, 3) == "RBP") {

@@ -56,6 +56,7 @@ void BasicBlock::gen_x86(ostream& o) {
     
     for (IRInstr* instr : instructions) {
         instr->gen_x86(o);
+        // if return_true vers epilogue, on arrête parce qu'on vient de voir un return et on ne veut pas générer de code après
     }
 }
 
@@ -80,6 +81,7 @@ CFG::CFG(SymbolTableGenVisitor& p_stv) : stv(p_stv), current_bb(nullptr), start_
     Operation* op_end = new Epilogue(end_block);
     IRInstr* instr_end = new IRInstr(end_block, op_end);
     end_block->add_IRInstr(instr_end);
+    current_bb->exit_true = end_block;
 
     add_bb(start_block);
     add_bb(current_bb);

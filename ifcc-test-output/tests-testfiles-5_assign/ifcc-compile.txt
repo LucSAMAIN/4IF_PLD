@@ -1,0 +1,3 @@
+/bin/sh: 1: /home/luc/INSA/4IF/4IF_PLD/tests/ifcc-wrapper.sh: Permission denied
+
+exit status: 126

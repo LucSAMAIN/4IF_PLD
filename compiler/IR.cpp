@@ -111,7 +111,7 @@ std::string CFG::IR_addr_to_x86(std::string &addr)
         }
     }
     std::cerr << "Erreur conversion adresse IR to x86\n"; 
-    return ""
+    return "";
 }
 
 // Génère une représentation textuelle du CFG

@@ -22,7 +22,7 @@ public:
     // virtual antlrcpp::Any visitNotExpr(ifccParser::NotExprContext *ctx) override;
     // virtual antlrcpp::Any visitUnaryMinusExpr(ifccParser::UnaryMinusExprContext *ctx) override;
     // virtual antlrcpp::Any visitMulDivExpr(ifccParser::MulDivExprContext *ctx) override;
-    virtual antlrcpp::Any visitAddSubExpr(ifccParser::AddSubExprContext *ctx) override;
+    // virtual antlrcpp::Any visitAddSubExpr(ifccParser::AddSubExprContext *ctx) override;
     // virtual antlrcpp::Any visitCompExpr(ifccParser::CompExprContext *ctx) override;
     // virtual antlrcpp::Any visitEqExpr(ifccParser::EqExprContext *ctx) override;
     // virtual antlrcpp::Any visitAndExpr(ifccParser::AndExprContext *ctx) override;

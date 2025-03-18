@@ -19,7 +19,8 @@
     - CmpEq
     - CmpLt
     - CmpLe
-    
+    - prologue
+    - epilogue
 
 */
 

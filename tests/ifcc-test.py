@@ -31,6 +31,11 @@ import shutil
 import sys
 import subprocess
 
+def print_rouge(texte):
+    print("\033[1;31m"+texte+"\033[0m")
+def print_vert(texte):
+    print("\033[1;32m"+texte+"\033[0m")
+
 def command(string, logfile=None):
     """execute `string` as a shell command, optionnaly logging stdout+stderr to a file. return exit status.)"""
     if args.verbose:
@@ -196,16 +201,16 @@ for i, jobname in enumerate(jobs):
     
     if gccstatus != 0 and ifccstatus != 0:
         ## ifcc correctly rejects invalid program -> test-case ok
-        print("TEST OK\n")
+        print_vert("TEST OK\n")
         nbOk += 1
         continue
     elif gccstatus != 0 and ifccstatus == 0:
         ## ifcc wrongly accepts invalid program -> error
-        print("TEST FAIL (your compiler accepts an invalid program)\n")
+        print_rouge("TEST FAIL (your compiler accepts an invalid program)\n")
         continue
     elif gccstatus == 0 and ifccstatus != 0:
         ## ifcc wrongly rejects valid program -> error
-        print("TEST FAIL (your compiler rejects a valid program)\n")
+        print_rouge("TEST FAIL (your compiler rejects a valid program)\n")
         if args.verbose:
             dumpfile("ifcc-compile.txt")
         continue
@@ -213,7 +218,7 @@ for i, jobname in enumerate(jobs):
         ## ifcc accepts to compile valid program -> let's link it
         ldstatus=command("gcc -O0 -o exe-ifcc asm-ifcc.s", "ifcc-link.txt")
         if ldstatus:
-            print("TEST FAIL (your compiler produces incorrect assembly)\n")
+            print_rouge("TEST FAIL (your compiler produces incorrect assembly)\n")
             if args.verbose:
                 dumpfile("ifcc-link.txt")
             continue
@@ -223,7 +228,7 @@ for i, jobname in enumerate(jobs):
         
     command("./exe-ifcc","ifcc-execute.txt")
     if open("gcc-execute.txt").read() != open("ifcc-execute.txt").read() :
-        print("TEST FAIL (different results at execution)\n")
+        print_rouge("TEST FAIL (different results at execution)\n")
         if args.verbose:
             print("GCC:")
             dumpfile("gcc-execute.txt")
@@ -232,7 +237,7 @@ for i, jobname in enumerate(jobs):
         continue
 
     ## last but not least
-    print("TEST OK\n")
+    print_vert("TEST OK\n")
     nbOk += 1
     
 print(f"\nRatio (tests réussis / échoués): {nbOk} / {len(jobs)}")

@@ -14,7 +14,9 @@ main:
 	movl	$-42, -8(%rbp)
 	movl	$5, -12(%rbp)
 	movl	$7, -16(%rbp)
-	movl	$0, %eax
+	movl	-12(%rbp), %eax
+	cltd
+	idivl	-16(%rbp)
 	popq	%rbp
 	.cfi_def_cfa 7, 8
 	ret

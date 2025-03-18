@@ -1,2 +1,2 @@
 
-exit status: 6
+exit status: 255

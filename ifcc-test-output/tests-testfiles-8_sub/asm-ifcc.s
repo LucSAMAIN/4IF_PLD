@@ -10,7 +10,12 @@ main:
     subq $16, %rsp
 main0:
     movl $5, %eax
+    movl %eax, -8(%rbp)
     movl $1, %eax
+    movl %eax, -12(%rbp)
+    movl -8(%rbp), %eax
+    movl -12(%rbp), %ecx
+    subl %ecx, %eax
     movl %eax, -4(%rbp)
     movl -4(%rbp), %eax
 main_epilogue:

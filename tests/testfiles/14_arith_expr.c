@@ -4,5 +4,5 @@ int main() {
     int c = 5&3+2;
     int d = 5|7-1;
 
-    return 0;
+    return c/d;
 }

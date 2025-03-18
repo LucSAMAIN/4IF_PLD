@@ -1,5 +1,5 @@
 int main() {
     int a = 1 < 7;
 
-    return 0;
+    return a | 0;
 }

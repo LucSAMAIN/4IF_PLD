@@ -93,8 +93,10 @@ void CFG::add_bb(BasicBlock* bb) {
 string CFG::IR_reg_to_x86(const string &reg) {
     if (reg == "!reg") {
         return "%eax";
-    } else if (reg == "!regLecture") {
+    } else if (reg == "!regLeft") {
         return "%ebx";
+    } else if (reg == "!regRight") {
+        return "%ecx";
     }
     std::cerr << "Erreur conversion registre IR to x86, le registre renseigné n'existe pas\n"; 
     return "";

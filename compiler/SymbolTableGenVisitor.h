@@ -38,6 +38,6 @@ public:
     virtual antlrcpp::Any visitBlock(ifccParser::BlockContext *ctx) override;
 
     std::map<std::string, VarInfos> symbolTable;
-    std::map<std::string, int> offsetTable;
+    std::map<std::string, int> offsetTable; // pour les fonctions connaitre le début d'offset.
     std::string scope;
 };

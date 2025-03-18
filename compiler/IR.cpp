@@ -60,14 +60,13 @@ void BasicBlock::gen_x86(ostream& o) {
 
 // Implémentation de CFG
 
-CFG::CFG(SymbolTableGenVisitor& p_stv) : stv(p_stv), current_bb(nullptr), start_block(nullptr), end_block(nullptr), nexTmpNumber(0), bbs(), functionName("main") {
+CFG::CFG(SymbolTableGenVisitor& p_stv) : stv(p_stv), current_bb(nullptr), start_block(nullptr), end_block(nullptr), bbs(), functionName("main") {
     // Ajouter le bloc de base initial
     start_block = new BasicBlock(this, functionName);
     Operation* op_start = new Prologue(start_block);
     IRInstr* instr_start = new IRInstr(start_block, op_start);
     start_block->add_IRInstr(instr_start);
 
-    std::cout << "#création current\n";
     current_bb = new BasicBlock(this, new_BB_name());
     start_block->exit_true = current_bb;
 
@@ -81,20 +80,39 @@ CFG::CFG(SymbolTableGenVisitor& p_stv) : stv(p_stv), current_bb(nullptr), start_
     add_bb(end_block);
 }
 
+CFG::~CFG()
+{
+    for (auto block : bbs)
+        delete block;
+}
+
 void CFG::add_bb(BasicBlock* bb) {
     bbs.push_back(bb);
 }
 
-string CFG::IR_reg_to_x86(string reg) {
+string CFG::IR_reg_to_x86(const string &reg) {
     if (reg == "!reg") {
         return "%eax";
-    } else if (isdigit(reg[0]) || (reg[0] == '-' && reg.size() > 1 && isdigit(reg[1]))) {
-        // C'est une constante numérique
-        return "$" + reg;
-    } else {
-        // C'est une variable
-        return stv.symbolTable[reg].offset + "(%rbp)";
+    } else if (reg == "!regLeft") {
+        return "%ebx";
+    } else if (reg == "!regRight") {
+        return "%ecx";
     }
+    std::cerr << "Erreur conversion registre IR to x86, le registre renseigné n'existe pas\n"; 
+    return "";
+}
+
+std::string CFG::IR_addr_to_x86(const std::string &addr)
+{
+    // std::cout << "# addr IR_addr_to_x86 " << addr << "\n";
+    if (addr.substr(0, 3) == "RBP") {
+        std::string offset = addr.substr(3);
+        // std::cout << "# offset IR_addr_to_x86 " << offset << "\n";
+        return offset + "(%rbp)";
+    
+    }
+    std::cerr << "# Erreur conversion adresse IR to x86\n"; 
+    return "";
 }
 
 // Génère une représentation textuelle du CFG

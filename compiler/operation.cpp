@@ -21,7 +21,7 @@ void Prologue::gen_x86(std::ostream& o) {
     o << "    movq %rsp, %rbp" << "\n";
     
     // Allouer de l'espace pour les variables locales
-    int frameSize = ((bb->cfg->stv.offsetTable[bb->cfg->functionName] + 15) & ~15);  // Alignement sur 16 octets uniquement
+    int frameSize = ((-bb->cfg->stv.offsetTable[bb->cfg->functionName] + 15) & ~15);  // Alignement sur 16 octets uniquement
     o << "    subq $" << frameSize << ", %rsp" << "\n";
 }
 
@@ -68,30 +68,32 @@ void Copy::gen_x86(std::ostream& o) {
 }
 
 // Implémentation de Add
-// Add::Add(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2) 
-//     : Operation(), dest(dest_reg), op1(operand1), op2(operand2), bb(bb) {}
+Add::Add(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2) 
+    : Operation(), dest(dest_reg), op1(operand1), op2(operand2), bb(bb) {}
 
 
-// std::string Add::get_operation_name() const {
-//     return "add";
-// }
+std::string Add::get_operation_name() const {
+    return "add";
+}
 
-// void Add::gen_x86(std::ostream& o) {
-//     o << "    ADD " << op1 << ", " << op2 << " -> " << dest << "\n";
-// }
+void Add::gen_x86(std::ostream& o) {
+    o << "    addl " << bb->cfg->IR_reg_to_x86(op1) << ", " << bb->cfg->IR_reg_to_x86(op2) << "\n";
+}
 
-// // Implémentation de Sub
-// Sub::Sub(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2) 
-//     : Operation(), dest(dest_reg), op1(operand1), op2(operand2), bb(bb) {}
+// Implémentation de Sub
+Sub::Sub(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2) 
+    : Operation(), dest(dest_reg), op1(operand1), op2(operand2), bb(bb) {}
 
 
-// std::string Sub::get_operation_name() const {
-//     return "sub";
-// }
+std::string Sub::get_operation_name() const {
+    return "sub";
+}
 
-// void Sub::gen_x86(std::ostream& o) {
-//     o << "    SUB " << op1 << ", " << op2 << " -> " << dest << "\n";
-// }
+// sub %ebx, %eax ==> %eax = %eax - %ebx, donc on doit inverser op2 et op1
+//  b-a s'écrit subl a, b
+void Sub::gen_x86(std::ostream& o) {
+    o << "    subl " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(op1) << "\n";
+}
 
 // // Implémentation de Mul
 // Mul::Mul(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2) 
@@ -106,32 +108,32 @@ void Copy::gen_x86(std::ostream& o) {
 //     o << "    MUL " << op1 << ", " << op2 << " -> " << dest << "\n";
 // }
 
-// // Implémentation de Rmem
-// Rmem::Rmem(BasicBlock* bb, const std::string& dest_reg, const std::string& address) 
-//     : Operation(), dest(dest_reg), addr(address), bb(bb) {}
+// Implémentation de Rmem
+Rmem::Rmem(BasicBlock* bb, const std::string& dest_reg, const std::string& address) 
+    : Operation(), dest(dest_reg), addr(address), bb(bb) {}
 
 
-// std::string Rmem::get_operation_name() const {
-//     return "rmem";
-// }
+std::string Rmem::get_operation_name() const {
+    return "rmem";
+}
 
-// void Rmem::gen_x86(std::ostream& o) {
-//     o << "    RMEM " << addr << " -> " << dest << "\n";
-// }
+void Rmem::gen_x86(std::ostream& o) {
+    // o << " # Rmem addr " << addr << "\n";
+    o << "    movl " << bb->cfg->IR_addr_to_x86(addr) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+}
 
-// // Implémentation de Wmem
-// Wmem::Wmem(BasicBlock* bb, const std::string& address, const std::string& src_reg) 
-//     : Operation(), addr(address), src(src_reg), bb(bb) {}
+// Implémentation de Wmem
+Wmem::Wmem(BasicBlock* bb, const std::string& address, const std::string& src_reg) 
+    : Operation(), addr(address), src(src_reg), bb(bb) {}
 
 
+std::string Wmem::get_operation_name() const {
+    return "wmem";
+}
 
-// std::string Wmem::get_operation_name() const {
-//     return "wmem";
-// }
-
-// void Wmem::gen_x86(std::ostream& o) {
-//     o << "    WMEM " << src << " -> " << addr << "\n";
-// }
+void Wmem::gen_x86(std::ostream& o) {
+    o << "    movl " << bb->cfg->IR_reg_to_x86(src) << ", " << bb->cfg->IR_addr_to_x86(addr) << "\n";
+}
 
 // // Implémentation de Call
 // Call::Call(BasicBlock* bb, const std::string& function) : func_name(function), bb(bb) {}

@@ -11,20 +11,22 @@ Type fromStringToType(std::string s)
 }
 
 antlrcpp::Any SymbolTableGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx) {
-    if (symbolTable.find(scope + '_' + ctx->ID()->getText()) != symbolTable.end()) {
-        std::cerr << "error: variable name already declared " << ctx->ID()->getText() << "\n";
-        return 0;
-    }
-    std::string funcName;
-    std::istringstream ss_scope(scope);
-    std::getline(ss_scope, funcName, '_');
-    if (ctx->type()->getText() == "int") {
-        offsetTable[funcName] -= 4;
-        symbolTable[scope + '_' + ctx->ID()->getText()] = {Type::INT, offsetTable[funcName], true, false};
-    }
-    
-    if (ctx->expr() != nullptr) {
-        visit(ctx->expr());
+    for (int i = 0; i < ctx->decl_element().size(); i++) {
+        if (symbolTable.find(scope + '_' + ctx->decl_element(i)->ID()->getText()) != symbolTable.end()) {
+            std::cerr << "error: variable name already declared " << ctx->decl_element(i)->ID()->getText() << "\n";
+            return 0;
+        }
+        std::string funcName;
+        std::istringstream ss_scope(scope);
+        std::getline(ss_scope, funcName, '_');
+        if (ctx->type()->getText() == "int") {
+            offsetTable[funcName] -= 4;
+            symbolTable[scope + '_' + ctx->decl_element(i)->ID()->getText()] = {Type::INT, offsetTable[funcName], true, false};
+        }
+        
+        if (ctx->decl_element(i)->expr() != nullptr) {
+            visit(ctx->decl_element(i)->expr());
+        }
     }
     return 0;
 }
@@ -97,5 +99,24 @@ antlrcpp::Any SymbolTableGenVisitor::visitBlock(ifccParser::BlockContext *ctx) {
             visit(ctx->stmt(i));
         }
     }
+    return 0;
+}
+
+antlrcpp::Any SymbolTableGenVisitor::visitAssignExpr(ifccParser::AssignExprContext *ctx) {
+    std::string tried_scope = scope;
+    while (tried_scope != "" && symbolTable.find(tried_scope + '_' + ctx->ID()->getText()) == symbolTable.end()) {
+        while (tried_scope.size() != 0 && tried_scope.back() != '_') {
+            tried_scope.pop_back();
+        }
+        if (tried_scope.size() != 0) {
+            tried_scope.pop_back();
+        }
+    }
+    if (tried_scope.size() == 0) {
+        std::cerr << "error: variable not declared " << ctx->ID()->getText() << " in scope " << scope << "\n";
+        return 0;
+    }
+    symbolTable[tried_scope + '_' + ctx->ID()->getText()].used = true;
+    visit(ctx->expr());
     return 0;
 }

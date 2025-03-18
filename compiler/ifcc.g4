@@ -12,7 +12,9 @@ stmt : decl_stmt SEMICOLON
      | block_stmt
      ;
      
-decl_stmt : type ID (ASSIGN expr)? ;
+decl_stmt : type decl_element (COMMA decl_element)* ;
+decl_element : ID (ASSIGN expr)? ;
+
 assign_stmt : ID ASSIGN expr ;
 expr_stmt : expr ;
 return_stmt : RETURN expr ;
@@ -33,6 +35,7 @@ expr : primary # primaryExpr
 primary : ID # idUse
         | CONST # const
         | LPAR expr RPAR # parExpr
+        | ID ASSIGN expr # assignExpr
         ;
 
 mOp : STAR | SLASH | MOD ;
@@ -62,6 +65,7 @@ SLASH : '/' ;
 MOD : '%' ;
 ASSIGN : '=' ;
 SEMICOLON : ';' ;
+COMMA : ',' ;
 RETURN : 'return' ;
 type : INT | CHAR ;
 INT : 'int' ;

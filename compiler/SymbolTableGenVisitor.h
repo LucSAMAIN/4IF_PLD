@@ -36,6 +36,7 @@ public:
     virtual antlrcpp::Any visitAssign_stmt(ifccParser::Assign_stmtContext *ctx) override;
     virtual antlrcpp::Any visitIdUse(ifccParser::IdUseContext *ctx) override;
     virtual antlrcpp::Any visitBlock(ifccParser::BlockContext *ctx) override;
+    virtual antlrcpp::Any visitAssignExpr(ifccParser::AssignExprContext *ctx) override;
 
     std::map<std::string, VarInfos> symbolTable;
     std::map<std::string, int> offsetTable; // pour les fonctions connaitre le début d'offset.

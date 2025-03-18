@@ -51,26 +51,27 @@ antlrcpp::Any IRGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx)
 { 
     // On a rien besoin de faire si c'est uniquement une déclaration...
     // Car c'est déjà géré par la symbol table.
+    for (int i = 0; i < ctx->decl_element().size(); i++) {
+        if (ctx->decl_element(i)->expr()) // si déclaration + assignement direct
+        {
+            std::string nomVar = scope + "_" + ctx->decl_element(i)->ID()->getText();
+            std::cout << "# nomVar " << i << " : " << nomVar << "\n";
+            std::string address = "RBP" + std::to_string(cfg->stv.symbolTable[nomVar].offset);
+            std::cout << "# address " << address << "\n";
 
-    if (ctx->expr()) // si déclaration + assignement direct
-    {
-        std::string nomVar = scope + "_" + ctx->ID()->getText();
-        // std::cout << "# nomVar " << nomVar << "\n";
-        std::string address = "RBP" + std::to_string(cfg->stv.symbolTable[nomVar].offset); 
-        // std::cout << "# address " << address << "\n";
-
-        // Évaluation de l'expression qu'on place dans le registre universel !reg
-        visit(ctx->expr());
-        Operation *wmem = new Wmem(cfg->current_bb, address, "!reg"); // block, dst, src
-        IRInstr *instruction = new IRInstr(cfg->current_bb, wmem);
-        cfg->current_bb->add_IRInstr(instruction);
+            // Évaluation de l'expression qu'on place dans le registre universel !reg
+            visit(ctx->decl_element(i)->expr());
+            Operation *wmem = new Wmem(cfg->current_bb, address, "!reg"); // block, dst, src
+            IRInstr *instruction = new IRInstr(cfg->current_bb, wmem);
+            cfg->current_bb->add_IRInstr(instruction);
+        }
     }
     return 0;
 }
 
 antlrcpp::Any IRGenVisitor::visitAssign_stmt(ifccParser::Assign_stmtContext *ctx)
 {
-    /// On récupère le nom et l'adresse stack de la variable en question
+    // On récupère le nom et l'adresse stack de la variable en question
     std::string nomVar = scope + "_" + ctx->ID()->getText();
     // std::cout << "# nomVar " << nomVar << "\n";
     std::string address = "RBP" + std::to_string(cfg->stv.symbolTable[nomVar].offset); 
@@ -115,6 +116,24 @@ antlrcpp::Any IRGenVisitor::visitIdUse(ifccParser::IdUseContext *ctx)
     IRInstr *instruction = new IRInstr(cfg->current_bb, rmem);
     cfg->current_bb->add_IRInstr(instruction);
 
+    return 0;
+}
+
+antlrcpp::Any IRGenVisitor::visitAssignExpr(ifccParser::AssignExprContext *ctx) {
+    // On récupère le nom et l'adresse stack de la variable en question
+    std::string nomVar = scope + "_" + ctx->ID()->getText();
+    // std::cout << "# nomVar " << nomVar << "\n";
+    std::string address = "RBP" + std::to_string(cfg->stv.symbolTable[nomVar].offset); 
+    // std::cout << "# address " << address << "\n";
+
+    // Évaluation de l'expression qu'on place dans le registre universel !reg
+    visit(ctx->expr());
+    Operation *wmem = new Wmem(cfg->current_bb, address, "!reg"); // block, dst, src
+    IRInstr *instruction = new IRInstr(cfg->current_bb, wmem);
+    cfg->current_bb->add_IRInstr(instruction);
+
+    // la valeur est retournée dans !reg
+    
     return 0;
 }
 

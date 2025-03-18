@@ -93,7 +93,7 @@ void CFG::add_bb(BasicBlock* bb) {
 string CFG::IR_reg_to_x86(string &reg) {
     if (reg == "!reg") {
         return "%eax";
-    } else if (reg == "!regLecture"){
+    } else if (reg == "!regLecture") {
         return "%ebx";
     }
     std::cerr << "Erreur conversion registre IR to x86, le registre renseigné n'existe pas\n"; 
@@ -102,15 +102,14 @@ string CFG::IR_reg_to_x86(string &reg) {
 
 std::string CFG::IR_addr_to_x86(std::string &addr)
 {
+    // std::cout << "# addr IR_addr_to_x86 " << addr << "\n";
     if (addr.substr(0, 3) == "RBP") {
-        size_t pos = addr.find("-");
-        
-        if (pos != std::string::npos) {
-            std::string offset = addr.substr(pos);
-            return offset + "(%rbp)";
-        }
+        std::string offset = addr.substr(3);
+        // std::cout << "# offset IR_addr_to_x86 " << offset << "\n";
+        return offset + "(%rbp)";
+    
     }
-    std::cerr << "Erreur conversion adresse IR to x86\n"; 
+    std::cerr << "# Erreur conversion adresse IR to x86\n"; 
     return "";
 }
 

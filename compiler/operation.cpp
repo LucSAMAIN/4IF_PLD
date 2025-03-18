@@ -116,6 +116,7 @@ std::string Rmem::get_operation_name() const {
 }
 
 void Rmem::gen_x86(std::ostream& o) {
+    // o << " # Rmem addr " << addr << "\n";
     o << "    movl " << bb->cfg->IR_addr_to_x86(addr) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
 }
 

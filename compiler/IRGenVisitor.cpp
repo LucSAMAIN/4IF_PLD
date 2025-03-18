@@ -54,14 +54,15 @@ antlrcpp::Any IRGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx)
 
     if (ctx->expr()) // si déclaration + assignement direct
     {
-        // On récupère le nom de la variable en question
         std::string nomVar = scope + "_" + ctx->ID()->getText();
+        // std::cout << "# nomVar " << nomVar << "\n";
+        std::string address = "RBP" + std::to_string(cfg->stv.symbolTable[nomVar].offset); 
+        // std::cout << "# address " << address << "\n";
 
         // Évaluation de l'expression qu'on place dans le registre universel !reg
         visit(ctx->expr());
-
-        Operation *op = new Copy(cfg->current_bb, nomVar, "!reg");  // block, dst, src
-        IRInstr *instruction = new IRInstr(cfg->current_bb, op);
+        Operation *wmem = new Wmem(cfg->current_bb, address, "!reg"); // block, dst, src
+        IRInstr *instruction = new IRInstr(cfg->current_bb, wmem);
         cfg->current_bb->add_IRInstr(instruction);
     }
     return 0;
@@ -71,7 +72,9 @@ antlrcpp::Any IRGenVisitor::visitAssign_stmt(ifccParser::Assign_stmtContext *ctx
 {
     /// On récupère le nom et l'adresse stack de la variable en question
     std::string nomVar = scope + "_" + ctx->ID()->getText();
-    std::string address = "RBP" + cfg->get_var_offset(nomVar); 
+    // std::cout << "# nomVar " << nomVar << "\n";
+    std::string address = "RBP" + std::to_string(cfg->stv.symbolTable[nomVar].offset); 
+    // std::cout << "# address " << address << "\n";
 
     // Évaluation de l'expression qu'on place dans le registre universel !reg
     visit(ctx->expr());
@@ -106,8 +109,7 @@ antlrcpp::Any IRGenVisitor::visitIdUse(ifccParser::IdUseContext *ctx)
 {
     // On récupère le nom et l'adresse stack de la variable en question
     std::string nomVar = scope + "_" + ctx->ID()->getText();
-    std::string address = "RBP" + cfg->get_var_offset(nomVar); 
-
+    std::string address = "RBP" + std::to_string(cfg->stv.symbolTable[nomVar].offset); 
 
     Operation *rmem = new Rmem(cfg->current_bb, "!reg", address);
     IRInstr *instruction = new IRInstr(cfg->current_bb, rmem);

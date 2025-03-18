@@ -240,4 +240,4 @@ for i, jobname in enumerate(jobs):
     print_vert("TEST OK\n")
     nbOk += 1
     
-print(f"\nRatio (tests réussis / échoués): {nbOk} / {len(jobs)}")
+print(f"\nRatio (tests réussis / tentés): {nbOk} / {len(jobs)}")

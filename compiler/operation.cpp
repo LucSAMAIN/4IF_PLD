@@ -68,8 +68,8 @@ void Copy::gen_x86(std::ostream& o) {
 }
 
 // Implémentation de Add
-Add::Add(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2) 
-    : Operation(), dest(dest_reg), op1(operand1), op2(operand2), bb(bb) {}
+Add::Add(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2) 
+    : Operation(), dest(dest_reg), op2(operand2), bb(bb) {}
 
 
 std::string Add::get_operation_name() const {
@@ -77,12 +77,12 @@ std::string Add::get_operation_name() const {
 }
 
 void Add::gen_x86(std::ostream& o) {
-    o << "    addl " << bb->cfg->IR_reg_to_x86(op1) << ", " << bb->cfg->IR_reg_to_x86(op2) << "\n";
+    o << "    addl " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
 }
 
 // Implémentation de Sub
-Sub::Sub(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2) 
-    : Operation(), dest(dest_reg), op1(operand1), op2(operand2), bb(bb) {}
+Sub::Sub(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2) 
+    : Operation(), dest(dest_reg), op2(operand2), bb(bb) {}
 
 
 std::string Sub::get_operation_name() const {
@@ -92,21 +92,21 @@ std::string Sub::get_operation_name() const {
 // sub %ebx, %eax ==> %eax = %eax - %ebx, donc on doit inverser op2 et op1
 //  b-a s'écrit subl a, b
 void Sub::gen_x86(std::ostream& o) {
-    o << "    subl " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(op1) << "\n";
+    o << "    subl " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
 }
 
-// // Implémentation de Mul
-// Mul::Mul(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2) 
-//     : Operation(), dest(dest_reg), op1(operand1), op2(operand2), bb(bb) {}
+// Implémentation de Mul
+Mul::Mul(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2) 
+    : Operation(), dest(dest_reg), op2(operand2), bb(bb) {}
 
 
-// std::string Mul::get_operation_name() const {
-//     return "mul";
-// }
+std::string Mul::get_operation_name() const {
+    return "mul";
+}
 
-// void Mul::gen_x86(std::ostream& o) {
-//     o << "    MUL " << op1 << ", " << op2 << " -> " << dest << "\n";
-// }
+void Mul::gen_x86(std::ostream& o) {
+    o << "    imull " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+}
 
 // Implémentation de Rmem
 Rmem::Rmem(BasicBlock* bb, const std::string& dest_reg, const std::string& address) 

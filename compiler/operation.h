@@ -109,12 +109,11 @@ class Add : public Operation
 {
 private:
     std::string dest;
-    std::string op1;
     std::string op2;
     BasicBlock* bb;
 
 public:
-    Add(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2);
+    Add(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
 };
@@ -124,12 +123,11 @@ class Sub : public Operation
 {
 private:
     std::string dest;
-    std::string op1;
     std::string op2;
     BasicBlock* bb;
 
 public:
-    Sub(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2);
+    Sub(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
 };
@@ -139,12 +137,11 @@ class Mul : public Operation
 {
 private:
     std::string dest;
-    std::string op1;
     std::string op2;
     BasicBlock* bb;
 
 public:
-    Mul(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2);
+    Mul(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
 };

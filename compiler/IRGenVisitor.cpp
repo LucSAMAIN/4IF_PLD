@@ -174,82 +174,75 @@ antlrcpp::Any IRGenVisitor::visitAssignExpr(ifccParser::AssignExprContext *ctx) 
 //     return 0;
 // }
 
-// antlrcpp::Any IRGenVisitor::visitMulDivExpr(ifccParser::MulDivExprContext *ctx) {
-//     // Évaluation de l'opérande gauche
-//     visit(ctx->left);
+antlrcpp::Any IRGenVisitor::visitMulDivExpr(ifccParser::MulDivExprContext *ctx) {
+    // Évaluation de l'expression droite qu'on place dans le registre universel !reg
+    visit(ctx->left);
+    std::string temp_left = cfg->create_new_tempvar(Type::INT);
+    std::string address_left = "RBP" + std::to_string(cfg->stv.symbolTable[temp_left].offset); 
     
-//     // Créer une variable temporaire pour stocker le résultat de l'opérande gauche
-//     std::string temp_left = cfg->create_new_tempvar(Type::INT);
+    // Copier le résultat de l'expression dans la variable temporaire
+    Operation *wmem_left = new Wmem(cfg->current_bb, address_left, "!reg");
+    IRInstr *instruction_left = new IRInstr(cfg->current_bb, wmem_left);
+    cfg->current_bb->add_IRInstr(instruction_left);
+
+
+    // Évaluation de l'expression left qu'on place dans le registre universel !reg
+    visit(ctx->right);
     
-//     // Copier le résultat de l'expression dans la variable temporaire
-//     std::vector<std::string> param_copy_left = {temp_left, "%eax"};
-//     currentBB->add_IRInstr(IRInstr::copy, Type::INT, param_copy_left);
+    // Appliquer l'opération selon l'opérateur
+    if (ctx->mOp()->STAR()) {
+        Operation *rmem_left = new Rmem(cfg->current_bb, "!regLeft", address_left);
+        IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
+        cfg->current_bb->add_IRInstr(instruction_read_left);
+
+        Operation *operation_mul = new Mul(cfg->current_bb, "!reg", "!regLeft");
+        IRInstr *instruction_mul = new IRInstr(cfg->current_bb, operation_mul);
+        cfg->current_bb->add_IRInstr(instruction_mul);
+    }
+    else if (ctx->mOp()->SLASH()) {
+    }
+    else if (ctx->mOp()->MOD()) {
+    }
     
-//     // Évaluation de l'opérande droite
-//     visit(ctx->right);
-    
-//     // Créer une variable temporaire pour stocker le résultat de l'opérande droite
-//     std::string temp_right = cfg->create_new_tempvar(Type::INT);
-    
-//     // Copier le résultat de l'expression dans la variable temporaire
-//     std::vector<std::string> param_copy_right = {temp_right, "%eax"};
-//     currentBB->add_IRInstr(IRInstr::copy, Type::INT, param_copy_right);
-    
-//     // Appliquer l'opération selon l'opérateur
-//     if (ctx->mOp()->STAR()) {
-//         std::vector<std::string> params = {"%eax", temp_left, temp_right};
-//         currentBB->add_IRInstr(IRInstr::mul, Type::INT, params);
-//     }
-//     else if (ctx->mOp()->SLASH() || ctx->mOp()->MOD()) {
-//         // Pour la division et le modulo, on utilise une approche différente
-//         // car ces opérations ne sont pas directement disponibles dans l'IR
-//         // En pratique, cela nécessiterait des appels à des fonctions externes
-//         // ou des séquences d'instructions spécifiques
-        
-//         // Ici, on se contente de faire une multiplication pour la démonstration
-//         std::vector<std::string> params = {"%eax", temp_left, temp_right};
-//         currentBB->add_IRInstr(IRInstr::mul, Type::INT, params);
-//     }
-    
-//     return 0;
-// }
+    return 0;
+}
 
 antlrcpp::Any IRGenVisitor::visitAddSubExpr(ifccParser::AddSubExprContext *ctx) {
 
     // Évaluation de l'expression droite qu'on place dans le registre universel !reg
-    visit(ctx->right);
-    std::string temp_right = cfg->create_new_tempvar(Type::INT);
-    std::string address_right = "RBP" + std::to_string(cfg->stv.symbolTable[temp_right].offset); 
+    visit(ctx->left);
+    std::string temp_left = cfg->create_new_tempvar(Type::INT);
+    std::string address_left = "RBP" + std::to_string(cfg->stv.symbolTable[temp_left].offset); 
     
     // Copier le résultat de l'expression dans la variable temporaire
-    Operation *wmem_right = new Wmem(cfg->current_bb, address_right, "!reg");
-    IRInstr *instruction_right = new IRInstr(cfg->current_bb, wmem_right);
-    cfg->current_bb->add_IRInstr(instruction_right);
+    Operation *wmem_left = new Wmem(cfg->current_bb, address_left, "!reg");
+    IRInstr *instruction_left = new IRInstr(cfg->current_bb, wmem_left);
+    cfg->current_bb->add_IRInstr(instruction_left);
 
 
     // Évaluation de l'expression left qu'on place dans le registre universel !reg
-    visit(ctx->left);
-    
-
-    
-    
+    visit(ctx->right);   
     
     // Appliquer l'opération selon l'opérateur
     if (ctx->aOp()->PLUS()) {
-        Operation *rmem_right = new Rmem(cfg->current_bb, "!regRight", address_right);
-        IRInstr *instruction_read_right = new IRInstr(cfg->current_bb, rmem_right);
-        cfg->current_bb->add_IRInstr(instruction_read_right);
+        Operation *rmem_left = new Rmem(cfg->current_bb, "!regLeft", address_left);
+        IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
+        cfg->current_bb->add_IRInstr(instruction_read_left);
 
-        Operation *operation_add = new Add(cfg->current_bb, "!reg", "!regRight", "!reg");
+        Operation *operation_add = new Add(cfg->current_bb, "!reg", "!regLeft");
         IRInstr *instruction_add = new IRInstr(cfg->current_bb, operation_add);
         cfg->current_bb->add_IRInstr(instruction_add);
     }
     else if (ctx->aOp()->MINUS()) {
-        Operation *rmem_right = new Rmem(cfg->current_bb, "!regRight", address_right);
-        IRInstr *instruction_read_right = new IRInstr(cfg->current_bb, rmem_right);
-        cfg->current_bb->add_IRInstr(instruction_read_right);
+        Operation *copy_right = new Copy(cfg->current_bb, "!regRight", "!reg");
+        IRInstr *instruction_copy_right = new IRInstr(cfg->current_bb, copy_right);
+        cfg->current_bb->add_IRInstr(instruction_copy_right);
 
-        Operation *operation_sub = new Sub(cfg->current_bb, "!reg", "!reg", "!regRight");
+        Operation *rmem_left = new Rmem(cfg->current_bb, "!reg", address_left);
+        IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
+        cfg->current_bb->add_IRInstr(instruction_read_left);
+
+        Operation *operation_sub = new Sub(cfg->current_bb, "!reg", "!regRight");
         IRInstr *instruction_sub = new IRInstr(cfg->current_bb, operation_sub);
         cfg->current_bb->add_IRInstr(instruction_sub);
     }

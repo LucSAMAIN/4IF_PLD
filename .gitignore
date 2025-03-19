@@ -1,6 +1,13 @@
 # Prerequisites
 *.d
 
+*.log
+*.txt
+*.out
+*.err
+*.err.txt
+*.err.log
+
 # Compiled Object files
 *.slo
 *.lo
@@ -46,3 +53,9 @@ settings.json
 
 ./compiler/build/
 ./compiler/generated/
+
+# Compiled WAT files
+*.wat
+*.wasm
+*.wat.txt
+*.wasm.txt

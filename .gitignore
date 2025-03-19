@@ -1,6 +1,6 @@
 # Prerequisites
 *.d
-
+*.js
 *.log
 *.txt
 *.out

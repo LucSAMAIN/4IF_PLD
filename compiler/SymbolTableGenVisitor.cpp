@@ -66,6 +66,7 @@ antlrcpp::Any SymbolTableGenVisitor::visitAssign_stmt(ifccParser::Assign_stmtCon
         std::cerr << "error: variable not declared " << ctx->ID()->getText() << " in scope " << scope << "\n";
         return 0;
     }
+    std::cout << "# trouvé : " << tried_scope + '_' + ctx->ID()->getText() << "\n";
     visit(ctx->expr());
     return 0;
 }

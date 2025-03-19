@@ -78,7 +78,16 @@ antlrcpp::Any IRGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx)
 antlrcpp::Any IRGenVisitor::visitAssign_stmt(ifccParser::Assign_stmtContext *ctx)
 {
     // On récupère le nom et l'adresse stack de la variable en question
-    std::string nomVar = scope + "_" + ctx->ID()->getText();
+    std::string tried_scope = scope;
+    while (tried_scope != "" && cfgs.back()->stv.symbolTable.find(tried_scope + '_' + ctx->ID()->getText()) == cfgs.back()->stv.symbolTable.end()) {
+        while (tried_scope.size() != 0 && tried_scope.back() != '_') {
+            tried_scope.pop_back();
+        }
+        if (tried_scope.size() != 0) {
+            tried_scope.pop_back();
+        }
+    }
+    std::string nomVar = tried_scope + "_" + ctx->ID()->getText();
     // std::cout << "# nomVar " << nomVar << "\n";
     std::string address = "RBP" + std::to_string(cfgs.back()->stv.symbolTable[nomVar].offset); 
     // std::cout << "# address " << address << "\n";
@@ -168,7 +177,16 @@ antlrcpp::Any IRGenVisitor::visitCharExpr(ifccParser::CharExprContext *ctx)
 antlrcpp::Any IRGenVisitor::visitIdUse(ifccParser::IdUseContext *ctx)
 {
     // On récupère le nom et l'adresse stack de la variable en question
-    std::string nomVar = scope + "_" + ctx->ID()->getText();
+    std::string tried_scope = scope;
+    while (tried_scope != "" && cfgs.back()->stv.symbolTable.find(tried_scope + '_' + ctx->ID()->getText()) == cfgs.back()->stv.symbolTable.end()) {
+        while (tried_scope.size() != 0 && tried_scope.back() != '_') {
+            tried_scope.pop_back();
+        }
+        if (tried_scope.size() != 0) {
+            tried_scope.pop_back();
+        }
+    }
+    std::string nomVar = tried_scope + "_" + ctx->ID()->getText();
 
     // on regarde si c'est un argument de la fonction
     if (cfgs.back()->stv.symbolTable[nomVar].index_arg >= 0) {

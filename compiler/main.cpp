@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include <cstdlib>
+#include <string>
 
 #include "antlr4-runtime.h"
 #include "generated/ifccLexer.h"
@@ -15,44 +16,46 @@
 
 using namespace antlr4;
 
-int main(int argn, const char **argv)
+int main(int argc, const char **argv)
 {
     std::stringstream in;
     bool wasm = false;
-    if (argn >= 2)
-    {
-        std::ifstream lecture(argv[1]);
-        if (!lecture.good())
-        {
-            std::cerr << "error: cannot read file: " << argv[1] << "\n";
-            exit(1);
-        }
-        in << lecture.rdbuf();
-        if (argn == 3 && std::string(argv[2]) == "-j")
-        {
+    std::string input_file;
+    
+    // Parse command line arguments
+    for(int i = 1; i < argc; i++) {
+        std::string arg = argv[i];
+        if(arg == "-w" || arg == "--wat") {
             wasm = true;
+        } else {
+            input_file = arg;
         }
     }
-    else
-    {
-        std::cerr << "usage: ifcc path/to/file.c\n";
-        exit(1);
+    
+    if(input_file.empty()) {
+        std::cerr << "usage: ifcc [-w|--wat] path/to/file.c\n";
+        return 1;
     }
+
+    // Lecture du fichier d'entrée
+    std::ifstream lecture(input_file);
+    if (!lecture.good()) {
+        std::cerr << "error: cannot read file: " << input_file << "\n";
+        return 1;
+    }
+    in << lecture.rdbuf();
 
     ANTLRInputStream input(in.str());
-
     ifccLexer lexer(&input);
     CommonTokenStream tokens(&lexer);
-
     tokens.fill();
 
     ifccParser parser(&tokens);
     tree::ParseTree *tree = parser.axiom();
 
-    if (parser.getNumberOfSyntaxErrors() != 0)
-    {
+    if (parser.getNumberOfSyntaxErrors() != 0) {
         std::cerr << "error: syntax error during parsing\n";
-        exit(1);
+        return 1;
     }
 
     SymbolTableGenVisitor stv;
@@ -83,15 +86,13 @@ int main(int argn, const char **argv)
     CFG* cfg = cgv.getCFG();
     
     if (cfg) {        
-        // Génération du code x86 à partir de l'IR
-        if (!wasm) {
+        if (wasm) {
+            cfg->gen_wat(std::cout);
+        } else {
             std::cout << ".text\n";
             std::cout << ".globl main\n";
             cfg->gen_x86(std::cout);
-        } else {
-            cfg->gen_wat(std::cout);
         }
-
         delete cfg;
     }
 

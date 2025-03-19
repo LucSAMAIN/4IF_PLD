@@ -2,7 +2,9 @@ grammar ifcc;
 
 axiom : prog EOF ;
 
-prog : INT MAIN LPAR RPAR block ;
+prog : funcDecl+ ;
+
+funcDecl : funcType funcName=ID LPAR (type ID)? (COMMA type ID)* RPAR block ;
 
 block : LCUR stmt* RCUR ;
 stmt : decl_stmt SEMICOLON
@@ -50,7 +52,6 @@ aOp : PLUS | MINUS ;
 eqOp : EQ | NEQ ;
 compOp : LT | LE | GT | GE ;
 
-MAIN : 'main' ;
 LPAR : '(' ;
 RPAR : ')' ;
 LCUR : '{' ;
@@ -76,8 +77,10 @@ COMMA : ',' ;
 RETURN : 'return' ;
 
 type : INT | CHAR ;
+funcType : INT | CHAR | VOID ;
 INT : 'int' ;
 CHAR : 'char' ;
+VOID : 'void' ;
 
 CONSTINT : '0' | [1-9][0-9]* ;
 CONSTCHAR : '\''.*?'\'' ;

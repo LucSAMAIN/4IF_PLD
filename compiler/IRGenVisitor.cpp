@@ -7,20 +7,20 @@
 
 
 IRGenVisitor::IRGenVisitor(SymbolTableGenVisitor& symbolTableGenVisitor) 
-    : symbolTableGenVisitor(symbolTableGenVisitor), cfg(nullptr), currentBB(nullptr), scope() {}
+    : symbolTableGenVisitor(symbolTableGenVisitor), cfgs(), currentBB(nullptr), scope() {}
 
 IRGenVisitor::~IRGenVisitor() {
     // Le CFG doit être libéré par le main
     // Car on le réutilise
 }
 
-antlrcpp::Any IRGenVisitor::visitProg(ifccParser::ProgContext *ctx) 
-{
-    // Initialisation du CFG et du bloc de base
-    cfg = new CFG(symbolTableGenVisitor);
-    scope = "main";
+antlrcpp::Any IRGenVisitor::visitFuncDecl(ifccParser::FuncDeclContext *ctx) {
+    // Création d'un nouveau CFG pour chaque fonction
+    scope = ctx->funcName->getText();
+    CFG* cfg = new CFG(symbolTableGenVisitor, scope);
+    cfgs.push_back(cfg);
     
-    // Visite du bloc principal
+    // Visite de la fonction
     visit(ctx->block());
     
     return 0;
@@ -57,19 +57,19 @@ antlrcpp::Any IRGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx)
         {
             std::string nomVar = scope + "_" + ctx->decl_element(i)->ID()->getText();
             // std::cout << "# nomVar " << i << " : " << nomVar << "\n";
-            std::string address = "RBP" + std::to_string(cfg->stv.symbolTable[nomVar].offset);
+            std::string address = "RBP" + std::to_string(cfgs.back()->stv.symbolTable[nomVar].offset);
             // std::cout << "# address " << address << "\n";
 
             // Évaluation de l'expression qu'on place dans le registre universel !reg
             std::pair<bool, int> res(visit(ctx->decl_element(i)->expr()));
             if (res.first) {
-                Operation *op_const = new LdConst(cfg->current_bb, "!reg", res.second);  // block, dst, src
-                IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
-                cfg->current_bb->add_IRInstr(instruction_const);
+                Operation *op_const = new LdConst(cfgs.back()->current_bb, "!reg", res.second);  // block, dst, src
+                IRInstr *instruction_const = new IRInstr(cfgs.back()->current_bb, op_const);
+                cfgs.back()->current_bb->add_IRInstr(instruction_const);
             }
-            Operation *wmem = new Wmem(cfg->current_bb, address, "!reg"); // block, dst, src
-            IRInstr *instruction = new IRInstr(cfg->current_bb, wmem);
-            cfg->current_bb->add_IRInstr(instruction);
+            Operation *wmem = new Wmem(cfgs.back()->current_bb, address, "!reg"); // block, dst, src
+            IRInstr *instruction = new IRInstr(cfgs.back()->current_bb, wmem);
+            cfgs.back()->current_bb->add_IRInstr(instruction);
         }
     }
     return 0;
@@ -80,19 +80,19 @@ antlrcpp::Any IRGenVisitor::visitAssign_stmt(ifccParser::Assign_stmtContext *ctx
     // On récupère le nom et l'adresse stack de la variable en question
     std::string nomVar = scope + "_" + ctx->ID()->getText();
     // std::cout << "# nomVar " << nomVar << "\n";
-    std::string address = "RBP" + std::to_string(cfg->stv.symbolTable[nomVar].offset); 
+    std::string address = "RBP" + std::to_string(cfgs.back()->stv.symbolTable[nomVar].offset); 
     // std::cout << "# address " << address << "\n";
 
     // Évaluation de l'expression qu'on place dans le registre universel !reg
     std::pair<bool, int> res(visit(ctx->expr()));
     if (res.first) {
-        Operation *op_const = new LdConst(cfg->current_bb, "!reg", res.second);  // block, dst, src
-        IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
-        cfg->current_bb->add_IRInstr(instruction_const);
+        Operation *op_const = new LdConst(cfgs.back()->current_bb, "!reg", res.second);  // block, dst, src
+        IRInstr *instruction_const = new IRInstr(cfgs.back()->current_bb, op_const);
+        cfgs.back()->current_bb->add_IRInstr(instruction_const);
     }
-    Operation *wmem = new Wmem(cfg->current_bb, address, "!reg"); // block, dst, src
-    IRInstr *instruction = new IRInstr(cfg->current_bb, wmem);
-    cfg->current_bb->add_IRInstr(instruction);
+    Operation *wmem = new Wmem(cfgs.back()->current_bb, address, "!reg"); // block, dst, src
+    IRInstr *instruction = new IRInstr(cfgs.back()->current_bb, wmem);
+    cfgs.back()->current_bb->add_IRInstr(instruction);
     
     return 0;
 }
@@ -102,31 +102,31 @@ antlrcpp::Any IRGenVisitor::visitReturn_stmt(ifccParser::Return_stmtContext *ctx
     // Évaluation de l'expression qu'on place dans le registre universel !reg
     std::pair<bool, int> res(visit(ctx->expr()));
     if (res.first) {
-        Operation *op_const = new LdConst(cfg->current_bb, "!reg", res.second);  // block, dst, src
-        IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
-        cfg->current_bb->add_IRInstr(instruction_const);
+        Operation *op_const = new LdConst(cfgs.back()->current_bb, "!reg", res.second);  // block, dst, src
+        IRInstr *instruction_const = new IRInstr(cfgs.back()->current_bb, op_const);
+        cfgs.back()->current_bb->add_IRInstr(instruction_const);
     }
     
-    cfg->current_bb->exit_true = cfg->end_block; // default exit
-    cfg->current_bb->exit_false = nullptr;
+    cfgs.back()->current_bb->exit_true = cfgs.back()->end_block; // default exit
+    cfgs.back()->current_bb->exit_false = nullptr;
     
     return 0;
 }
 
 antlrcpp::Any IRGenVisitor::visitIntExpr(ifccParser::IntExprContext *ctx)
 {
-    // Operation *op_const = new LdConst(cfg->current_bb, "!reg", std::stoi(ctx->CONST()->getText()));  // block, dst, src
-    // IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
-    // cfg->current_bb->add_IRInstr(instruction_const);
+    // Operation *op_const = new LdConst(cfgs.back()->current_bb, "!reg", std::stoi(ctx->CONST()->getText()));  // block, dst, src
+    // IRInstr *instruction_const = new IRInstr(cfgs.back()->current_bb, op_const);
+    // cfgs.back()->current_bb->add_IRInstr(instruction_const);
     
     return std::pair<bool, int>(true, std::stoi(ctx->CONSTINT()->getText()));
 }
 
 antlrcpp::Any IRGenVisitor::visitCharExpr(ifccParser::CharExprContext *ctx)
 {
-    // Operation *op_const = new LdConst(cfg->current_bb, "!reg", std::stoi(ctx->CONST()->getText()));  // block, dst, src
-    // IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
-    // cfg->current_bb->add_IRInstr(instruction_const);
+    // Operation *op_const = new LdConst(cfgs.back()->current_bb, "!reg", std::stoi(ctx->CONST()->getText()));  // block, dst, src
+    // IRInstr *instruction_const = new IRInstr(cfgs.back()->current_bb, op_const);
+    // cfgs.back()->current_bb->add_IRInstr(instruction_const);
 
     char interpretedChar;
     if (ctx->CONSTCHAR()->getText().size() == 3) {
@@ -169,11 +169,20 @@ antlrcpp::Any IRGenVisitor::visitIdUse(ifccParser::IdUseContext *ctx)
 {
     // On récupère le nom et l'adresse stack de la variable en question
     std::string nomVar = scope + "_" + ctx->ID()->getText();
-    std::string address = "RBP" + std::to_string(cfg->stv.symbolTable[nomVar].offset); 
 
-    Operation *rmem = new Rmem(cfg->current_bb, "!reg", address);
-    IRInstr *instruction = new IRInstr(cfg->current_bb, rmem);
-    cfg->current_bb->add_IRInstr(instruction);
+    // on regarde si c'est un argument de la fonction
+    if (cfgs.back()->stv.symbolTable[nomVar].index_arg >= 0) {
+        Operation *copy_arg = new Copy(cfgs.back()->current_bb, "!reg", "!arg" + std::to_string(cfgs.back()->stv.symbolTable[nomVar].index_arg));
+        IRInstr *instruction_copy_arg = new IRInstr(cfgs.back()->current_bb, copy_arg);
+        cfgs.back()->current_bb->add_IRInstr(instruction_copy_arg);
+    }
+    else {
+        std::string address = "RBP" + std::to_string(cfgs.back()->stv.symbolTable[nomVar].offset); 
+
+        Operation *rmem = new Rmem(cfgs.back()->current_bb, "!reg", address);
+        IRInstr *instruction = new IRInstr(cfgs.back()->current_bb, rmem);
+        cfgs.back()->current_bb->add_IRInstr(instruction);
+    }
 
     return std::pair<bool, int>(false, 0);
 }
@@ -181,18 +190,18 @@ antlrcpp::Any IRGenVisitor::visitIdUse(ifccParser::IdUseContext *ctx)
 antlrcpp::Any IRGenVisitor::visitAssignExpr(ifccParser::AssignExprContext *ctx) {
     // On récupère le nom et l'adresse stack de la variable en question
     std::string nomVar = scope + "_" + ctx->ID()->getText();
-    std::string address = "RBP" + std::to_string(cfg->stv.symbolTable[nomVar].offset); 
+    std::string address = "RBP" + std::to_string(cfgs.back()->stv.symbolTable[nomVar].offset); 
 
     // Évaluation de l'expression qu'on place dans le registre universel !reg
     std::pair<bool, int> res(visit(ctx->expr()));
     if (res.first) {
-        Operation *op_const = new LdConst(cfg->current_bb, "!reg", res.second);  // block, dst, src
-        IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
-        cfg->current_bb->add_IRInstr(instruction_const);
+        Operation *op_const = new LdConst(cfgs.back()->current_bb, "!reg", res.second);  // block, dst, src
+        IRInstr *instruction_const = new IRInstr(cfgs.back()->current_bb, op_const);
+        cfgs.back()->current_bb->add_IRInstr(instruction_const);
     }
-    Operation *wmem = new Wmem(cfg->current_bb, address, "!reg"); // block, dst, src
-    IRInstr *instruction = new IRInstr(cfg->current_bb, wmem);
-    cfg->current_bb->add_IRInstr(instruction);
+    Operation *wmem = new Wmem(cfgs.back()->current_bb, address, "!reg"); // block, dst, src
+    IRInstr *instruction = new IRInstr(cfgs.back()->current_bb, wmem);
+    cfgs.back()->current_bb->add_IRInstr(instruction);
 
     // la valeur est retournée dans !reg
     
@@ -207,9 +216,9 @@ antlrcpp::Any IRGenVisitor::visitNotExpr(ifccParser::NotExprContext *ctx) {
         return std::pair<bool, int>(true, !res.second);
     }
 
-    Operation *operation_not = new Not(cfg->current_bb, "!reg");
-    IRInstr *instruction_not = new IRInstr(cfg->current_bb, operation_not);
-    cfg->current_bb->add_IRInstr(instruction_not);
+    Operation *operation_not = new Not(cfgs.back()->current_bb, "!reg");
+    IRInstr *instruction_not = new IRInstr(cfgs.back()->current_bb, operation_not);
+    cfgs.back()->current_bb->add_IRInstr(instruction_not);
     
     return std::pair<bool, int>(false, 0);
 }
@@ -221,9 +230,9 @@ antlrcpp::Any IRGenVisitor::visitUnaryMinusExpr(ifccParser::UnaryMinusExprContex
         return std::pair<bool, int>(true, -res.second);
     }
 
-    Operation *operation_unaryminus = new UnaryMinus(cfg->current_bb, "!reg");
-    IRInstr *instruction_unaryminus = new IRInstr(cfg->current_bb, operation_unaryminus);
-    cfg->current_bb->add_IRInstr(instruction_unaryminus);
+    Operation *operation_unaryminus = new UnaryMinus(cfgs.back()->current_bb, "!reg");
+    IRInstr *instruction_unaryminus = new IRInstr(cfgs.back()->current_bb, operation_unaryminus);
+    cfgs.back()->current_bb->add_IRInstr(instruction_unaryminus);
     
     return std::pair<bool, int>(false, 0);
 }
@@ -246,93 +255,93 @@ antlrcpp::Any IRGenVisitor::visitMulDivExpr(ifccParser::MulDivExprContext *ctx) 
         }
         // Appliquer l'opération selon l'opérateur
         if (ctx->mOp()->STAR()) {
-            Operation *op_const = new LdConst(cfg->current_bb, "!regLeft", res_left.second);  // block, dst, src
-            IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
-            cfg->current_bb->add_IRInstr(instruction_const);
+            Operation *op_const = new LdConst(cfgs.back()->current_bb, "!regLeft", res_left.second);  // block, dst, src
+            IRInstr *instruction_const = new IRInstr(cfgs.back()->current_bb, op_const);
+            cfgs.back()->current_bb->add_IRInstr(instruction_const);
 
-            Operation *operation_mul = new Mul(cfg->current_bb, "!reg", "!regLeft");
-            IRInstr *instruction_mul = new IRInstr(cfg->current_bb, operation_mul);
-            cfg->current_bb->add_IRInstr(instruction_mul);
+            Operation *operation_mul = new Mul(cfgs.back()->current_bb, "!reg", "!regLeft");
+            IRInstr *instruction_mul = new IRInstr(cfgs.back()->current_bb, operation_mul);
+            cfgs.back()->current_bb->add_IRInstr(instruction_mul);
         }
         else if (ctx->mOp()->SLASH()) {
-            Operation *copy_right = new Copy(cfg->current_bb, "!regRight", "!reg");
-            IRInstr *instruction_copy_right = new IRInstr(cfg->current_bb, copy_right);
-            cfg->current_bb->add_IRInstr(instruction_copy_right);
+            Operation *copy_right = new Copy(cfgs.back()->current_bb, "!regRight", "!reg");
+            IRInstr *instruction_copy_right = new IRInstr(cfgs.back()->current_bb, copy_right);
+            cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
 
-            Operation *op_const = new LdConst(cfg->current_bb, "!reg", res_left.second);  // block, dst, src
-            IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
-            cfg->current_bb->add_IRInstr(instruction_const);
+            Operation *op_const = new LdConst(cfgs.back()->current_bb, "!reg", res_left.second);  // block, dst, src
+            IRInstr *instruction_const = new IRInstr(cfgs.back()->current_bb, op_const);
+            cfgs.back()->current_bb->add_IRInstr(instruction_const);
 
-            Operation *operation_div = new Div(cfg->current_bb, "!reg", "!regRight");
-            IRInstr *instruction_div = new IRInstr(cfg->current_bb, operation_div);
-            cfg->current_bb->add_IRInstr(instruction_div);
+            Operation *operation_div = new Div(cfgs.back()->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_div = new IRInstr(cfgs.back()->current_bb, operation_div);
+            cfgs.back()->current_bb->add_IRInstr(instruction_div);
         }
         else if (ctx->mOp()->MOD()) {
-            Operation *copy_right = new Copy(cfg->current_bb, "!regRight", "!reg");
-            IRInstr *instruction_copy_right = new IRInstr(cfg->current_bb, copy_right);
-            cfg->current_bb->add_IRInstr(instruction_copy_right);
+            Operation *copy_right = new Copy(cfgs.back()->current_bb, "!regRight", "!reg");
+            IRInstr *instruction_copy_right = new IRInstr(cfgs.back()->current_bb, copy_right);
+            cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
 
-            Operation *op_const = new LdConst(cfg->current_bb, "!reg", res_left.second);  // block, dst, src
-            IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
-            cfg->current_bb->add_IRInstr(instruction_const);
+            Operation *op_const = new LdConst(cfgs.back()->current_bb, "!reg", res_left.second);  // block, dst, src
+            IRInstr *instruction_const = new IRInstr(cfgs.back()->current_bb, op_const);
+            cfgs.back()->current_bb->add_IRInstr(instruction_const);
 
-            Operation *operation_mod = new Mod(cfg->current_bb, "!reg", "!regRight");
-            IRInstr *instruction_mod = new IRInstr(cfg->current_bb, operation_mod);
-            cfg->current_bb->add_IRInstr(instruction_mod);
+            Operation *operation_mod = new Mod(cfgs.back()->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_mod = new IRInstr(cfgs.back()->current_bb, operation_mod);
+            cfgs.back()->current_bb->add_IRInstr(instruction_mod);
         }
     }
 
     else {
-        std::string temp_left = cfg->create_new_tempvar(Type::INT);
-        std::string address_left = "RBP" + std::to_string(cfg->stv.symbolTable[temp_left].offset);
+        std::string temp_left = cfgs.back()->create_new_tempvar(Type::INT);
+        std::string address_left = "RBP" + std::to_string(cfgs.back()->stv.symbolTable[temp_left].offset);
         // Copier le résultat de l'expression dans la variable temporaire
-        Operation *wmem_left = new Wmem(cfg->current_bb, address_left, "!reg");
-        IRInstr *instruction_left = new IRInstr(cfg->current_bb, wmem_left);
-        cfg->current_bb->add_IRInstr(instruction_left);
+        Operation *wmem_left = new Wmem(cfgs.back()->current_bb, address_left, "!reg");
+        IRInstr *instruction_left = new IRInstr(cfgs.back()->current_bb, wmem_left);
+        cfgs.back()->current_bb->add_IRInstr(instruction_left);
 
         // Évaluation de l'expression right qu'on place dans le registre universel !reg
         std::pair<bool, int> res_right(visit(ctx->right));
         if (res_right.first) {
-            Operation *op_const = new LdConst(cfg->current_bb, "!reg", res_right.second);  // block, dst, src
-            IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
-            cfg->current_bb->add_IRInstr(instruction_const);
+            Operation *op_const = new LdConst(cfgs.back()->current_bb, "!reg", res_right.second);  // block, dst, src
+            IRInstr *instruction_const = new IRInstr(cfgs.back()->current_bb, op_const);
+            cfgs.back()->current_bb->add_IRInstr(instruction_const);
         }
         
         // Appliquer l'opération selon l'opérateur
         if (ctx->mOp()->STAR()) {
-            Operation *rmem_left = new Rmem(cfg->current_bb, "!regLeft", address_left);
-            IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
-            cfg->current_bb->add_IRInstr(instruction_read_left);
+            Operation *rmem_left = new Rmem(cfgs.back()->current_bb, "!regLeft", address_left);
+            IRInstr *instruction_read_left = new IRInstr(cfgs.back()->current_bb, rmem_left);
+            cfgs.back()->current_bb->add_IRInstr(instruction_read_left);
 
-            Operation *operation_mul = new Mul(cfg->current_bb, "!reg", "!regLeft");
-            IRInstr *instruction_mul = new IRInstr(cfg->current_bb, operation_mul);
-            cfg->current_bb->add_IRInstr(instruction_mul);
+            Operation *operation_mul = new Mul(cfgs.back()->current_bb, "!reg", "!regLeft");
+            IRInstr *instruction_mul = new IRInstr(cfgs.back()->current_bb, operation_mul);
+            cfgs.back()->current_bb->add_IRInstr(instruction_mul);
         }
         else if (ctx->mOp()->SLASH()) {
-            Operation *copy_right = new Copy(cfg->current_bb, "!regRight", "!reg");
-            IRInstr *instruction_copy_right = new IRInstr(cfg->current_bb, copy_right);
-            cfg->current_bb->add_IRInstr(instruction_copy_right);
+            Operation *copy_right = new Copy(cfgs.back()->current_bb, "!regRight", "!reg");
+            IRInstr *instruction_copy_right = new IRInstr(cfgs.back()->current_bb, copy_right);
+            cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
 
-            Operation *rmem_left = new Rmem(cfg->current_bb, "!reg", address_left);
-            IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
-            cfg->current_bb->add_IRInstr(instruction_read_left);
+            Operation *rmem_left = new Rmem(cfgs.back()->current_bb, "!reg", address_left);
+            IRInstr *instruction_read_left = new IRInstr(cfgs.back()->current_bb, rmem_left);
+            cfgs.back()->current_bb->add_IRInstr(instruction_read_left);
 
-            Operation *operation_div = new Div(cfg->current_bb, "!reg", "!regRight");
-            IRInstr *instruction_div = new IRInstr(cfg->current_bb, operation_div);
-            cfg->current_bb->add_IRInstr(instruction_div);
+            Operation *operation_div = new Div(cfgs.back()->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_div = new IRInstr(cfgs.back()->current_bb, operation_div);
+            cfgs.back()->current_bb->add_IRInstr(instruction_div);
         }
         else if (ctx->mOp()->MOD()) {
-            Operation *copy_right = new Copy(cfg->current_bb, "!regRight", "!reg");
-            IRInstr *instruction_copy_right = new IRInstr(cfg->current_bb, copy_right);
-            cfg->current_bb->add_IRInstr(instruction_copy_right);
+            Operation *copy_right = new Copy(cfgs.back()->current_bb, "!regRight", "!reg");
+            IRInstr *instruction_copy_right = new IRInstr(cfgs.back()->current_bb, copy_right);
+            cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
 
-            Operation *rmem_left = new Rmem(cfg->current_bb, "!reg", address_left);
-            IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
-            cfg->current_bb->add_IRInstr(instruction_read_left);
+            Operation *rmem_left = new Rmem(cfgs.back()->current_bb, "!reg", address_left);
+            IRInstr *instruction_read_left = new IRInstr(cfgs.back()->current_bb, rmem_left);
+            cfgs.back()->current_bb->add_IRInstr(instruction_read_left);
 
-            Operation *operation_mod = new Mod(cfg->current_bb, "!reg", "!regRight");
-            IRInstr *instruction_mod = new IRInstr(cfg->current_bb, operation_mod);
-            cfg->current_bb->add_IRInstr(instruction_mod);
+            Operation *operation_mod = new Mod(cfgs.back()->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_mod = new IRInstr(cfgs.back()->current_bb, operation_mod);
+            cfgs.back()->current_bb->add_IRInstr(instruction_mod);
         }
     }    
     return std::pair<bool, int>(false, 0);
@@ -353,67 +362,67 @@ antlrcpp::Any IRGenVisitor::visitAddSubExpr(ifccParser::AddSubExprContext *ctx) 
         }
         // Appliquer l'opération selon l'opérateur
         if (ctx->aOp()->PLUS()) {
-            Operation *op_const = new LdConst(cfg->current_bb, "!regLeft", res_left.second);  // block, dst, src
-            IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
-            cfg->current_bb->add_IRInstr(instruction_const);
+            Operation *op_const = new LdConst(cfgs.back()->current_bb, "!regLeft", res_left.second);  // block, dst, src
+            IRInstr *instruction_const = new IRInstr(cfgs.back()->current_bb, op_const);
+            cfgs.back()->current_bb->add_IRInstr(instruction_const);
 
-            Operation *operation_add = new Add(cfg->current_bb, "!reg", "!regLeft");
-            IRInstr *instruction_add = new IRInstr(cfg->current_bb, operation_add);
-            cfg->current_bb->add_IRInstr(instruction_add);
+            Operation *operation_add = new Add(cfgs.back()->current_bb, "!reg", "!regLeft");
+            IRInstr *instruction_add = new IRInstr(cfgs.back()->current_bb, operation_add);
+            cfgs.back()->current_bb->add_IRInstr(instruction_add);
         }
         else if (ctx->aOp()->MINUS()) {
-            Operation *copy_right = new Copy(cfg->current_bb, "!regRight", "!reg");
-            IRInstr *instruction_copy_right = new IRInstr(cfg->current_bb, copy_right);
-            cfg->current_bb->add_IRInstr(instruction_copy_right);
+            Operation *copy_right = new Copy(cfgs.back()->current_bb, "!regRight", "!reg");
+            IRInstr *instruction_copy_right = new IRInstr(cfgs.back()->current_bb, copy_right);
+            cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
 
-            Operation *op_const = new LdConst(cfg->current_bb, "!reg", res_left.second);  // block, dst, src
-            IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
-            cfg->current_bb->add_IRInstr(instruction_const);
+            Operation *op_const = new LdConst(cfgs.back()->current_bb, "!reg", res_left.second);  // block, dst, src
+            IRInstr *instruction_const = new IRInstr(cfgs.back()->current_bb, op_const);
+            cfgs.back()->current_bb->add_IRInstr(instruction_const);
 
-            Operation *operation_sub = new Sub(cfg->current_bb, "!reg", "!regRight");
-            IRInstr *instruction_sub = new IRInstr(cfg->current_bb, operation_sub);
-            cfg->current_bb->add_IRInstr(instruction_sub);
+            Operation *operation_sub = new Sub(cfgs.back()->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_sub = new IRInstr(cfgs.back()->current_bb, operation_sub);
+            cfgs.back()->current_bb->add_IRInstr(instruction_sub);
         }
     }
 
     else {
-        std::string temp_left = cfg->create_new_tempvar(Type::INT);
-        std::string address_left = "RBP" + std::to_string(cfg->stv.symbolTable[temp_left].offset);
+        std::string temp_left = cfgs.back()->create_new_tempvar(Type::INT);
+        std::string address_left = "RBP" + std::to_string(cfgs.back()->stv.symbolTable[temp_left].offset);
         // Copier le résultat de l'expression dans la variable temporaire
-        Operation *wmem_left = new Wmem(cfg->current_bb, address_left, "!reg");
-        IRInstr *instruction_left = new IRInstr(cfg->current_bb, wmem_left);
-        cfg->current_bb->add_IRInstr(instruction_left);
+        Operation *wmem_left = new Wmem(cfgs.back()->current_bb, address_left, "!reg");
+        IRInstr *instruction_left = new IRInstr(cfgs.back()->current_bb, wmem_left);
+        cfgs.back()->current_bb->add_IRInstr(instruction_left);
 
         // Évaluation de l'expression right qu'on place dans le registre universel !reg
         std::pair<bool, int> res_right(visit(ctx->right));
         if (res_right.first) {
-            Operation *op_const = new LdConst(cfg->current_bb, "!reg", res_right.second);  // block, dst, src
-            IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
-            cfg->current_bb->add_IRInstr(instruction_const);
+            Operation *op_const = new LdConst(cfgs.back()->current_bb, "!reg", res_right.second);  // block, dst, src
+            IRInstr *instruction_const = new IRInstr(cfgs.back()->current_bb, op_const);
+            cfgs.back()->current_bb->add_IRInstr(instruction_const);
         }  
 
         // Appliquer l'opération selon l'opérateur
         if (ctx->aOp()->PLUS()) {
-            Operation *rmem_left = new Rmem(cfg->current_bb, "!regLeft", address_left);
-            IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
-            cfg->current_bb->add_IRInstr(instruction_read_left);
+            Operation *rmem_left = new Rmem(cfgs.back()->current_bb, "!regLeft", address_left);
+            IRInstr *instruction_read_left = new IRInstr(cfgs.back()->current_bb, rmem_left);
+            cfgs.back()->current_bb->add_IRInstr(instruction_read_left);
 
-            Operation *operation_add = new Add(cfg->current_bb, "!reg", "!regLeft");
-            IRInstr *instruction_add = new IRInstr(cfg->current_bb, operation_add);
-            cfg->current_bb->add_IRInstr(instruction_add);
+            Operation *operation_add = new Add(cfgs.back()->current_bb, "!reg", "!regLeft");
+            IRInstr *instruction_add = new IRInstr(cfgs.back()->current_bb, operation_add);
+            cfgs.back()->current_bb->add_IRInstr(instruction_add);
         }
         else if (ctx->aOp()->MINUS()) {
-            Operation *copy_right = new Copy(cfg->current_bb, "!regRight", "!reg");
-            IRInstr *instruction_copy_right = new IRInstr(cfg->current_bb, copy_right);
-            cfg->current_bb->add_IRInstr(instruction_copy_right);
+            Operation *copy_right = new Copy(cfgs.back()->current_bb, "!regRight", "!reg");
+            IRInstr *instruction_copy_right = new IRInstr(cfgs.back()->current_bb, copy_right);
+            cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
 
-            Operation *rmem_left = new Rmem(cfg->current_bb, "!reg", address_left);
-            IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
-            cfg->current_bb->add_IRInstr(instruction_read_left);
+            Operation *rmem_left = new Rmem(cfgs.back()->current_bb, "!reg", address_left);
+            IRInstr *instruction_read_left = new IRInstr(cfgs.back()->current_bb, rmem_left);
+            cfgs.back()->current_bb->add_IRInstr(instruction_read_left);
 
-            Operation *operation_sub = new Sub(cfg->current_bb, "!reg", "!regRight");
-            IRInstr *instruction_sub = new IRInstr(cfg->current_bb, operation_sub);
-            cfg->current_bb->add_IRInstr(instruction_sub);
+            Operation *operation_sub = new Sub(cfgs.back()->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_sub = new IRInstr(cfgs.back()->current_bb, operation_sub);
+            cfgs.back()->current_bb->add_IRInstr(instruction_sub);
         }
     }    
     return std::pair<bool, int>(false, 0);
@@ -438,77 +447,77 @@ antlrcpp::Any IRGenVisitor::visitCompExpr(ifccParser::CompExprContext *ctx) {
             }
         }
         // Appliquer l'opération selon l'opérateur
-        Operation *copy_right = new Copy(cfg->current_bb, "!regRight", "!reg");
-        IRInstr *instruction_copy_right = new IRInstr(cfg->current_bb, copy_right);
-        cfg->current_bb->add_IRInstr(instruction_copy_right);
+        Operation *copy_right = new Copy(cfgs.back()->current_bb, "!regRight", "!reg");
+        IRInstr *instruction_copy_right = new IRInstr(cfgs.back()->current_bb, copy_right);
+        cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
 
-        Operation *op_const = new LdConst(cfg->current_bb, "!reg", res_left.second);  // block, dst, src
-        IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
-        cfg->current_bb->add_IRInstr(instruction_const);
+        Operation *op_const = new LdConst(cfgs.back()->current_bb, "!reg", res_left.second);  // block, dst, src
+        IRInstr *instruction_const = new IRInstr(cfgs.back()->current_bb, op_const);
+        cfgs.back()->current_bb->add_IRInstr(instruction_const);
         if (ctx->compOp()->LT()) {
-            Operation *operation_lt = new CmpLt(cfg->current_bb, "!reg", "!regRight");
-            IRInstr *instruction_lt = new IRInstr(cfg->current_bb, operation_lt);
-            cfg->current_bb->add_IRInstr(instruction_lt);
+            Operation *operation_lt = new CmpLt(cfgs.back()->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_lt = new IRInstr(cfgs.back()->current_bb, operation_lt);
+            cfgs.back()->current_bb->add_IRInstr(instruction_lt);
         }
         else if (ctx->compOp()->LE()) {
-            Operation *operation_le = new CmpLe(cfg->current_bb, "!reg", "!regRight");
-            IRInstr *instruction_le = new IRInstr(cfg->current_bb, operation_le);
-            cfg->current_bb->add_IRInstr(instruction_le);
+            Operation *operation_le = new CmpLe(cfgs.back()->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_le = new IRInstr(cfgs.back()->current_bb, operation_le);
+            cfgs.back()->current_bb->add_IRInstr(instruction_le);
         }
         else if (ctx->compOp()->GE()) {
-            Operation *operation_ge = new CmpGe(cfg->current_bb, "!reg", "!regRight");
-            IRInstr *instruction_ge = new IRInstr(cfg->current_bb, operation_ge);
-            cfg->current_bb->add_IRInstr(instruction_ge);
+            Operation *operation_ge = new CmpGe(cfgs.back()->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_ge = new IRInstr(cfgs.back()->current_bb, operation_ge);
+            cfgs.back()->current_bb->add_IRInstr(instruction_ge);
         }
         else if (ctx->compOp()->GT()) {
-            Operation *operation_gt = new CmpGt(cfg->current_bb, "!reg", "!regRight");
-            IRInstr *instruction_gt = new IRInstr(cfg->current_bb, operation_gt);
-            cfg->current_bb->add_IRInstr(instruction_gt);
+            Operation *operation_gt = new CmpGt(cfgs.back()->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_gt = new IRInstr(cfgs.back()->current_bb, operation_gt);
+            cfgs.back()->current_bb->add_IRInstr(instruction_gt);
         }
     }
 
     else {
-        std::string temp_left = cfg->create_new_tempvar(Type::INT);
-        std::string address_left = "RBP" + std::to_string(cfg->stv.symbolTable[temp_left].offset);
+        std::string temp_left = cfgs.back()->create_new_tempvar(Type::INT);
+        std::string address_left = "RBP" + std::to_string(cfgs.back()->stv.symbolTable[temp_left].offset);
         // Copier le résultat de l'expression dans la variable temporaire
-        Operation *wmem_left = new Wmem(cfg->current_bb, address_left, "!reg");
-        IRInstr *instruction_left = new IRInstr(cfg->current_bb, wmem_left);
-        cfg->current_bb->add_IRInstr(instruction_left);
+        Operation *wmem_left = new Wmem(cfgs.back()->current_bb, address_left, "!reg");
+        IRInstr *instruction_left = new IRInstr(cfgs.back()->current_bb, wmem_left);
+        cfgs.back()->current_bb->add_IRInstr(instruction_left);
 
         std::pair<bool, int> res_right(visit(ctx->right));
         if (res_right.first) {
-            Operation *op_const = new LdConst(cfg->current_bb, "!regRight", res_right.second);  // block, dst, src
-            IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
-            cfg->current_bb->add_IRInstr(instruction_const);
+            Operation *op_const = new LdConst(cfgs.back()->current_bb, "!regRight", res_right.second);  // block, dst, src
+            IRInstr *instruction_const = new IRInstr(cfgs.back()->current_bb, op_const);
+            cfgs.back()->current_bb->add_IRInstr(instruction_const);
         }  
         else {
-            Operation *copy_right = new Copy(cfg->current_bb, "!regRight", "!reg");
-            IRInstr *instruction_copy_right = new IRInstr(cfg->current_bb, copy_right);
-            cfg->current_bb->add_IRInstr(instruction_copy_right);
+            Operation *copy_right = new Copy(cfgs.back()->current_bb, "!regRight", "!reg");
+            IRInstr *instruction_copy_right = new IRInstr(cfgs.back()->current_bb, copy_right);
+            cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
         }
 
-        Operation *rmem_left = new Rmem(cfg->current_bb, "!reg", address_left);
-        IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
-        cfg->current_bb->add_IRInstr(instruction_read_left);
+        Operation *rmem_left = new Rmem(cfgs.back()->current_bb, "!reg", address_left);
+        IRInstr *instruction_read_left = new IRInstr(cfgs.back()->current_bb, rmem_left);
+        cfgs.back()->current_bb->add_IRInstr(instruction_read_left);
         if (ctx->compOp()->LT()) {
-            Operation *operation_lt = new CmpLt(cfg->current_bb, "!reg", "!regRight");
-            IRInstr *instruction_lt = new IRInstr(cfg->current_bb, operation_lt);
-            cfg->current_bb->add_IRInstr(instruction_lt);
+            Operation *operation_lt = new CmpLt(cfgs.back()->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_lt = new IRInstr(cfgs.back()->current_bb, operation_lt);
+            cfgs.back()->current_bb->add_IRInstr(instruction_lt);
         }
         else if (ctx->compOp()->LE()) {
-            Operation *operation_le = new CmpLe(cfg->current_bb, "!reg", "!regRight");
-            IRInstr *instruction_le = new IRInstr(cfg->current_bb, operation_le);
-            cfg->current_bb->add_IRInstr(instruction_le);
+            Operation *operation_le = new CmpLe(cfgs.back()->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_le = new IRInstr(cfgs.back()->current_bb, operation_le);
+            cfgs.back()->current_bb->add_IRInstr(instruction_le);
         }
         else if (ctx->compOp()->GE()) {
-            Operation *operation_ge = new CmpGe(cfg->current_bb, "!reg", "!regRight");
-            IRInstr *instruction_ge = new IRInstr(cfg->current_bb, operation_ge);
-            cfg->current_bb->add_IRInstr(instruction_ge);
+            Operation *operation_ge = new CmpGe(cfgs.back()->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_ge = new IRInstr(cfgs.back()->current_bb, operation_ge);
+            cfgs.back()->current_bb->add_IRInstr(instruction_ge);
         }
         else if (ctx->compOp()->GT()) {
-            Operation *operation_gt = new CmpGt(cfg->current_bb, "!reg", "!regRight");
-            IRInstr *instruction_gt = new IRInstr(cfg->current_bb, operation_gt);
-            cfg->current_bb->add_IRInstr(instruction_gt);
+            Operation *operation_gt = new CmpGt(cfgs.back()->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_gt = new IRInstr(cfgs.back()->current_bb, operation_gt);
+            cfgs.back()->current_bb->add_IRInstr(instruction_gt);
         }
     }
     
@@ -528,57 +537,57 @@ antlrcpp::Any IRGenVisitor::visitEqExpr(ifccParser::EqExprContext *ctx) {
             }
         }
         // Appliquer l'opération selon l'opérateur
-        Operation *copy_right = new Copy(cfg->current_bb, "!regRight", "!reg");
-        IRInstr *instruction_copy_right = new IRInstr(cfg->current_bb, copy_right);
-        cfg->current_bb->add_IRInstr(instruction_copy_right);
+        Operation *copy_right = new Copy(cfgs.back()->current_bb, "!regRight", "!reg");
+        IRInstr *instruction_copy_right = new IRInstr(cfgs.back()->current_bb, copy_right);
+        cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
 
-        Operation *op_const = new LdConst(cfg->current_bb, "!reg", res_left.second);  // block, dst, src
-        IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
-        cfg->current_bb->add_IRInstr(instruction_const);
+        Operation *op_const = new LdConst(cfgs.back()->current_bb, "!reg", res_left.second);  // block, dst, src
+        IRInstr *instruction_const = new IRInstr(cfgs.back()->current_bb, op_const);
+        cfgs.back()->current_bb->add_IRInstr(instruction_const);
         if (ctx->eqOp()->EQ()) {
-            Operation *operation_eq = new CmpEq(cfg->current_bb, "!reg", "!regRight");
-            IRInstr *instruction_eq = new IRInstr(cfg->current_bb, operation_eq);
-            cfg->current_bb->add_IRInstr(instruction_eq);
+            Operation *operation_eq = new CmpEq(cfgs.back()->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_eq = new IRInstr(cfgs.back()->current_bb, operation_eq);
+            cfgs.back()->current_bb->add_IRInstr(instruction_eq);
         }
         else if (ctx->eqOp()->NEQ()) {
-            Operation *operation_neq = new CmpNeq(cfg->current_bb, "!reg", "!regRight");
-            IRInstr *instruction_neq = new IRInstr(cfg->current_bb, operation_neq);
-            cfg->current_bb->add_IRInstr(instruction_neq);
+            Operation *operation_neq = new CmpNeq(cfgs.back()->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_neq = new IRInstr(cfgs.back()->current_bb, operation_neq);
+            cfgs.back()->current_bb->add_IRInstr(instruction_neq);
         }
     }
 
     else {
-        std::string temp_left = cfg->create_new_tempvar(Type::INT);
-        std::string address_left = "RBP" + std::to_string(cfg->stv.symbolTable[temp_left].offset);
+        std::string temp_left = cfgs.back()->create_new_tempvar(Type::INT);
+        std::string address_left = "RBP" + std::to_string(cfgs.back()->stv.symbolTable[temp_left].offset);
         // Copier le résultat de l'expression dans la variable temporaire
-        Operation *wmem_left = new Wmem(cfg->current_bb, address_left, "!reg");
-        IRInstr *instruction_left = new IRInstr(cfg->current_bb, wmem_left);
-        cfg->current_bb->add_IRInstr(instruction_left);
+        Operation *wmem_left = new Wmem(cfgs.back()->current_bb, address_left, "!reg");
+        IRInstr *instruction_left = new IRInstr(cfgs.back()->current_bb, wmem_left);
+        cfgs.back()->current_bb->add_IRInstr(instruction_left);
 
         std::pair<bool, int> res_right(visit(ctx->right));
         if (res_right.first) {
-            Operation *op_const = new LdConst(cfg->current_bb, "!regRight", res_right.second);  // block, dst, src
-            IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
-            cfg->current_bb->add_IRInstr(instruction_const);
+            Operation *op_const = new LdConst(cfgs.back()->current_bb, "!regRight", res_right.second);  // block, dst, src
+            IRInstr *instruction_const = new IRInstr(cfgs.back()->current_bb, op_const);
+            cfgs.back()->current_bb->add_IRInstr(instruction_const);
         } 
         else {
-            Operation *copy_right = new Copy(cfg->current_bb, "!regRight", "!reg");
-            IRInstr *instruction_copy_right = new IRInstr(cfg->current_bb, copy_right);
-            cfg->current_bb->add_IRInstr(instruction_copy_right);
+            Operation *copy_right = new Copy(cfgs.back()->current_bb, "!regRight", "!reg");
+            IRInstr *instruction_copy_right = new IRInstr(cfgs.back()->current_bb, copy_right);
+            cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
         }
 
-        Operation *rmem_left = new Rmem(cfg->current_bb, "!reg", address_left);
-        IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
-        cfg->current_bb->add_IRInstr(instruction_read_left);
+        Operation *rmem_left = new Rmem(cfgs.back()->current_bb, "!reg", address_left);
+        IRInstr *instruction_read_left = new IRInstr(cfgs.back()->current_bb, rmem_left);
+        cfgs.back()->current_bb->add_IRInstr(instruction_read_left);
         if (ctx->eqOp()->EQ()) {
-            Operation *operation_eq = new CmpEq(cfg->current_bb, "!reg", "!regRight");
-            IRInstr *instruction_eq = new IRInstr(cfg->current_bb, operation_eq);
-            cfg->current_bb->add_IRInstr(instruction_eq);
+            Operation *operation_eq = new CmpEq(cfgs.back()->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_eq = new IRInstr(cfgs.back()->current_bb, operation_eq);
+            cfgs.back()->current_bb->add_IRInstr(instruction_eq);
         }
         else if (ctx->eqOp()->NEQ()) {
-            Operation *operation_neq = new CmpNeq(cfg->current_bb, "!reg", "!regRight");
-            IRInstr *instruction_neq = new IRInstr(cfg->current_bb, operation_neq);
-            cfg->current_bb->add_IRInstr(instruction_neq);
+            Operation *operation_neq = new CmpNeq(cfgs.back()->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_neq = new IRInstr(cfgs.back()->current_bb, operation_neq);
+            cfgs.back()->current_bb->add_IRInstr(instruction_neq);
         }
     }
     
@@ -592,36 +601,36 @@ antlrcpp::Any IRGenVisitor::visitAndExpr(ifccParser::AndExprContext *ctx) {
         if (res_right.first) {
             return std::pair<bool, int>(true, res_left.second & res_right.second);
         }
-        Operation *op_const = new LdConst(cfg->current_bb, "!regLeft", res_left.second);  // block, dst, src
-        IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
-        cfg->current_bb->add_IRInstr(instruction_const);
+        Operation *op_const = new LdConst(cfgs.back()->current_bb, "!regLeft", res_left.second);  // block, dst, src
+        IRInstr *instruction_const = new IRInstr(cfgs.back()->current_bb, op_const);
+        cfgs.back()->current_bb->add_IRInstr(instruction_const);
 
-        Operation *operation_and = new And(cfg->current_bb, "!reg", "!regLeft");
-        IRInstr *instruction_and = new IRInstr(cfg->current_bb, operation_and);
-        cfg->current_bb->add_IRInstr(instruction_and);
+        Operation *operation_and = new And(cfgs.back()->current_bb, "!reg", "!regLeft");
+        IRInstr *instruction_and = new IRInstr(cfgs.back()->current_bb, operation_and);
+        cfgs.back()->current_bb->add_IRInstr(instruction_and);
     }
 
     else {
-        std::string temp_left = cfg->create_new_tempvar(Type::INT);
-        std::string address_left = "RBP" + std::to_string(cfg->stv.symbolTable[temp_left].offset);
+        std::string temp_left = cfgs.back()->create_new_tempvar(Type::INT);
+        std::string address_left = "RBP" + std::to_string(cfgs.back()->stv.symbolTable[temp_left].offset);
         // Copier le résultat de l'expression dans la variable temporaire
-        Operation *wmem_left = new Wmem(cfg->current_bb, address_left, "!reg");
-        IRInstr *instruction_left = new IRInstr(cfg->current_bb, wmem_left);
-        cfg->current_bb->add_IRInstr(instruction_left);
+        Operation *wmem_left = new Wmem(cfgs.back()->current_bb, address_left, "!reg");
+        IRInstr *instruction_left = new IRInstr(cfgs.back()->current_bb, wmem_left);
+        cfgs.back()->current_bb->add_IRInstr(instruction_left);
 
         std::pair<bool, int> res_right(visit(ctx->right));
         if (res_right.first) {
-            Operation *op_const = new LdConst(cfg->current_bb, "!reg", res_right.second);  // block, dst, src
-            IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
-            cfg->current_bb->add_IRInstr(instruction_const);
+            Operation *op_const = new LdConst(cfgs.back()->current_bb, "!reg", res_right.second);  // block, dst, src
+            IRInstr *instruction_const = new IRInstr(cfgs.back()->current_bb, op_const);
+            cfgs.back()->current_bb->add_IRInstr(instruction_const);
         } 
-        Operation *rmem_left = new Rmem(cfg->current_bb, "!regLeft", address_left);
-        IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
-        cfg->current_bb->add_IRInstr(instruction_read_left);
+        Operation *rmem_left = new Rmem(cfgs.back()->current_bb, "!regLeft", address_left);
+        IRInstr *instruction_read_left = new IRInstr(cfgs.back()->current_bb, rmem_left);
+        cfgs.back()->current_bb->add_IRInstr(instruction_read_left);
         
-        Operation *operation_and = new And(cfg->current_bb, "!reg", "!regLeft");
-        IRInstr *instruction_and = new IRInstr(cfg->current_bb, operation_and);
-        cfg->current_bb->add_IRInstr(instruction_and);
+        Operation *operation_and = new And(cfgs.back()->current_bb, "!reg", "!regLeft");
+        IRInstr *instruction_and = new IRInstr(cfgs.back()->current_bb, operation_and);
+        cfgs.back()->current_bb->add_IRInstr(instruction_and);
     }
     
     return std::pair<bool, int>(false, 0);
@@ -634,37 +643,37 @@ antlrcpp::Any IRGenVisitor::visitXorExpr(ifccParser::XorExprContext *ctx) {
         if (res_right.first) {
             return std::pair<bool, int>(true, res_left.second ^ res_right.second);
         }
-        Operation *op_const = new LdConst(cfg->current_bb, "!regLeft", res_left.second);  // block, dst, src
-        IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
-        cfg->current_bb->add_IRInstr(instruction_const);
+        Operation *op_const = new LdConst(cfgs.back()->current_bb, "!regLeft", res_left.second);  // block, dst, src
+        IRInstr *instruction_const = new IRInstr(cfgs.back()->current_bb, op_const);
+        cfgs.back()->current_bb->add_IRInstr(instruction_const);
 
-        Operation *operation_and = new Xor(cfg->current_bb, "!reg", "!regLeft");
-        IRInstr *instruction_and = new IRInstr(cfg->current_bb, operation_and);
-        cfg->current_bb->add_IRInstr(instruction_and);
+        Operation *operation_and = new Xor(cfgs.back()->current_bb, "!reg", "!regLeft");
+        IRInstr *instruction_and = new IRInstr(cfgs.back()->current_bb, operation_and);
+        cfgs.back()->current_bb->add_IRInstr(instruction_and);
     }
 
     else {
-        std::string temp_left = cfg->create_new_tempvar(Type::INT);
-        std::string address_left = "RBP" + std::to_string(cfg->stv.symbolTable[temp_left].offset);
+        std::string temp_left = cfgs.back()->create_new_tempvar(Type::INT);
+        std::string address_left = "RBP" + std::to_string(cfgs.back()->stv.symbolTable[temp_left].offset);
         // Copier le résultat de l'expression dans la variable temporaire
-        Operation *wmem_left = new Wmem(cfg->current_bb, address_left, "!reg");
-        IRInstr *instruction_left = new IRInstr(cfg->current_bb, wmem_left);
-        cfg->current_bb->add_IRInstr(instruction_left);
+        Operation *wmem_left = new Wmem(cfgs.back()->current_bb, address_left, "!reg");
+        IRInstr *instruction_left = new IRInstr(cfgs.back()->current_bb, wmem_left);
+        cfgs.back()->current_bb->add_IRInstr(instruction_left);
 
         std::pair<bool, int> res_right(visit(ctx->right));
         if (res_right.first) {
-            Operation *op_const = new LdConst(cfg->current_bb, "!reg", res_right.second);  // block, dst, src
-            IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
-            cfg->current_bb->add_IRInstr(instruction_const);
+            Operation *op_const = new LdConst(cfgs.back()->current_bb, "!reg", res_right.second);  // block, dst, src
+            IRInstr *instruction_const = new IRInstr(cfgs.back()->current_bb, op_const);
+            cfgs.back()->current_bb->add_IRInstr(instruction_const);
         }   
 
-        Operation *rmem_left = new Rmem(cfg->current_bb, "!regLeft", address_left);
-        IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
-        cfg->current_bb->add_IRInstr(instruction_read_left);
+        Operation *rmem_left = new Rmem(cfgs.back()->current_bb, "!regLeft", address_left);
+        IRInstr *instruction_read_left = new IRInstr(cfgs.back()->current_bb, rmem_left);
+        cfgs.back()->current_bb->add_IRInstr(instruction_read_left);
         
-        Operation *operation_and = new Xor(cfg->current_bb, "!reg", "!regLeft");
-        IRInstr *instruction_and = new IRInstr(cfg->current_bb, operation_and);
-        cfg->current_bb->add_IRInstr(instruction_and);
+        Operation *operation_and = new Xor(cfgs.back()->current_bb, "!reg", "!regLeft");
+        IRInstr *instruction_and = new IRInstr(cfgs.back()->current_bb, operation_and);
+        cfgs.back()->current_bb->add_IRInstr(instruction_and);
     }
     
     return std::pair<bool, int>(false, 0);
@@ -677,37 +686,37 @@ antlrcpp::Any IRGenVisitor::visitOrExpr(ifccParser::OrExprContext *ctx) {
         if (res_right.first) {
             return std::pair<bool, int>(true, res_left.second | res_right.second);
         }
-        Operation *op_const = new LdConst(cfg->current_bb, "!regLeft", res_left.second);  // block, dst, src
-        IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
-        cfg->current_bb->add_IRInstr(instruction_const);
+        Operation *op_const = new LdConst(cfgs.back()->current_bb, "!regLeft", res_left.second);  // block, dst, src
+        IRInstr *instruction_const = new IRInstr(cfgs.back()->current_bb, op_const);
+        cfgs.back()->current_bb->add_IRInstr(instruction_const);
 
-        Operation *operation_and = new Or(cfg->current_bb, "!reg", "!regLeft");
-        IRInstr *instruction_and = new IRInstr(cfg->current_bb, operation_and);
-        cfg->current_bb->add_IRInstr(instruction_and);
+        Operation *operation_and = new Or(cfgs.back()->current_bb, "!reg", "!regLeft");
+        IRInstr *instruction_and = new IRInstr(cfgs.back()->current_bb, operation_and);
+        cfgs.back()->current_bb->add_IRInstr(instruction_and);
     }
 
     else {
-        std::string temp_left = cfg->create_new_tempvar(Type::INT);
-        std::string address_left = "RBP" + std::to_string(cfg->stv.symbolTable[temp_left].offset);
+        std::string temp_left = cfgs.back()->create_new_tempvar(Type::INT);
+        std::string address_left = "RBP" + std::to_string(cfgs.back()->stv.symbolTable[temp_left].offset);
         // Copier le résultat de l'expression dans la variable temporaire
-        Operation *wmem_left = new Wmem(cfg->current_bb, address_left, "!reg");
-        IRInstr *instruction_left = new IRInstr(cfg->current_bb, wmem_left);
-        cfg->current_bb->add_IRInstr(instruction_left);
+        Operation *wmem_left = new Wmem(cfgs.back()->current_bb, address_left, "!reg");
+        IRInstr *instruction_left = new IRInstr(cfgs.back()->current_bb, wmem_left);
+        cfgs.back()->current_bb->add_IRInstr(instruction_left);
 
         std::pair<bool, int> res_right(visit(ctx->right));
         if (res_right.first) {
-            Operation *op_const = new LdConst(cfg->current_bb, "!reg", res_right.second);  // block, dst, src
-            IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
-            cfg->current_bb->add_IRInstr(instruction_const);
+            Operation *op_const = new LdConst(cfgs.back()->current_bb, "!reg", res_right.second);  // block, dst, src
+            IRInstr *instruction_const = new IRInstr(cfgs.back()->current_bb, op_const);
+            cfgs.back()->current_bb->add_IRInstr(instruction_const);
         }  
 
-        Operation *rmem_left = new Rmem(cfg->current_bb, "!regLeft", address_left);
-        IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
-        cfg->current_bb->add_IRInstr(instruction_read_left);
+        Operation *rmem_left = new Rmem(cfgs.back()->current_bb, "!regLeft", address_left);
+        IRInstr *instruction_read_left = new IRInstr(cfgs.back()->current_bb, rmem_left);
+        cfgs.back()->current_bb->add_IRInstr(instruction_read_left);
         
-        Operation *operation_and = new Or(cfg->current_bb, "!reg", "!regLeft");
-        IRInstr *instruction_and = new IRInstr(cfg->current_bb, operation_and);
-        cfg->current_bb->add_IRInstr(instruction_and);
+        Operation *operation_and = new Or(cfgs.back()->current_bb, "!reg", "!regLeft");
+        IRInstr *instruction_and = new IRInstr(cfgs.back()->current_bb, operation_and);
+        cfgs.back()->current_bb->add_IRInstr(instruction_and);
     }
     
     return std::pair<bool, int>(false, 0);
@@ -720,26 +729,35 @@ antlrcpp::Any IRGenVisitor::visitParExpr(ifccParser::ParExprContext *ctx) {
 
 antlrcpp::Any IRGenVisitor::visitFuncCall(ifccParser::FuncCallContext *ctx) {
     std::string nomFonction = ctx->ID()->getText();
+
+    std::vector<std::string> args_temp_addr;
     
     for (int i = 0; i < ctx->expr().size(); i++) {
+        std::string temp(cfgs.back()->create_new_tempvar(Type::INT));
+        args_temp_addr.push_back("RBP" + std::to_string(cfgs.back()->stv.symbolTable[temp].offset));
         std::pair<bool, int> res(visit(ctx->expr(i)));
         if (res.first) {
-            Operation *op_const = new LdConst(cfg->current_bb, "!arg"+std::to_string(i)+"32", res.second);  // block, dst, src
-            IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
-            cfg->current_bb->add_IRInstr(instruction_const);
+            Operation *op_const = new LdConst(cfgs.back()->current_bb, "!reg", res.second);  // block, dst, src
+            IRInstr *instruction_const = new IRInstr(cfgs.back()->current_bb, op_const);
+            cfgs.back()->current_bb->add_IRInstr(instruction_const);
         }
-        else {
-            Operation *copy_arg = new Copy(cfg->current_bb, "!arg"+std::to_string(i)+"32", "!reg");
-            IRInstr *instruction_copy_arg = new IRInstr(cfg->current_bb, copy_arg);
-            cfg->current_bb->add_IRInstr(instruction_copy_arg);
-        }
+        Operation *wmem_temp = new Wmem(cfgs.back()->current_bb, args_temp_addr.back(), "!reg");
+        IRInstr *instruction_temp = new IRInstr(cfgs.back()->current_bb, wmem_temp);
+        cfgs.back()->current_bb->add_IRInstr(instruction_temp);
         // plus de 6 args ? faire une operation push et pop ?
     }
 
+    // on remet les arguments à la bonne place
+    for (int i = 0; i < args_temp_addr.size(); i++) {
+        Operation *rmem_temp = new Rmem(cfgs.back()->current_bb, "!arg"+std::to_string(i)+"32", args_temp_addr[i]);
+        IRInstr *instruction_temp = new IRInstr(cfgs.back()->current_bb, rmem_temp);
+        cfgs.back()->current_bb->add_IRInstr(instruction_temp);
+    }
+
     // On appelle la fonction
-    Operation *call = new Call(cfg->current_bb, nomFonction);  // block, dst, src
-    IRInstr *instruction_call = new IRInstr(cfg->current_bb, call);
-    cfg->current_bb->add_IRInstr(instruction_call);
+    Operation *call = new Call(cfgs.back()->current_bb, nomFonction);  // block, dst, src
+    IRInstr *instruction_call = new IRInstr(cfgs.back()->current_bb, call);
+    cfgs.back()->current_bb->add_IRInstr(instruction_call);
 
     return std::pair<bool, int>(false, 0);
 }

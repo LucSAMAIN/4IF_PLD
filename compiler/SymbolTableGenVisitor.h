@@ -22,6 +22,7 @@ typedef struct VarInfos
 {
     Type type;
     int offset;
+    int index_arg;
     bool declared;
     bool used;
 } VarInfos;
@@ -32,6 +33,7 @@ public:
     SymbolTableGenVisitor();
     virtual ~SymbolTableGenVisitor() {}
 
+    virtual antlrcpp::Any visitFuncDecl(ifccParser::FuncDeclContext *ctx) override;
     virtual antlrcpp::Any visitDecl_stmt(ifccParser::Decl_stmtContext *ctx) override;
     virtual antlrcpp::Any visitAssign_stmt(ifccParser::Assign_stmtContext *ctx) override;
     virtual antlrcpp::Any visitIdUse(ifccParser::IdUseContext *ctx) override;

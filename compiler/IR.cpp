@@ -67,7 +67,7 @@ void BasicBlock::gen_x86(ostream& o) {
 
 // Implémentation de CFG
 
-CFG::CFG(SymbolTableGenVisitor& p_stv) : stv(p_stv), current_bb(nullptr), start_block(nullptr), end_block(nullptr), bbs(), functionName("main") {
+CFG::CFG(SymbolTableGenVisitor& p_stv, const std::string& p_funcName) : stv(p_stv), current_bb(nullptr), start_block(nullptr), end_block(nullptr), bbs(), functionName(p_funcName) {
     // Ajouter le bloc de base initial
     start_block = new BasicBlock(this, functionName);
     Operation* op_start = new Prologue(start_block);

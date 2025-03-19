@@ -40,7 +40,7 @@ std::string Epilogue::get_operation_name() const {
 void Epilogue::gen_x86(std::ostream& o) {
     o << "    movq %rbp, %rsp\n";
     o << "    popq %rbp\n";
-    o << "    ret\n";
+    o << "    ret\n\n";
 }
 
 // Implémentation de LdConst

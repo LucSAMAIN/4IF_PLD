@@ -96,7 +96,7 @@ public:
  */
 class CFG {
 public:
-	CFG(SymbolTableGenVisitor& p_stv);
+	CFG(SymbolTableGenVisitor& p_stv, const std::string& p_funcName);
 	~CFG();
 
 	void add_bb(BasicBlock* bb);

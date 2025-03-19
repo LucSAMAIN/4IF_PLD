@@ -10,9 +10,9 @@ public:
     IRGenVisitor(SymbolTableGenVisitor& symbolTableGenVisitor); 
     virtual ~IRGenVisitor();
     
-    CFG* getCFG() { return cfg; }
+    std::vector<CFG*>& getCFGs() { return cfgs; }
     
-    virtual antlrcpp::Any visitProg(ifccParser::ProgContext *ctx) override;
+    virtual antlrcpp::Any visitFuncDecl(ifccParser::FuncDeclContext *ctx) override;
     virtual antlrcpp::Any visitBlock(ifccParser::BlockContext *ctx) override;
     virtual antlrcpp::Any visitReturn_stmt(ifccParser::Return_stmtContext *ctx) override;
     virtual antlrcpp::Any visitDecl_stmt(ifccParser::Decl_stmtContext *ctx) override;
@@ -35,7 +35,7 @@ public:
     
 private:
     SymbolTableGenVisitor symbolTableGenVisitor;
-    CFG* cfg;              // Le Control Flow Graph
+   std::vector<CFG*> cfgs;              // Le Control Flow Graph
     BasicBlock* currentBB; // Le bloc de base courant
     std::string scope;
 };

@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include <cstdlib>
+#include <vector>
 
 #include "antlr4-runtime.h"
 #include "generated/ifccLexer.h"
@@ -75,12 +76,11 @@ int main(int argn, const char **argv)
     cgv.visit(tree);
 
     // Récupération du CFG généré
-    CFG* cfg = cgv.getCFG();
+    std::vector<CFG*> cfgs = cgv.getCFGs();
     
-    if (cfg) {        
-        // Génération du code x86 à partir de l'IR
-        std::cout << ".text\n";
-        std::cout << ".globl main\n";
+    std::cout << ".text\n";
+    std::cout << ".globl main\n";
+    for (CFG* cfg : cfgs) {
         cfg->gen_x86(std::cout);
 
         delete cfg;

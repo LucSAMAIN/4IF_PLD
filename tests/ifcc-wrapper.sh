@@ -15,11 +15,17 @@
 
 # Warning: you have to forward the exit status of your compiler back to the harness
 
+#!/bin/sh
+
 DESTNAME=$1
 SOURCENAME=$2
 
-$(dirname $0)/../compiler/ifcc $SOURCENAME >$DESTNAME
-retcode=$?
+# Check if WAT generation is requested
+if [ -n "$WAT_OUTPUT" ]; then
+    $(dirname $0)/../compiler/ifcc -w $SOURCENAME >$DESTNAME
+else
+    $(dirname $0)/../compiler/ifcc $SOURCENAME >$DESTNAME
+fi
 
-# forward exit status of the compiler
+retcode=$?
 exit $retcode

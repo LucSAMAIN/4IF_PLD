@@ -68,7 +68,7 @@ void BasicBlock::gen_wat(ostream& o) {
     o << label << ":\n";
     
     for (IRInstr* instr : instructions) {
-        instr->gen_x86(o);
+        instr->gen_wat(o);
         // if return_true vers epilogue, on arrête parce qu'on vient de voir un return et on ne veut pas générer de code après
     }
 }

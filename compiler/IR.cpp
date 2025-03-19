@@ -99,12 +99,54 @@ void CFG::add_bb(BasicBlock* bb) {
 }
 
 string CFG::IR_reg_to_x86(const string &reg) {
-    if (reg == "!reg") {
-        return "%eax";
-    } else if (reg == "!regLeft") {
-        return "%ebx";
-    } else if (reg == "!regRight") {
-        return "%ecx";
+    if (reg.substr(0, 8) == "!regLeft") {
+        if (reg.substr(8) == "64") {
+            return "%rbx";
+        }
+        else if (reg.substr(8) == "32") {
+            return "%ebx";
+        }
+        else if (reg.substr(8) == "16") {
+            return "%bx";
+        }
+        else if (reg.substr(8) == "8") {
+            return "%bl";
+        }
+        else {
+            return "%ebx";
+        }
+    } else if (reg.substr(0, 9) == "!regRight") {
+        if (reg.substr(9) == "64") {
+            return "%rcx";
+        }
+        else if (reg.substr(9) == "32") {
+            return "%ecx";
+        }
+        else if (reg.substr(9) == "16") {
+            return "%cx";
+        }
+        else if (reg.substr(9) == "8") {
+            return "%cl";
+        }
+        else {
+            return "%ecx";
+        }
+    } else if (reg.substr(0, 4) == "!reg") {
+        if (reg.substr(4) == "64") {
+            return "%rax";
+        }
+        else if (reg.substr(4) == "32") {
+            return "%eax";
+        }
+        else if (reg.substr(4) == "16") {
+            return "%ax";
+        }
+        else if (reg.substr(4) == "8") {
+            return "%al";
+        }
+        else {
+            return "%eax";
+        }
     }
     std::cerr << "Erreur conversion registre IR to x86, le registre renseigné n'existe pas\n"; 
     return "";

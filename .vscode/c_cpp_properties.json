@@ -4,7 +4,8 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/usr/include/antlr4-runtime"
+                "/usr/include/antlr4-runtime",
+                "${workspaceFolder}/compiler"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/g++",

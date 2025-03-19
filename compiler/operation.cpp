@@ -95,6 +95,19 @@ void Sub::gen_x86(std::ostream& o) {
     o << "    subl " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
 }
 
+// UnaryMinus
+UnaryMinus::UnaryMinus(BasicBlock* bb, const std::string& dest_reg) 
+    : Operation(), dest(dest_reg), bb(bb) {}
+
+
+std::string UnaryMinus::get_operation_name() const {
+    return "unaryMinus";
+}
+
+void UnaryMinus::gen_x86(std::ostream& o) {
+    o << "    negl " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+}
+
 // Implémentation de Mul
 Mul::Mul(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2) 
     : Operation(), dest(dest_reg), op2(operand2), bb(bb) {}
@@ -106,6 +119,40 @@ std::string Mul::get_operation_name() const {
 
 void Mul::gen_x86(std::ostream& o) {
     o << "    imull " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+}
+
+// Implémentation de Div
+Div::Div(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2) 
+    : Operation(), dest(dest_reg), op2(operand2), bb(bb) {}
+
+
+std::string Div::get_operation_name() const {
+    return "div";
+}
+
+void Div::gen_x86(std::ostream& o) {
+    o << "    cqo\n";
+    o << "    idivl " << bb->cfg->IR_reg_to_x86(op2) << "\n";
+    if (bb->cfg->IR_reg_to_x86(dest) != "%eax") {
+        o << "    movl " << "%eax" << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+    }
+}
+
+// Implémentation de Mod
+Mod::Mod(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2) 
+    : Operation(), dest(dest_reg), op2(operand2), bb(bb) {}
+
+
+std::string Mod::get_operation_name() const {
+    return "mod";
+}
+
+void Mod::gen_x86(std::ostream& o) {
+    o << "    cqo\n";
+    o << "    idivl " << bb->cfg->IR_reg_to_x86(op2) << "\n";
+    if (bb->cfg->IR_reg_to_x86(dest) != "%edx") {
+        o << "    movl " << "%edx" << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+    }
 }
 
 // Implémentation de Rmem
@@ -188,3 +235,39 @@ void Wmem::gen_x86(std::ostream& o) {
 // void CmpLe::gen_x86(std::ostream& o) {
 //     o << "    CMP_LE " << op1 << ", " << op2 << " -> " << dest << "\n";
 // }
+
+And::And(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2) 
+    : Operation(), dest(dest_reg), op2(operand2), bb(bb) {}
+
+
+std::string And::get_operation_name() const {
+    return "and";
+}
+
+void And::gen_x86(std::ostream& o) {
+    o << "    andl " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+}
+
+Or::Or(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2) 
+    : Operation(), dest(dest_reg), op2(operand2), bb(bb) {}
+
+
+std::string Or::get_operation_name() const {
+    return "or";
+}
+
+void Or::gen_x86(std::ostream& o) {
+    o << "    orl " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+}
+
+Xor::Xor(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2) 
+    : Operation(), dest(dest_reg), op2(operand2), bb(bb) {}
+
+
+std::string Xor::get_operation_name() const {
+    return "xor";
+}
+
+void Xor::gen_x86(std::ostream& o) {
+    o << "    xorl " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+}

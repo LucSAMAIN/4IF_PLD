@@ -156,23 +156,16 @@ antlrcpp::Any IRGenVisitor::visitAssignExpr(ifccParser::AssignExprContext *ctx) 
 //     return 0;
 // }
 
-// antlrcpp::Any IRGenVisitor::visitUnaryMinusExpr(ifccParser::UnaryMinusExprContext *ctx) {
-//     // Évaluation de l'expression primaire
-//     visit(ctx->primary());
+antlrcpp::Any IRGenVisitor::visitUnaryMinusExpr(ifccParser::UnaryMinusExprContext *ctx) {
+    // Évaluation de l'expression qu'on place dans le registre universel !reg
+    visit(ctx->primary()); 
+
+    Operation *operation_unaryminus = new UnaryMinus(cfg->current_bb, "!reg");
+    IRInstr *instruction_unaryminus = new IRInstr(cfg->current_bb, operation_unaryminus);
+    cfg->current_bb->add_IRInstr(instruction_unaryminus);
     
-//     // Créer une variable temporaire pour stocker le résultat
-//     std::string temp = cfg->create_new_tempvar(Type::INT);
-    
-//     // Copier le résultat de l'expression dans la variable temporaire
-//     std::vector<std::string> param_copy = {temp, "%eax"};
-//     currentBB->add_IRInstr(IRInstr::copy, Type::INT, param_copy);
-    
-//     // Inverser le signe de la variable temporaire et stocker dans %eax
-//     std::vector<std::string> params = {"%eax", "0", temp};
-//     currentBB->add_IRInstr(IRInstr::sub, Type::INT, params);
-    
-//     return 0;
-// }
+    return 0;
+}
 
 antlrcpp::Any IRGenVisitor::visitMulDivExpr(ifccParser::MulDivExprContext *ctx) {
     // Évaluation de l'expression droite qu'on place dans le registre universel !reg
@@ -200,8 +193,30 @@ antlrcpp::Any IRGenVisitor::visitMulDivExpr(ifccParser::MulDivExprContext *ctx) 
         cfg->current_bb->add_IRInstr(instruction_mul);
     }
     else if (ctx->mOp()->SLASH()) {
+        Operation *copy_right = new Copy(cfg->current_bb, "!regRight", "!reg");
+        IRInstr *instruction_copy_right = new IRInstr(cfg->current_bb, copy_right);
+        cfg->current_bb->add_IRInstr(instruction_copy_right);
+
+        Operation *rmem_left = new Rmem(cfg->current_bb, "!reg", address_left);
+        IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
+        cfg->current_bb->add_IRInstr(instruction_read_left);
+
+        Operation *operation_div = new Div(cfg->current_bb, "!reg", "!regRight");
+        IRInstr *instruction_div = new IRInstr(cfg->current_bb, operation_div);
+        cfg->current_bb->add_IRInstr(instruction_div);
     }
     else if (ctx->mOp()->MOD()) {
+        Operation *copy_right = new Copy(cfg->current_bb, "!regRight", "!reg");
+        IRInstr *instruction_copy_right = new IRInstr(cfg->current_bb, copy_right);
+        cfg->current_bb->add_IRInstr(instruction_copy_right);
+
+        Operation *rmem_left = new Rmem(cfg->current_bb, "!reg", address_left);
+        IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
+        cfg->current_bb->add_IRInstr(instruction_read_left);
+
+        Operation *operation_mod = new Mod(cfg->current_bb, "!reg", "!regRight");
+        IRInstr *instruction_mod = new IRInstr(cfg->current_bb, operation_mod);
+        cfg->current_bb->add_IRInstr(instruction_mod);
     }
     
     return 0;
@@ -370,111 +385,80 @@ antlrcpp::Any IRGenVisitor::visitAddSubExpr(ifccParser::AddSubExprContext *ctx) 
 //     return 0;
 // }
 
-// antlrcpp::Any IRGenVisitor::visitAndExpr(ifccParser::AndExprContext *ctx) {
-//     // Évaluation de l'opérande gauche
-//     visit(ctx->left);
+antlrcpp::Any IRGenVisitor::visitAndExpr(ifccParser::AndExprContext *ctx) {
+    // Évaluation de l'expression droite qu'on place dans le registre universel !reg
+    visit(ctx->left);
+    std::string temp_left = cfg->create_new_tempvar(Type::INT);
+    std::string address_left = "RBP" + std::to_string(cfg->stv.symbolTable[temp_left].offset); 
     
-//     // Créer une variable temporaire pour stocker le résultat de l'opérande gauche
-//     std::string temp_left = cfg->create_new_tempvar(Type::INT);
-    
-//     // Copier le résultat de l'expression dans la variable temporaire
-//     std::vector<std::string> param_copy_left = {temp_left, "%eax"};
-//     currentBB->add_IRInstr(IRInstr::copy, Type::INT, param_copy_left);
-    
-//     // Évaluation de l'opérande droite
-//     visit(ctx->right);
-    
-//     // Créer une variable temporaire pour stocker le résultat de l'opérande droite
-//     std::string temp_right = cfg->create_new_tempvar(Type::INT);
-    
-//     // Copier le résultat de l'expression dans la variable temporaire
-//     std::vector<std::string> param_copy_right = {temp_right, "%eax"};
-//     currentBB->add_IRInstr(IRInstr::copy, Type::INT, param_copy_right);
-    
-//     // Multiplication pour simuler l'opération AND
-//     std::vector<std::string> params = {"%eax", temp_left, temp_right};
-//     currentBB->add_IRInstr(IRInstr::mul, Type::INT, params);
-    
-//     return 0;
-// }
+    // Copier le résultat de l'expression dans la variable temporaire
+    Operation *wmem_left = new Wmem(cfg->current_bb, address_left, "!reg");
+    IRInstr *instruction_left = new IRInstr(cfg->current_bb, wmem_left);
+    cfg->current_bb->add_IRInstr(instruction_left);
 
-// antlrcpp::Any IRGenVisitor::visitXorExpr(ifccParser::XorExprContext *ctx) {
-//     // XOR n'est pas directement disponible dans l'IR, nous allons donc le simuler avec d'autres opérations
-    
-//     // Évaluation de l'opérande gauche
-//     visit(ctx->left);
-    
-//     // Créer une variable temporaire pour stocker le résultat de l'opérande gauche
-//     std::string temp_left = cfg->create_new_tempvar(Type::INT);
-    
-//     // Copier le résultat de l'expression dans la variable temporaire
-//     std::vector<std::string> param_copy_left = {temp_left, "%eax"};
-//     currentBB->add_IRInstr(IRInstr::copy, Type::INT, param_copy_left);
-    
-//     // Évaluation de l'opérande droite
-//     visit(ctx->right);
-    
-//     // Créer une variable temporaire pour stocker le résultat de l'opérande droite
-//     std::string temp_right = cfg->create_new_tempvar(Type::INT);
-    
-//     // Copier le résultat de l'expression dans la variable temporaire
-//     std::vector<std::string> param_copy_right = {temp_right, "%eax"};
-//     currentBB->add_IRInstr(IRInstr::copy, Type::INT, param_copy_right);
-    
-//     // Pour simuler XOR, on peut utiliser: (a | b) - (a & b)
-//     // D'abord calculer (a & b)
-//     std::vector<std::string> params_and = {"%eax", temp_left, temp_right};
-//     currentBB->add_IRInstr(IRInstr::mul, Type::INT, params_and); // Utiliser mul comme AND
-    
-//     // Sauvegarder dans une variable temporaire
-//     std::string temp_and = cfg->create_new_tempvar(Type::INT);
-//     std::vector<std::string> param_copy_and = {temp_and, "%eax"};
-//     currentBB->add_IRInstr(IRInstr::copy, Type::INT, param_copy_and);
-    
-//     // Calculer (a + b) pour simuler (a | b)
-//     std::vector<std::string> params_or = {"%eax", temp_left, temp_right};
-//     currentBB->add_IRInstr(IRInstr::add, Type::INT, params_or);
-    
-//     // Soustraire (a & b) pour obtenir XOR
-//     std::vector<std::string> params_sub = {"%eax", "%eax", temp_and};
-//     currentBB->add_IRInstr(IRInstr::sub, Type::INT, params_sub);
-    
-//     return 0;
-// }
 
-// antlrcpp::Any IRGenVisitor::visitOrExpr(ifccParser::OrExprContext *ctx) {
-//     // Évaluation de l'opérande gauche
-//     visit(ctx->left);
+    // Évaluation de l'expression left qu'on place dans le registre universel !reg
+    visit(ctx->right);   
+
+    Operation *rmem_left = new Rmem(cfg->current_bb, "!regLeft", address_left);
+    IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
+    cfg->current_bb->add_IRInstr(instruction_read_left);
+
+    Operation *operation_and = new And(cfg->current_bb, "!reg", "!regLeft");
+    IRInstr *instruction_and = new IRInstr(cfg->current_bb, operation_and);
+    cfg->current_bb->add_IRInstr(instruction_and);
+
+    return 0;
+}
+
+antlrcpp::Any IRGenVisitor::visitXorExpr(ifccParser::XorExprContext *ctx) {
+    // Évaluation de l'expression droite qu'on place dans le registre universel !reg
+    visit(ctx->left);
+    std::string temp_left = cfg->create_new_tempvar(Type::INT);
+    std::string address_left = "RBP" + std::to_string(cfg->stv.symbolTable[temp_left].offset); 
     
-//     // Créer une variable temporaire pour stocker le résultat de l'opérande gauche
-//     std::string temp_left = cfg->create_new_tempvar(Type::INT);
+    // Copier le résultat de l'expression dans la variable temporaire
+    Operation *wmem_left = new Wmem(cfg->current_bb, address_left, "!reg");
+    IRInstr *instruction_left = new IRInstr(cfg->current_bb, wmem_left);
+    cfg->current_bb->add_IRInstr(instruction_left);
+
+
+    // Évaluation de l'expression left qu'on place dans le registre universel !reg
+    visit(ctx->right);   
+
+    Operation *rmem_left = new Rmem(cfg->current_bb, "!regLeft", address_left);
+    IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
+    cfg->current_bb->add_IRInstr(instruction_read_left);
+
+    Operation *operation_xor = new Xor(cfg->current_bb, "!reg", "!regLeft");
+    IRInstr *instruction_xor = new IRInstr(cfg->current_bb, operation_xor);
+    cfg->current_bb->add_IRInstr(instruction_xor);
+
+    return 0;
+}
+
+antlrcpp::Any IRGenVisitor::visitOrExpr(ifccParser::OrExprContext *ctx) {
+    // Évaluation de l'expression droite qu'on place dans le registre universel !reg
+    visit(ctx->left);
+    std::string temp_left = cfg->create_new_tempvar(Type::INT);
+    std::string address_left = "RBP" + std::to_string(cfg->stv.symbolTable[temp_left].offset); 
     
-//     // Copier le résultat de l'expression dans la variable temporaire
-//     std::vector<std::string> param_copy_left = {temp_left, "%eax"};
-//     currentBB->add_IRInstr(IRInstr::copy, Type::INT, param_copy_left);
-    
-//     // Évaluation de l'opérande droite
-//     visit(ctx->right);
-    
-//     // Créer une variable temporaire pour stocker le résultat de l'opérande droite
-//     std::string temp_right = cfg->create_new_tempvar(Type::INT);
-    
-//     // Copier le résultat de l'expression dans la variable temporaire
-//     std::vector<std::string> param_copy_right = {temp_right, "%eax"};
-//     currentBB->add_IRInstr(IRInstr::copy, Type::INT, param_copy_right);
-    
-//     // Pour simuler OR, on peut utiliser: a + b - (a & b)
-//     // D'abord calculer (a & b)
-//     std::string temp_sum = cfg->create_new_tempvar(Type::INT);
-//     std::vector<std::string> params_add = {temp_sum, temp_left, temp_right};
-//     currentBB->add_IRInstr(IRInstr::add, Type::INT, params_add);
-    
-//     std::vector<std::string> params_and = {"%eax", temp_left, temp_right};
-//     currentBB->add_IRInstr(IRInstr::mul, Type::INT, params_and); // Utiliser mul comme AND
-    
-//     // Soustraire (a & b) de (a + b) pour simuler OR
-//     std::vector<std::string> params_sub = {"%eax", temp_sum, "%eax"};
-//     currentBB->add_IRInstr(IRInstr::sub, Type::INT, params_sub);
-    
-//     return 0;
-// }
+    // Copier le résultat de l'expression dans la variable temporaire
+    Operation *wmem_left = new Wmem(cfg->current_bb, address_left, "!reg");
+    IRInstr *instruction_left = new IRInstr(cfg->current_bb, wmem_left);
+    cfg->current_bb->add_IRInstr(instruction_left);
+
+
+    // Évaluation de l'expression left qu'on place dans le registre universel !reg
+    visit(ctx->right);   
+
+    Operation *rmem_left = new Rmem(cfg->current_bb, "!regLeft", address_left);
+    IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
+    cfg->current_bb->add_IRInstr(instruction_read_left);
+
+    Operation *operation_or = new Or(cfg->current_bb, "!reg", "!regLeft");
+    IRInstr *instruction_or = new IRInstr(cfg->current_bb, operation_or);
+    cfg->current_bb->add_IRInstr(instruction_or);
+
+    return 0;
+}

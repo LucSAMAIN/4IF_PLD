@@ -132,6 +132,18 @@ public:
     void gen_x86(std::ostream& o) override;
 };
 
+class UnaryMinus : public Operation
+{
+private:
+    std::string dest;
+    BasicBlock* bb;
+
+public:
+    UnaryMinus(BasicBlock* bb, const std::string& dest_reg);
+    std::string get_operation_name() const override;
+    void gen_x86(std::ostream& o) override;
+};
+
 // Sous-classe pour l'opération de multiplication
 class Mul : public Operation
 {
@@ -142,6 +154,32 @@ private:
 
 public:
     Mul(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2);
+    std::string get_operation_name() const override;
+    void gen_x86(std::ostream& o) override;
+};
+
+class Div : public Operation
+{
+private:
+    std::string dest;
+    std::string op2;
+    BasicBlock* bb;
+
+public:
+    Div(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2);
+    std::string get_operation_name() const override;
+    void gen_x86(std::ostream& o) override;
+};
+
+class Mod : public Operation
+{
+private:
+    std::string dest;
+    std::string op2;
+    BasicBlock* bb;
+
+public:
+    Mod(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
 };
@@ -228,6 +266,45 @@ private:
 
 public:
     CmpLe(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2);
+    std::string get_operation_name() const override;
+    void gen_x86(std::ostream& o) override;
+};
+
+class And : public Operation
+{
+private:
+    std::string dest;
+    std::string op2;
+    BasicBlock* bb;
+
+public:
+    And(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2);
+    std::string get_operation_name() const override;
+    void gen_x86(std::ostream& o) override;
+};
+
+class Or : public Operation
+{
+private:
+    std::string dest;
+    std::string op2;
+    BasicBlock* bb;
+
+public:
+    Or(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2);
+    std::string get_operation_name() const override;
+    void gen_x86(std::ostream& o) override;
+};
+
+class Xor : public Operation
+{
+private:
+    std::string dest;
+    std::string op2;
+    BasicBlock* bb;
+
+public:
+    Xor(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
 };

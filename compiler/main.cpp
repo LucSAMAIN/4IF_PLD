@@ -18,7 +18,8 @@ using namespace antlr4;
 int main(int argn, const char **argv)
 {
     std::stringstream in;
-    if (argn == 2)
+    bool wasm = false;
+    if (argn >= 2)
     {
         std::ifstream lecture(argv[1]);
         if (!lecture.good())
@@ -27,6 +28,10 @@ int main(int argn, const char **argv)
             exit(1);
         }
         in << lecture.rdbuf();
+        if (argn == 3 && std::string(argv[2]) == "-j")
+        {
+            wasm = true;
+        }
     }
     else
     {
@@ -79,9 +84,13 @@ int main(int argn, const char **argv)
     
     if (cfg) {        
         // Génération du code x86 à partir de l'IR
-        std::cout << ".text\n";
-        std::cout << ".globl main\n";
-        cfg->gen_x86(std::cout);
+        if (!wasm) {
+            std::cout << ".text\n";
+            std::cout << ".globl main\n";
+            cfg->gen_x86(std::cout);
+        } else {
+            cfg->gen_wasm(std::cout);
+        }
 
         delete cfg;
     }

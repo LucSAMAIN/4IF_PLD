@@ -103,6 +103,7 @@ public:
 
 	// x86 code generation: could be encapsulated in a processor class in a retargetable compiler
 	void gen_x86(std::ostream& o); /**< x86 assembly code generation for the whole CFG */
+	void gen_wat(std::ostream& o); /**< wat code generation for the whole CFG */
 	std::string IR_reg_to_x86(const std::string &reg); /**< helper method: inputs a IR reg or input variable, returns e.g. "-24(%rbp)" for the proper value of 24 */
 	std::string IR_addr_to_x86 (const std::string &Iraddr);
 

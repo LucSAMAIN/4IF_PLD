@@ -84,8 +84,8 @@ CFG::CFG(SymbolTableGenVisitor& p_stv, const std::string& p_funcName) : stv(p_st
     current_bb->exit_true = end_block;
 
     add_bb(start_block);
-    add_bb(current_bb);
     add_bb(end_block);
+    add_bb(current_bb);
 }
 
 CFG::~CFG()
@@ -264,6 +264,7 @@ std::string CFG::IR_addr_to_x86(const std::string &addr)
 // Génère une représentation textuelle du CFG
 void CFG::gen_x86(ostream& o) {
     // Générer le code pour tous les blocs de base
+    o << "\n";
     for (BasicBlock* bb : bbs) {
         bb->gen_x86(o);
     }
@@ -321,6 +322,6 @@ Type CFG::get_var_type(string name) {
 
 string CFG::new_BB_name() {
     stringstream ss;
-    ss << functionName << bbs.size(); // je pense ça passe car on ajoute le block direct dans la liste après
+    ss << functionName << "_" << bbs.size(); // je pense ça passe car on ajoute le block direct dans la liste après
     return ss.str();
 } 

@@ -12,6 +12,7 @@ stmt : decl_stmt SEMICOLON
      | expr_stmt SEMICOLON
      | return_stmt SEMICOLON
      | funcCall_stmt SEMICOLON
+     | if_stmt
      | block_stmt
      ;
      
@@ -24,6 +25,7 @@ assign_stmt : ID ASSIGN expr ;
 expr_stmt : expr ;
 return_stmt : RETURN expr ;
 funcCall_stmt : funcCall ;
+if_stmt : IF LPAR expr RPAR block (ELSE block)? ;
 block_stmt : block ;
 
 
@@ -75,6 +77,8 @@ ASSIGN : '=' ;
 SEMICOLON : ';' ;
 COMMA : ',' ;
 RETURN : 'return' ;
+IF : 'if' ;
+ELSE : 'else' ;
 
 type : INT | CHAR ;
 funcType : INT | CHAR | VOID ;

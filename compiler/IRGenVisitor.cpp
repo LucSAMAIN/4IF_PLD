@@ -44,6 +44,11 @@ antlrcpp::Any IRGenVisitor::visitBlock(ifccParser::BlockContext *ctx)
             visit(ctx->stmt(i));
         }
     }
+    if (cfgs.back()->current_bb->exit_true) {
+        Operation *op_jump = new Jump(cfgs.back()->current_bb, cfgs.back()->current_bb->exit_true->label);
+        IRInstr *instruction_jump = new IRInstr(cfgs.back()->current_bb, op_jump);
+        cfgs.back()->current_bb->add_IRInstr(instruction_jump);
+    }
     return 0;
 }
 
@@ -122,21 +127,66 @@ antlrcpp::Any IRGenVisitor::visitReturn_stmt(ifccParser::Return_stmtContext *ctx
     return 0;
 }
 
+antlrcpp::Any IRGenVisitor::visitIf_stmt(ifccParser::If_stmtContext *ctx) {
+    std::pair<bool, int> res(visit(ctx->expr()));
+    if (res.first) {
+        Operation *op_const = new LdConst(cfgs.back()->current_bb, "!reg", res.second);  // block, dst, src
+        IRInstr *instruction_const = new IRInstr(cfgs.back()->current_bb, op_const);
+        cfgs.back()->current_bb->add_IRInstr(instruction_const);
+    }
+
+    if (ctx->block().size() == 1) { // pas de else
+        BasicBlock* bb_true = new BasicBlock(cfgs.back(), cfgs.back()->new_BB_name() + "_if_true");
+        BasicBlock* bb_endif = new BasicBlock(cfgs.back(), cfgs.back()->new_BB_name() + "_endif");
+        bb_endif->exit_true = cfgs.back()->current_bb->exit_true;
+        cfgs.back()->current_bb->exit_true = bb_true;
+        cfgs.back()->current_bb->exit_false = bb_endif;
+        bb_true->exit_true = bb_endif;
+        cfgs.back()->add_bb(bb_true);
+        cfgs.back()->add_bb(bb_endif);
+
+        Operation *op_jump = new JumpFalse(cfgs.back()->current_bb, cfgs.back()->current_bb->exit_false->label, cfgs.back()->current_bb->exit_true->label, "!reg");
+        IRInstr *instruction_jump = new IRInstr(cfgs.back()->current_bb, op_jump);
+        cfgs.back()->current_bb->add_IRInstr(instruction_jump);
+
+        cfgs.back()->current_bb = bb_true;
+        visit(ctx->block(0));
+        cfgs.back()->current_bb = bb_endif;
+    }
+    else {
+        BasicBlock* bb_true = new BasicBlock(cfgs.back(), cfgs.back()->new_BB_name() + "_if_true");
+        BasicBlock* bb_false = new BasicBlock(cfgs.back(), cfgs.back()->new_BB_name() + "_if_false");
+        BasicBlock* bb_endif = new BasicBlock(cfgs.back(), cfgs.back()->new_BB_name() + "_endif");
+        bb_endif->exit_true = cfgs.back()->current_bb->exit_true;
+        cfgs.back()->current_bb->exit_true = bb_true;
+        cfgs.back()->current_bb->exit_false = bb_endif;
+        bb_true->exit_true = bb_endif;
+        bb_false->exit_true = bb_endif;
+        cfgs.back()->add_bb(bb_true);
+        cfgs.back()->add_bb(bb_false);
+        cfgs.back()->add_bb(bb_endif);
+
+        Operation *op_jump = new JumpFalse(cfgs.back()->current_bb, cfgs.back()->current_bb->exit_false->label, cfgs.back()->current_bb->exit_true->label, "!reg");
+        IRInstr *instruction_jump = new IRInstr(cfgs.back()->current_bb, op_jump);
+        cfgs.back()->current_bb->add_IRInstr(instruction_jump);
+
+        cfgs.back()->current_bb = bb_true;
+        visit(ctx->block(0));
+        cfgs.back()->current_bb = bb_false;
+        visit(ctx->block(1));
+        cfgs.back()->current_bb = bb_endif;
+    }
+
+    return 0;
+}
+
 antlrcpp::Any IRGenVisitor::visitIntExpr(ifccParser::IntExprContext *ctx)
 {
-    // Operation *op_const = new LdConst(cfgs.back()->current_bb, "!reg", std::stoi(ctx->CONST()->getText()));  // block, dst, src
-    // IRInstr *instruction_const = new IRInstr(cfgs.back()->current_bb, op_const);
-    // cfgs.back()->current_bb->add_IRInstr(instruction_const);
-    
     return std::pair<bool, int>(true, std::stoi(ctx->CONSTINT()->getText()));
 }
 
 antlrcpp::Any IRGenVisitor::visitCharExpr(ifccParser::CharExprContext *ctx)
 {
-    // Operation *op_const = new LdConst(cfgs.back()->current_bb, "!reg", std::stoi(ctx->CONST()->getText()));  // block, dst, src
-    // IRInstr *instruction_const = new IRInstr(cfgs.back()->current_bb, op_const);
-    // cfgs.back()->current_bb->add_IRInstr(instruction_const);
-
     char interpretedChar;
     if (ctx->CONSTCHAR()->getText().size() == 3) {
         interpretedChar = ctx->CONSTCHAR()->getText()[1];

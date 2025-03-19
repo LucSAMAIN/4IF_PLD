@@ -25,6 +25,7 @@ void Prologue::gen_x86(std::ostream& o) {
     if (frameSize > 0) {
         o << "    subq $" << frameSize << ", %rsp" << "\n";
     }
+    o << "    jmp " << bb->cfg->functionName << "_0\n";
 }
 
 // implémentation de Epilogue
@@ -40,7 +41,7 @@ std::string Epilogue::get_operation_name() const {
 void Epilogue::gen_x86(std::ostream& o) {
     o << "    movq %rbp, %rsp\n";
     o << "    popq %rbp\n";
-    o << "    ret\n\n";
+    o << "    ret\n";
 }
 
 // Implémentation de LdConst
@@ -334,4 +335,30 @@ std::string Xor::get_operation_name() const {
 
 void Xor::gen_x86(std::ostream& o) {
     o << "    xorl " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+}
+
+Jump::Jump(BasicBlock* bb, const std::string& p_dest_label) 
+    : Operation(), dest_label(p_dest_label), bb(bb) {}
+
+
+std::string Jump::get_operation_name() const {
+    return "jump";
+}
+
+void Jump::gen_x86(std::ostream& o) {
+    o << "    jmp " << dest_label << "\n";
+}
+
+JumpFalse::JumpFalse(BasicBlock* bb, const std::string& p_dest_false, const std::string& p_dest_true, const std::string& p_op) 
+    : Operation(), dest_false(p_dest_false), dest_true(p_dest_true), op(p_op), bb(bb) {}
+
+
+std::string JumpFalse::get_operation_name() const {
+    return "jumpfalse";
+}
+
+void JumpFalse::gen_x86(std::ostream& o) {
+    o << "    cmpl $0, " << bb->cfg->IR_reg_to_x86(op) << "\n";
+    o << "    je " << dest_false << "\n";
+    o << "    jmp " << dest_true << "\n";
 }

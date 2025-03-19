@@ -357,4 +357,30 @@ public:
     void gen_x86(std::ostream& o) override;
 };
 
+class Jump : public Operation
+{
+private:
+    std::string dest_label;
+    BasicBlock* bb;
+
+public:
+    Jump(BasicBlock* bb, const std::string& dest_label);
+    std::string get_operation_name() const override;
+    void gen_x86(std::ostream& o) override;
+};
+
+class JumpFalse : public Operation
+{
+private:
+    std::string dest_false;
+    std::string dest_true;
+    std::string op;
+    BasicBlock* bb;
+
+public:
+    JumpFalse(BasicBlock* bb, const std::string& dest_false, const std::string& dest_true, const std::string& operand);
+    std::string get_operation_name() const override;
+    void gen_x86(std::ostream& o) override;
+};
+
 #endif // OPERATION_H

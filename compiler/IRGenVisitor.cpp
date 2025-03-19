@@ -161,7 +161,7 @@ antlrcpp::Any IRGenVisitor::visitUnaryMinusExpr(ifccParser::UnaryMinusExprContex
 }
 
 antlrcpp::Any IRGenVisitor::visitMulDivExpr(ifccParser::MulDivExprContext *ctx) {
-    // Évaluation de l'expression droite qu'on place dans le registre universel !reg
+    // Évaluation de l'expression gauche qu'on place dans le registre universel !reg
     visit(ctx->left);
     std::string temp_left = cfg->create_new_tempvar(Type::INT);
     std::string address_left = "RBP" + std::to_string(cfg->stv.symbolTable[temp_left].offset); 
@@ -172,7 +172,7 @@ antlrcpp::Any IRGenVisitor::visitMulDivExpr(ifccParser::MulDivExprContext *ctx) 
     cfg->current_bb->add_IRInstr(instruction_left);
 
 
-    // Évaluation de l'expression left qu'on place dans le registre universel !reg
+    // Évaluation de l'expression right qu'on place dans le registre universel !reg
     visit(ctx->right);
     
     // Appliquer l'opération selon l'opérateur
@@ -259,7 +259,7 @@ antlrcpp::Any IRGenVisitor::visitAddSubExpr(ifccParser::AddSubExprContext *ctx) 
 }
 
 antlrcpp::Any IRGenVisitor::visitCompExpr(ifccParser::CompExprContext *ctx) {
-    // Évaluation de l'expression droite qu'on place dans le registre universel !reg
+    // Évaluation de l'expression gauche qu'on place dans le registre universel !reg
     visit(ctx->left);
     std::string temp_left = cfg->create_new_tempvar(Type::INT);
     std::string address_left = "RBP" + std::to_string(cfg->stv.symbolTable[temp_left].offset); 
@@ -270,9 +270,17 @@ antlrcpp::Any IRGenVisitor::visitCompExpr(ifccParser::CompExprContext *ctx) {
     cfg->current_bb->add_IRInstr(instruction_left);
 
 
-    // Évaluation de l'expression right qu'on place dans le registre universel !reg
+
+
+    // Évaluation de l'expression droite qu'on place dans le registre universel !reg
     visit(ctx->right);   
 
+
+    // Probablement car les opération suivantes ne sont pas commutatives
+    // On prévoit le coup et on déplace le résultat de droite à dans le
+    // registre regRight.
+    // Evite de répété les trois prochaines lignes de codes dans tous les if
+    // then else suivant.
     Operation *copy_right = new Copy(cfg->current_bb, "!regRight", "!reg");
     IRInstr *instruction_copy_right = new IRInstr(cfg->current_bb, copy_right);
     cfg->current_bb->add_IRInstr(instruction_copy_right);

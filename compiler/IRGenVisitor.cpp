@@ -42,6 +42,10 @@ antlrcpp::Any IRGenVisitor::visitBlock(ifccParser::BlockContext *ctx)
         // Cas si juste un statement
         else {
             visit(ctx->stmt(i));
+            // si on a un return on sort du block
+            if (ctx->stmt(i)->return_stmt() != nullptr) {
+                break;
+            }
         }
     }
     if (cfgs.back()->current_bb->exit_true) {
@@ -124,7 +128,7 @@ antlrcpp::Any IRGenVisitor::visitReturn_stmt(ifccParser::Return_stmtContext *ctx
     cfgs.back()->current_bb->exit_true = cfgs.back()->end_block; // default exit
     cfgs.back()->current_bb->exit_false = nullptr;
     
-    return 0;
+    return 0; // pour savoir qu'on a un return
 }
 
 antlrcpp::Any IRGenVisitor::visitIf_stmt(ifccParser::If_stmtContext *ctx) {

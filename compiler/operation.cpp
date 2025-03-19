@@ -105,7 +105,22 @@ std::string UnaryMinus::get_operation_name() const {
 }
 
 void UnaryMinus::gen_x86(std::ostream& o) {
-    o << "    negl " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+    o << "    neg " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+}
+
+
+Not::Not(BasicBlock* bb, const std::string& dest_reg) 
+    : Operation(), dest(dest_reg), bb(bb) {}
+
+
+std::string Not::get_operation_name() const {
+    return "not";
+}
+
+void Not::gen_x86(std::ostream& o) {
+    o << "    cmpl $0, " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+    o << "    sete " << bb->cfg->IR_reg_to_x86(dest+"8") << "\n";
+    o << "    movzbl " << bb->cfg->IR_reg_to_x86(dest+"8") << ", " << bb->cfg->IR_reg_to_x86(dest+"32") << "\n";
 }
 
 // Implémentation de Mul
@@ -195,46 +210,87 @@ void Wmem::gen_x86(std::ostream& o) {
 //     o << "    CALL " << func_name << "\n";
 // }
 
-// // Implémentation de CmpEq
-// CmpEq::CmpEq(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2) 
-//     : Operation(), dest(dest_reg), op1(operand1), op2(operand2), bb(bb) {}
 
+// Implémentation de CmpEq
+CmpEq::CmpEq(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2) 
+    : Operation(), dest(dest_reg), op2(operand2), bb(bb) {}
 
+std::string CmpEq::get_operation_name() const {
+    return "cmp_eq";
+}
 
-// std::string CmpEq::get_operation_name() const {
-//     return "cmp_eq";
-// }
+void CmpEq::gen_x86(std::ostream& o) {
+    o << "    cmp " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+    o << "    sete " << bb->cfg->IR_reg_to_x86(dest+"8") << "\n";
+    o << "    movzbl " << bb->cfg->IR_reg_to_x86(dest+"8") << ", " << bb->cfg->IR_reg_to_x86(dest+"32") << "\n";
+}
 
-// void CmpEq::gen_x86(std::ostream& o) {
-//     o << "    CMP_EQ " << op1 << ", " << op2 << " -> " << dest << "\n";
-// }
+// Implémentation de CmpLt
+CmpNeq::CmpNeq(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2) 
+    : Operation(), dest(dest_reg), op2(operand2), bb(bb) {}
 
-// // Implémentation de CmpLt
-// CmpLt::CmpLt(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2) 
-//     : Operation(), dest(dest_reg), op1(operand1), op2(operand2), bb(bb) {}
+std::string CmpNeq::get_operation_name() const {
+    return "cmp_neq";
+}
 
+void CmpNeq::gen_x86(std::ostream& o) {
+    o << "    cmp " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+    o << "    setne " << bb->cfg->IR_reg_to_x86(dest+"8") << "\n";
+    o << "    movzbl " << bb->cfg->IR_reg_to_x86(dest+"8") << ", " << bb->cfg->IR_reg_to_x86(dest+"32") << "\n";
+}
 
-// std::string CmpLt::get_operation_name() const {
-//     return "cmp_lt";
-// }
+// Implémentation de CmpLe
+CmpLe::CmpLe(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2)
+    : Operation(), dest(dest_reg), op2(operand2), bb(bb) {}
 
-// void CmpLt::gen_x86(std::ostream& o) {
-//     o << "    CMP_LT " << op1 << ", " << op2 << " -> " << dest << "\n";
-// }
+std::string CmpLe::get_operation_name() const {
+    return "cmp_le";
+}
 
-// // Implémentation de CmpLe
-// CmpLe::CmpLe(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2) 
-//     : Operation(), dest(dest_reg), op1(operand1), op2(operand2), bb(bb) {}
+void CmpLe::gen_x86(std::ostream& o) {
+    o << "    cmp " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+    o << "    setle " << bb->cfg->IR_reg_to_x86(dest+"8") << "\n";
+    o << "    movzbl " << bb->cfg->IR_reg_to_x86(dest+"8") << ", " << bb->cfg->IR_reg_to_x86(dest+"32") << "\n";
+}
 
+CmpLt::CmpLt(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2) 
+    : Operation(), dest(dest_reg), op2(operand2), bb(bb) {}
 
+std::string CmpLt::get_operation_name() const {
+    return "cmp_lt";
+}
 
-// std::string CmpLe::get_operation_name() const {
-//     return "cmp_le";
-// }
+void CmpLt::gen_x86(std::ostream& o) {
+    o << "    cmp " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+    o << "    setl " << bb->cfg->IR_reg_to_x86(dest+"8") << "\n";
+    o << "    movzbl " << bb->cfg->IR_reg_to_x86(dest+"8") << ", " << bb->cfg->IR_reg_to_x86(dest+"32") << "\n";
+}
 
-// void CmpLe::gen_x86(std::ostream& o) {
-//     o << "    CMP_LE " << op1 << ", " << op2 << " -> " << dest << "\n";
-// }
+CmpGe::CmpGe(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2) 
+    : Operation(), dest(dest_reg), op2(operand2), bb(bb) {}
+
+std::string CmpGe::get_operation_name() const {
+    return "cmp_ge";
+}
+
+void CmpGe::gen_x86(std::ostream& o) {
+    o << "    cmp " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+    o << "    setge " << bb->cfg->IR_reg_to_x86(dest+"8") << "\n";
+    o << "    movzbl " << bb->cfg->IR_reg_to_x86(dest+"8") << ", " << bb->cfg->IR_reg_to_x86(dest+"32") << "\n";
+}
+
+CmpGt::CmpGt(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2) 
+    : Operation(), dest(dest_reg), op2(operand2), bb(bb) {}
+
+std::string CmpGt::get_operation_name() const {
+    return "cmp_gt";
+}
+
+void CmpGt::gen_x86(std::ostream& o) {
+    o << "    cmp " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+    o << "    setg " << bb->cfg->IR_reg_to_x86(dest+"8") << "\n";
+    o << "    movzbl " << bb->cfg->IR_reg_to_x86(dest+"8") << ", " << bb->cfg->IR_reg_to_x86(dest+"32") << "\n";
+}
 
 And::And(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2) 
     : Operation(), dest(dest_reg), op2(operand2), bb(bb) {}

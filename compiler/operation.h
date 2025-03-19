@@ -144,6 +144,18 @@ public:
     void gen_x86(std::ostream& o) override;
 };
 
+class Not : public Operation
+{
+private:
+    std::string dest;
+    BasicBlock* bb;
+
+public:
+    Not(BasicBlock* bb, const std::string& dest_reg);
+    std::string get_operation_name() const override;
+    void gen_x86(std::ostream& o) override;
+};
+
 // Sous-classe pour l'opération de multiplication
 class Mul : public Operation
 {
@@ -230,27 +242,24 @@ class CmpEq : public Operation
 {
 private:
     std::string dest;
-    std::string op1;
     std::string op2;
     BasicBlock* bb;
 
 public:
-    CmpEq(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2);
+    CmpEq(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
 };
 
-// Sous-classe pour la comparaison "plus petit que"
-class CmpLt : public Operation
+class CmpNeq : public Operation
 {
 private:
     std::string dest;
-    std::string op1;
     std::string op2;
     BasicBlock* bb;
 
 public:
-    CmpLt(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2);
+    CmpNeq(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
 };
@@ -260,12 +269,50 @@ class CmpLe : public Operation
 {
 private:
     std::string dest;
-    std::string op1;
     std::string op2;
     BasicBlock* bb;
 
 public:
-    CmpLe(BasicBlock* bb, const std::string& dest_reg, const std::string& operand1, const std::string& operand2);
+    CmpLe(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2);
+    std::string get_operation_name() const override;
+    void gen_x86(std::ostream& o) override;
+};
+
+class CmpLt : public Operation
+{
+private:
+    std::string dest;
+    std::string op2;
+    BasicBlock* bb;
+
+public:
+    CmpLt(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2);
+    std::string get_operation_name() const override;
+    void gen_x86(std::ostream& o) override;
+};
+
+class CmpGe : public Operation
+{
+private:
+    std::string dest;
+    std::string op2;
+    BasicBlock* bb;
+
+public:
+    CmpGe(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2);
+    std::string get_operation_name() const override;
+    void gen_x86(std::ostream& o) override;
+};
+
+class CmpGt : public Operation
+{
+private:
+    std::string dest;
+    std::string op2;
+    BasicBlock* bb;
+
+public:
+    CmpGt(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
 };

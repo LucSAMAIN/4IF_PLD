@@ -99,7 +99,103 @@ void CFG::add_bb(BasicBlock* bb) {
 }
 
 string CFG::IR_reg_to_x86(const string &reg) {
-    if (reg.substr(0, 8) == "!regLeft") {
+    if (reg.substr(0, 5) == "!arg0") {
+        if (reg.substr(5) == "64") {
+            return "%rdi";
+        }
+        else if (reg.substr(5) == "32") {
+            return "%edi";
+        }
+        else if (reg.substr(5) == "16") {
+            return "%di";
+        }
+        else if (reg.substr(5) == "8") {
+            return "%dil";
+        }
+        else {
+            return "%edi";
+        }
+    } else if (reg.substr(0, 5) == "!arg1") {
+        if (reg.substr(5) == "64") {
+            return "%rsi";
+        }
+        else if (reg.substr(5) == "32") {
+            return "%esi";
+        }
+        else if (reg.substr(5) == "16") {
+            return "%si";
+        }
+        else if (reg.substr(5) == "8") {
+            return "%sil";
+        }
+        else {
+            return "%esi";
+        }
+    } else if (reg.substr(0, 5) == "!arg2") {
+        if (reg.substr(5) == "64") {
+            return "%rdx";
+        }
+        else if (reg.substr(5) == "32") {
+            return "%edx";
+        }
+        else if (reg.substr(5) == "16") {
+            return "%dx";
+        }
+        else if (reg.substr(5) == "8") {
+            return "%dl";
+        }
+        else {
+            return "%edx";
+        }
+    } else if (reg.substr(0, 5) == "!arg3") {
+        if (reg.substr(5) == "64") {
+            return "%rcx";
+        }
+        else if (reg.substr(5) == "32") {
+            return "%ecx";
+        }
+        else if (reg.substr(5) == "16") {
+            return "%cx";
+        }
+        else if (reg.substr(5) == "8") {
+            return "%cl";
+        }
+        else {
+            return "%ecx";
+        }
+    } else if (reg.substr(0, 5) == "!arg4") {
+        if (reg.substr(5) == "64") {
+            return "%r8";
+        }
+        else if (reg.substr(5) == "32") {
+            return "%r8d";
+        }
+        else if (reg.substr(5) == "16") {
+            return "%r8w";
+        }
+        else if (reg.substr(5) == "8") {
+            return "%r8b";
+        }
+        else {
+            return "%r8d";
+        }
+    } else if (reg.substr(0, 5) == "!arg5") {
+        if (reg.substr(5) == "64") {
+            return "%r9";
+        }
+        else if (reg.substr(5) == "32") {
+            return "%r9d";
+        }
+        else if (reg.substr(5) == "16") {
+            return "%r9w";
+        }
+        else if (reg.substr(5) == "8") {
+            return "%r9b";
+        }
+        else {
+            return "%r9d";
+        }
+    } else if (reg.substr(0, 8) == "!regLeft") {
         if (reg.substr(8) == "64") {
             return "%rbx";
         }

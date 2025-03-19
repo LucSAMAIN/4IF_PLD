@@ -9,16 +9,21 @@ stmt : decl_stmt SEMICOLON
      | assign_stmt SEMICOLON
      | expr_stmt SEMICOLON
      | return_stmt SEMICOLON
+     | funcCall_stmt SEMICOLON
      | block_stmt
      ;
      
 decl_stmt : type decl_element (COMMA decl_element)* ;
 decl_element : ID (ASSIGN expr)? ;
 
+funcCall : ID LPAR expr? (COMMA expr)* RPAR ;
+
 assign_stmt : ID ASSIGN expr ;
 expr_stmt : expr ;
 return_stmt : RETURN expr ;
+funcCall_stmt : funcCall ;
 block_stmt : block ;
+
 
 expr : primary # primaryExpr
      | <assoc=right>NOT primary # notExpr
@@ -33,9 +38,11 @@ expr : primary # primaryExpr
      ;
 
 primary : ID # idUse
-        | CONST # const
+        | CONSTINT # intExpr
+        | CONSTCHAR # charExpr
         | LPAR expr RPAR # parExpr
         | ID ASSIGN expr # assignExpr
+        | funcCall # funcCallExpr
         ;
 
 mOp : STAR | SLASH | MOD ;
@@ -67,10 +74,14 @@ ASSIGN : '=' ;
 SEMICOLON : ';' ;
 COMMA : ',' ;
 RETURN : 'return' ;
+
 type : INT | CHAR ;
 INT : 'int' ;
 CHAR : 'char' ;
-CONST : '0' | [1-9][0-9]* | '\''.*?'\'' ;
+
+CONSTINT : '0' | [1-9][0-9]* ;
+CONSTCHAR : '\''.*?'\'' ;
+
 ID : [a-zA-Z][a-zA-Z0-9_]* ;
 COMMENT : '/*' .*? '*/' -> skip ;
 DIRECTIVE : '#' .*? '\n' -> skip ;

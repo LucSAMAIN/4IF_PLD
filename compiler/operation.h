@@ -3,6 +3,7 @@
 
 #include <string>
 #include <iostream>
+#include <vector>
 
 /*
     LISTE DE TOUTES LES CLASSES IMPLEMENTÉES CI-DESSOUS

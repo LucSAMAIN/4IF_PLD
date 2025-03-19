@@ -22,7 +22,9 @@ void Prologue::gen_x86(std::ostream& o) {
     
     // Allouer de l'espace pour les variables locales
     int frameSize = ((-bb->cfg->stv.offsetTable[bb->cfg->functionName] + 15) & ~15);  // Alignement sur 16 octets uniquement
-    o << "    subq $" << frameSize << ", %rsp" << "\n";
+    if (frameSize > 0) {
+        o << "    subq $" << frameSize << ", %rsp" << "\n";
+    }
 }
 
 // implémentation de Epilogue
@@ -197,18 +199,24 @@ void Wmem::gen_x86(std::ostream& o) {
     o << "    movl " << bb->cfg->IR_reg_to_x86(src) << ", " << bb->cfg->IR_addr_to_x86(addr) << "\n";
 }
 
-// // Implémentation de Call
-// Call::Call(BasicBlock* bb, const std::string& function) : func_name(function), bb(bb) {}
+// Implémentation de Call
+Call::Call(BasicBlock* bb, const std::string& function) : func_name(function), bb(bb) {}
 
+std::string Call::get_operation_name() const {
+    return "call";
+}
 
+void Call::gen_x86(std::ostream& o) {
+    // for (int i = std::max<int>(6, args.size()) - 1; i >= 6; i--) {
+    //     o << "pushl " << bb->cfg->IR_reg_to_x86(args[i]) << "\n";
+    // }
+    o << "    call " << func_name << "\n";
 
-// std::string Call::get_operation_name() const {
-//     return "call";
-// }
-
-// void Call::gen_x86(std::ostream& o) {
-//     o << "    CALL " << func_name << "\n";
-// }
+    // int to_pop = std::max<int>(0, args.size() - 6);
+    // if (to_pop > 0) { // on a push des arguments, on peut les pop ou juste déplacer rsp
+    //     o << "    addq $" << to_pop * 4 << ", %rsp\n";
+    // }
+}
 
 
 // Implémentation de CmpEq

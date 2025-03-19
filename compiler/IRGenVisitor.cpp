@@ -113,13 +113,56 @@ antlrcpp::Any IRGenVisitor::visitReturn_stmt(ifccParser::Return_stmtContext *ctx
     return 0;
 }
 
-antlrcpp::Any IRGenVisitor::visitConst(ifccParser::ConstContext *ctx)
+antlrcpp::Any IRGenVisitor::visitIntExpr(ifccParser::IntExprContext *ctx)
 {
     // Operation *op_const = new LdConst(cfg->current_bb, "!reg", std::stoi(ctx->CONST()->getText()));  // block, dst, src
     // IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
     // cfg->current_bb->add_IRInstr(instruction_const);
     
-    return std::pair<bool, int>(true, std::stoi(ctx->CONST()->getText()));
+    return std::pair<bool, int>(true, std::stoi(ctx->CONSTINT()->getText()));
+}
+
+antlrcpp::Any IRGenVisitor::visitCharExpr(ifccParser::CharExprContext *ctx)
+{
+    // Operation *op_const = new LdConst(cfg->current_bb, "!reg", std::stoi(ctx->CONST()->getText()));  // block, dst, src
+    // IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
+    // cfg->current_bb->add_IRInstr(instruction_const);
+
+    char interpretedChar;
+    if (ctx->CONSTCHAR()->getText().size() == 3) {
+        interpretedChar = ctx->CONSTCHAR()->getText()[1];
+    }
+    else {
+        if (ctx->CONSTCHAR()->getText()[1] == '\\') {
+            switch (ctx->CONSTCHAR()->getText()[2]) {
+                case 'n':
+                    interpretedChar = '\n';
+                    break;
+                case 't':
+                    interpretedChar = '\t';
+                    break;
+                case 'r':
+                    interpretedChar = '\r';
+                    break;
+                case '0':
+                    interpretedChar = '\0';
+                    break;
+                case '\\':
+                    interpretedChar = '\\';
+                    break;
+                case '\'':
+                    interpretedChar = '\'';
+                    break;
+                case '\"':
+                    interpretedChar = '\"';
+                    break;
+                default:
+                    interpretedChar = ctx->CONSTCHAR()->getText()[2];
+                    break;
+            }
+        }
+    }
+    return std::pair<bool, int>(true, interpretedChar);
 }
 
 antlrcpp::Any IRGenVisitor::visitIdUse(ifccParser::IdUseContext *ctx)
@@ -673,4 +716,30 @@ antlrcpp::Any IRGenVisitor::visitOrExpr(ifccParser::OrExprContext *ctx) {
 antlrcpp::Any IRGenVisitor::visitParExpr(ifccParser::ParExprContext *ctx) {
     std::pair<bool, int> res(visit(ctx->expr()));
     return res;
+}
+
+antlrcpp::Any IRGenVisitor::visitFuncCall(ifccParser::FuncCallContext *ctx) {
+    std::string nomFonction = ctx->ID()->getText();
+    
+    for (int i = 0; i < ctx->expr().size(); i++) {
+        std::pair<bool, int> res(visit(ctx->expr(i)));
+        if (res.first) {
+            Operation *op_const = new LdConst(cfg->current_bb, "!arg"+std::to_string(i)+"32", res.second);  // block, dst, src
+            IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
+            cfg->current_bb->add_IRInstr(instruction_const);
+        }
+        else {
+            Operation *copy_arg = new Copy(cfg->current_bb, "!arg"+std::to_string(i)+"32", "!reg");
+            IRInstr *instruction_copy_arg = new IRInstr(cfg->current_bb, copy_arg);
+            cfg->current_bb->add_IRInstr(instruction_copy_arg);
+        }
+        // plus de 6 args ? faire une operation push et pop ?
+    }
+
+    // On appelle la fonction
+    Operation *call = new Call(cfg->current_bb, nomFonction);  // block, dst, src
+    IRInstr *instruction_call = new IRInstr(cfg->current_bb, call);
+    cfg->current_bb->add_IRInstr(instruction_call);
+
+    return std::pair<bool, int>(false, 0);
 }

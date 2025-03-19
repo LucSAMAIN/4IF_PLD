@@ -10,6 +10,11 @@ Type fromStringToType(std::string s)
         return Type::INT;
 }
 
+SymbolTableGenVisitor::SymbolTableGenVisitor() : symbolTable(), offsetTable(), scope("main") {
+    symbolTable["putchar"] = {Type::VOID, 0, true, true};
+    symbolTable["getchar"] = {Type::VOID, 0, true, true};
+}
+
 antlrcpp::Any SymbolTableGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx) {
     for (int i = 0; i < ctx->decl_element().size(); i++) {
         if (symbolTable.find(scope + '_' + ctx->decl_element(i)->ID()->getText()) != symbolTable.end()) {
@@ -118,5 +123,13 @@ antlrcpp::Any SymbolTableGenVisitor::visitAssignExpr(ifccParser::AssignExprConte
     }
     symbolTable[tried_scope + '_' + ctx->ID()->getText()].used = true;
     visit(ctx->expr());
+    return 0;
+}
+
+antlrcpp::Any SymbolTableGenVisitor::visitFuncCall(ifccParser::FuncCallContext *ctx) {
+    if (symbolTable.find(ctx->ID()->getText()) == symbolTable.end()) {
+        std::cerr << "error: function not declared " << ctx->ID()->getText() << " in scope " << scope << "\n";
+        return 0;
+    }
     return 0;
 }

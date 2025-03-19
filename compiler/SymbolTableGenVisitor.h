@@ -29,12 +29,13 @@ typedef struct VarInfos
 class SymbolTableGenVisitor : public ifccBaseVisitor
 {
 public:
-    SymbolTableGenVisitor() : symbolTable(), offsetTable(), scope("main") {}
+    SymbolTableGenVisitor();
     virtual ~SymbolTableGenVisitor() {}
 
     virtual antlrcpp::Any visitDecl_stmt(ifccParser::Decl_stmtContext *ctx) override;
     virtual antlrcpp::Any visitAssign_stmt(ifccParser::Assign_stmtContext *ctx) override;
     virtual antlrcpp::Any visitIdUse(ifccParser::IdUseContext *ctx) override;
+    virtual antlrcpp::Any visitFuncCall(ifccParser::FuncCallContext *ctx) override;
     virtual antlrcpp::Any visitBlock(ifccParser::BlockContext *ctx) override;
     virtual antlrcpp::Any visitAssignExpr(ifccParser::AssignExprContext *ctx) override;
     std::map<std::string, VarInfos> symbolTable;

@@ -166,7 +166,7 @@ void Mod::gen_x86(std::ostream& o) {
     o << "    cqo\n";
     o << "    idivl " << bb->cfg->IR_reg_to_x86(op2) << "\n";
     if (bb->cfg->IR_reg_to_x86(dest) != "%edx") {
-        o << "    movl " << "%edx" << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+        o << "    movl " << "%edx, " << bb->cfg->IR_reg_to_x86(dest) << "\n";
     }
 }
 

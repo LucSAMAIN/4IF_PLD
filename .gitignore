@@ -45,3 +45,4 @@ settings.json
 *.ir.pdf
 
 ./compiler/build/
+./compiler/generated/

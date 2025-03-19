@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <utility> // pour std::pair
 
 
 IRGenVisitor::IRGenVisitor(SymbolTableGenVisitor& symbolTableGenVisitor) 
@@ -60,7 +61,12 @@ antlrcpp::Any IRGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx)
             // std::cout << "# address " << address << "\n";
 
             // Évaluation de l'expression qu'on place dans le registre universel !reg
-            visit(ctx->decl_element(i)->expr());
+            std::pair<bool, int> res(visit(ctx->decl_element(i)->expr()));
+            if (res.first) {
+                Operation *op_const = new LdConst(cfg->current_bb, "!reg", res.second);  // block, dst, src
+                IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
+                cfg->current_bb->add_IRInstr(instruction_const);
+            }
             Operation *wmem = new Wmem(cfg->current_bb, address, "!reg"); // block, dst, src
             IRInstr *instruction = new IRInstr(cfg->current_bb, wmem);
             cfg->current_bb->add_IRInstr(instruction);
@@ -78,7 +84,12 @@ antlrcpp::Any IRGenVisitor::visitAssign_stmt(ifccParser::Assign_stmtContext *ctx
     // std::cout << "# address " << address << "\n";
 
     // Évaluation de l'expression qu'on place dans le registre universel !reg
-    visit(ctx->expr());
+    std::pair<bool, int> res(visit(ctx->expr()));
+    if (res.first) {
+        Operation *op_const = new LdConst(cfg->current_bb, "!reg", res.second);  // block, dst, src
+        IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
+        cfg->current_bb->add_IRInstr(instruction_const);
+    }
     Operation *wmem = new Wmem(cfg->current_bb, address, "!reg"); // block, dst, src
     IRInstr *instruction = new IRInstr(cfg->current_bb, wmem);
     cfg->current_bb->add_IRInstr(instruction);
@@ -89,7 +100,12 @@ antlrcpp::Any IRGenVisitor::visitAssign_stmt(ifccParser::Assign_stmtContext *ctx
 antlrcpp::Any IRGenVisitor::visitReturn_stmt(ifccParser::Return_stmtContext *ctx)
 {
     // Évaluation de l'expression qu'on place dans le registre universel !reg
-    visit(ctx->expr());
+    std::pair<bool, int> res(visit(ctx->expr()));
+    if (res.first) {
+        Operation *op_const = new LdConst(cfg->current_bb, "!reg", res.second);  // block, dst, src
+        IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
+        cfg->current_bb->add_IRInstr(instruction_const);
+    }
     
     cfg->current_bb->exit_true = cfg->end_block; // default exit
     cfg->current_bb->exit_false = nullptr;
@@ -99,11 +115,11 @@ antlrcpp::Any IRGenVisitor::visitReturn_stmt(ifccParser::Return_stmtContext *ctx
 
 antlrcpp::Any IRGenVisitor::visitConst(ifccParser::ConstContext *ctx)
 {
-    Operation *op_const = new LdConst(cfg->current_bb, "!reg", std::stoi(ctx->CONST()->getText()));  // block, dst, src
-    IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
-    cfg->current_bb->add_IRInstr(instruction_const);
+    // Operation *op_const = new LdConst(cfg->current_bb, "!reg", std::stoi(ctx->CONST()->getText()));  // block, dst, src
+    // IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
+    // cfg->current_bb->add_IRInstr(instruction_const);
     
-    return 0;
+    return std::pair<bool, int>(true, std::stoi(ctx->CONST()->getText()));
 }
 
 antlrcpp::Any IRGenVisitor::visitIdUse(ifccParser::IdUseContext *ctx)
@@ -116,316 +132,545 @@ antlrcpp::Any IRGenVisitor::visitIdUse(ifccParser::IdUseContext *ctx)
     IRInstr *instruction = new IRInstr(cfg->current_bb, rmem);
     cfg->current_bb->add_IRInstr(instruction);
 
-    return 0;
+    return std::pair<bool, int>(false, 0);
 }
 
 antlrcpp::Any IRGenVisitor::visitAssignExpr(ifccParser::AssignExprContext *ctx) {
     // On récupère le nom et l'adresse stack de la variable en question
     std::string nomVar = scope + "_" + ctx->ID()->getText();
-    // std::cout << "# nomVar " << nomVar << "\n";
     std::string address = "RBP" + std::to_string(cfg->stv.symbolTable[nomVar].offset); 
-    // std::cout << "# address " << address << "\n";
 
     // Évaluation de l'expression qu'on place dans le registre universel !reg
-    visit(ctx->expr());
+    std::pair<bool, int> res(visit(ctx->expr()));
+    if (res.first) {
+        Operation *op_const = new LdConst(cfg->current_bb, "!reg", res.second);  // block, dst, src
+        IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
+        cfg->current_bb->add_IRInstr(instruction_const);
+    }
     Operation *wmem = new Wmem(cfg->current_bb, address, "!reg"); // block, dst, src
     IRInstr *instruction = new IRInstr(cfg->current_bb, wmem);
     cfg->current_bb->add_IRInstr(instruction);
 
     // la valeur est retournée dans !reg
     
-    return 0;
+    return res;
 }
 
 
 antlrcpp::Any IRGenVisitor::visitNotExpr(ifccParser::NotExprContext *ctx) {
     // Évaluation de l'expression qu'on place dans le registre universel !reg
-    visit(ctx->primary()); 
+    std::pair<bool, int> res(visit(ctx->primary()));
+    if (res.first) {
+        return std::pair<bool, int>(true, !res.second);
+    }
 
     Operation *operation_not = new Not(cfg->current_bb, "!reg");
     IRInstr *instruction_not = new IRInstr(cfg->current_bb, operation_not);
     cfg->current_bb->add_IRInstr(instruction_not);
     
-    return 0;
+    return std::pair<bool, int>(false, 0);
 }
 
 antlrcpp::Any IRGenVisitor::visitUnaryMinusExpr(ifccParser::UnaryMinusExprContext *ctx) {
     // Évaluation de l'expression qu'on place dans le registre universel !reg
-    visit(ctx->primary()); 
+    std::pair<bool, int> res(visit(ctx->primary()));
+    if (res.first) {
+        return std::pair<bool, int>(true, -res.second);
+    }
 
     Operation *operation_unaryminus = new UnaryMinus(cfg->current_bb, "!reg");
     IRInstr *instruction_unaryminus = new IRInstr(cfg->current_bb, operation_unaryminus);
     cfg->current_bb->add_IRInstr(instruction_unaryminus);
     
-    return 0;
+    return std::pair<bool, int>(false, 0);
 }
 
 antlrcpp::Any IRGenVisitor::visitMulDivExpr(ifccParser::MulDivExprContext *ctx) {
     // Évaluation de l'expression gauche qu'on place dans le registre universel !reg
-    visit(ctx->left);
-    std::string temp_left = cfg->create_new_tempvar(Type::INT);
-    std::string address_left = "RBP" + std::to_string(cfg->stv.symbolTable[temp_left].offset); 
-    
-    // Copier le résultat de l'expression dans la variable temporaire
-    Operation *wmem_left = new Wmem(cfg->current_bb, address_left, "!reg");
-    IRInstr *instruction_left = new IRInstr(cfg->current_bb, wmem_left);
-    cfg->current_bb->add_IRInstr(instruction_left);
+    std::pair<bool, int> res_left(visit(ctx->left));
+    if (res_left.first) {
+        std::pair<bool, int> res_right(visit(ctx->right));
+        if (res_right.first) {
+            if (ctx->mOp()->STAR()) {
+                return std::pair<bool, int>(true, res_left.second * res_right.second);
+            }
+            else if (ctx->mOp()->SLASH()) {
+                return std::pair<bool, int>(true, res_left.second / res_right.second);
+            }
+            else if (ctx->mOp()->MOD()) {
+                return std::pair<bool, int>(true, res_left.second % res_right.second);
+            }
+        }
+        // Appliquer l'opération selon l'opérateur
+        if (ctx->mOp()->STAR()) {
+            Operation *op_const = new LdConst(cfg->current_bb, "!regLeft", res_left.second);  // block, dst, src
+            IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
+            cfg->current_bb->add_IRInstr(instruction_const);
 
+            Operation *operation_mul = new Mul(cfg->current_bb, "!reg", "!regLeft");
+            IRInstr *instruction_mul = new IRInstr(cfg->current_bb, operation_mul);
+            cfg->current_bb->add_IRInstr(instruction_mul);
+        }
+        else if (ctx->mOp()->SLASH()) {
+            Operation *copy_right = new Copy(cfg->current_bb, "!regRight", "!reg");
+            IRInstr *instruction_copy_right = new IRInstr(cfg->current_bb, copy_right);
+            cfg->current_bb->add_IRInstr(instruction_copy_right);
 
-    // Évaluation de l'expression right qu'on place dans le registre universel !reg
-    visit(ctx->right);
-    
-    // Appliquer l'opération selon l'opérateur
-    if (ctx->mOp()->STAR()) {
-        Operation *rmem_left = new Rmem(cfg->current_bb, "!regLeft", address_left);
-        IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
-        cfg->current_bb->add_IRInstr(instruction_read_left);
+            Operation *op_const = new LdConst(cfg->current_bb, "!reg", res_left.second);  // block, dst, src
+            IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
+            cfg->current_bb->add_IRInstr(instruction_const);
 
-        Operation *operation_mul = new Mul(cfg->current_bb, "!reg", "!regLeft");
-        IRInstr *instruction_mul = new IRInstr(cfg->current_bb, operation_mul);
-        cfg->current_bb->add_IRInstr(instruction_mul);
+            Operation *operation_div = new Div(cfg->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_div = new IRInstr(cfg->current_bb, operation_div);
+            cfg->current_bb->add_IRInstr(instruction_div);
+        }
+        else if (ctx->mOp()->MOD()) {
+            Operation *copy_right = new Copy(cfg->current_bb, "!regRight", "!reg");
+            IRInstr *instruction_copy_right = new IRInstr(cfg->current_bb, copy_right);
+            cfg->current_bb->add_IRInstr(instruction_copy_right);
+
+            Operation *op_const = new LdConst(cfg->current_bb, "!reg", res_left.second);  // block, dst, src
+            IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
+            cfg->current_bb->add_IRInstr(instruction_const);
+
+            Operation *operation_mod = new Mod(cfg->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_mod = new IRInstr(cfg->current_bb, operation_mod);
+            cfg->current_bb->add_IRInstr(instruction_mod);
+        }
     }
-    else if (ctx->mOp()->SLASH()) {
-        Operation *copy_right = new Copy(cfg->current_bb, "!regRight", "!reg");
-        IRInstr *instruction_copy_right = new IRInstr(cfg->current_bb, copy_right);
-        cfg->current_bb->add_IRInstr(instruction_copy_right);
 
-        Operation *rmem_left = new Rmem(cfg->current_bb, "!reg", address_left);
-        IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
-        cfg->current_bb->add_IRInstr(instruction_read_left);
+    else {
+        std::string temp_left = cfg->create_new_tempvar(Type::INT);
+        std::string address_left = "RBP" + std::to_string(cfg->stv.symbolTable[temp_left].offset);
+        // Copier le résultat de l'expression dans la variable temporaire
+        Operation *wmem_left = new Wmem(cfg->current_bb, address_left, "!reg");
+        IRInstr *instruction_left = new IRInstr(cfg->current_bb, wmem_left);
+        cfg->current_bb->add_IRInstr(instruction_left);
 
-        Operation *operation_div = new Div(cfg->current_bb, "!reg", "!regRight");
-        IRInstr *instruction_div = new IRInstr(cfg->current_bb, operation_div);
-        cfg->current_bb->add_IRInstr(instruction_div);
-    }
-    else if (ctx->mOp()->MOD()) {
-        Operation *copy_right = new Copy(cfg->current_bb, "!regRight", "!reg");
-        IRInstr *instruction_copy_right = new IRInstr(cfg->current_bb, copy_right);
-        cfg->current_bb->add_IRInstr(instruction_copy_right);
+        // Évaluation de l'expression right qu'on place dans le registre universel !reg
+        std::pair<bool, int> res_right(visit(ctx->right));
+        if (res_right.first) {
+            Operation *op_const = new LdConst(cfg->current_bb, "!reg", res_right.second);  // block, dst, src
+            IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
+            cfg->current_bb->add_IRInstr(instruction_const);
+        }
+        
+        // Appliquer l'opération selon l'opérateur
+        if (ctx->mOp()->STAR()) {
+            Operation *rmem_left = new Rmem(cfg->current_bb, "!regLeft", address_left);
+            IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
+            cfg->current_bb->add_IRInstr(instruction_read_left);
 
-        Operation *rmem_left = new Rmem(cfg->current_bb, "!reg", address_left);
-        IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
-        cfg->current_bb->add_IRInstr(instruction_read_left);
+            Operation *operation_mul = new Mul(cfg->current_bb, "!reg", "!regLeft");
+            IRInstr *instruction_mul = new IRInstr(cfg->current_bb, operation_mul);
+            cfg->current_bb->add_IRInstr(instruction_mul);
+        }
+        else if (ctx->mOp()->SLASH()) {
+            Operation *copy_right = new Copy(cfg->current_bb, "!regRight", "!reg");
+            IRInstr *instruction_copy_right = new IRInstr(cfg->current_bb, copy_right);
+            cfg->current_bb->add_IRInstr(instruction_copy_right);
 
-        Operation *operation_mod = new Mod(cfg->current_bb, "!reg", "!regRight");
-        IRInstr *instruction_mod = new IRInstr(cfg->current_bb, operation_mod);
-        cfg->current_bb->add_IRInstr(instruction_mod);
-    }
-    
-    return 0;
+            Operation *rmem_left = new Rmem(cfg->current_bb, "!reg", address_left);
+            IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
+            cfg->current_bb->add_IRInstr(instruction_read_left);
+
+            Operation *operation_div = new Div(cfg->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_div = new IRInstr(cfg->current_bb, operation_div);
+            cfg->current_bb->add_IRInstr(instruction_div);
+        }
+        else if (ctx->mOp()->MOD()) {
+            Operation *copy_right = new Copy(cfg->current_bb, "!regRight", "!reg");
+            IRInstr *instruction_copy_right = new IRInstr(cfg->current_bb, copy_right);
+            cfg->current_bb->add_IRInstr(instruction_copy_right);
+
+            Operation *rmem_left = new Rmem(cfg->current_bb, "!reg", address_left);
+            IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
+            cfg->current_bb->add_IRInstr(instruction_read_left);
+
+            Operation *operation_mod = new Mod(cfg->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_mod = new IRInstr(cfg->current_bb, operation_mod);
+            cfg->current_bb->add_IRInstr(instruction_mod);
+        }
+    }    
+    return std::pair<bool, int>(false, 0);
 }
 
 antlrcpp::Any IRGenVisitor::visitAddSubExpr(ifccParser::AddSubExprContext *ctx) {
+    // Évaluation de l'expression gauche qu'on place dans le registre universel !reg
+    std::pair<bool, int> res_left(visit(ctx->left));
+    if (res_left.first) {
+        std::pair<bool, int> res_right(visit(ctx->right));
+        if (res_right.first) {
+            if (ctx->aOp()->PLUS()) {
+                return std::pair<bool, int>(true, res_left.second + res_right.second);
+            }
+            else if (ctx->aOp()->MINUS()) {
+                return std::pair<bool, int>(true, res_left.second - res_right.second);
+            }
+        }
+        // Appliquer l'opération selon l'opérateur
+        if (ctx->aOp()->PLUS()) {
+            Operation *op_const = new LdConst(cfg->current_bb, "!regLeft", res_left.second);  // block, dst, src
+            IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
+            cfg->current_bb->add_IRInstr(instruction_const);
 
-    // Évaluation de l'expression droite qu'on place dans le registre universel !reg
-    visit(ctx->left);
-    std::string temp_left = cfg->create_new_tempvar(Type::INT);
-    std::string address_left = "RBP" + std::to_string(cfg->stv.symbolTable[temp_left].offset); 
-    
-    // Copier le résultat de l'expression dans la variable temporaire
-    Operation *wmem_left = new Wmem(cfg->current_bb, address_left, "!reg");
-    IRInstr *instruction_left = new IRInstr(cfg->current_bb, wmem_left);
-    cfg->current_bb->add_IRInstr(instruction_left);
+            Operation *operation_add = new Add(cfg->current_bb, "!reg", "!regLeft");
+            IRInstr *instruction_add = new IRInstr(cfg->current_bb, operation_add);
+            cfg->current_bb->add_IRInstr(instruction_add);
+        }
+        else if (ctx->aOp()->MINUS()) {
+            Operation *copy_right = new Copy(cfg->current_bb, "!regRight", "!reg");
+            IRInstr *instruction_copy_right = new IRInstr(cfg->current_bb, copy_right);
+            cfg->current_bb->add_IRInstr(instruction_copy_right);
 
+            Operation *op_const = new LdConst(cfg->current_bb, "!reg", res_left.second);  // block, dst, src
+            IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
+            cfg->current_bb->add_IRInstr(instruction_const);
 
-    // Évaluation de l'expression left qu'on place dans le registre universel !reg
-    visit(ctx->right);   
-    
-    // Appliquer l'opération selon l'opérateur
-    if (ctx->aOp()->PLUS()) {
-        Operation *rmem_left = new Rmem(cfg->current_bb, "!regLeft", address_left);
-        IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
-        cfg->current_bb->add_IRInstr(instruction_read_left);
-
-        Operation *operation_add = new Add(cfg->current_bb, "!reg", "!regLeft");
-        IRInstr *instruction_add = new IRInstr(cfg->current_bb, operation_add);
-        cfg->current_bb->add_IRInstr(instruction_add);
+            Operation *operation_sub = new Sub(cfg->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_sub = new IRInstr(cfg->current_bb, operation_sub);
+            cfg->current_bb->add_IRInstr(instruction_sub);
+        }
     }
-    else if (ctx->aOp()->MINUS()) {
+
+    else {
+        std::string temp_left = cfg->create_new_tempvar(Type::INT);
+        std::string address_left = "RBP" + std::to_string(cfg->stv.symbolTable[temp_left].offset);
+        // Copier le résultat de l'expression dans la variable temporaire
+        Operation *wmem_left = new Wmem(cfg->current_bb, address_left, "!reg");
+        IRInstr *instruction_left = new IRInstr(cfg->current_bb, wmem_left);
+        cfg->current_bb->add_IRInstr(instruction_left);
+
+        // Évaluation de l'expression right qu'on place dans le registre universel !reg
+        std::pair<bool, int> res_right(visit(ctx->right));
+        if (res_right.first) {
+            Operation *op_const = new LdConst(cfg->current_bb, "!reg", res_right.second);  // block, dst, src
+            IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
+            cfg->current_bb->add_IRInstr(instruction_const);
+        }  
+
+        // Appliquer l'opération selon l'opérateur
+        if (ctx->aOp()->PLUS()) {
+            Operation *rmem_left = new Rmem(cfg->current_bb, "!regLeft", address_left);
+            IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
+            cfg->current_bb->add_IRInstr(instruction_read_left);
+
+            Operation *operation_add = new Add(cfg->current_bb, "!reg", "!regLeft");
+            IRInstr *instruction_add = new IRInstr(cfg->current_bb, operation_add);
+            cfg->current_bb->add_IRInstr(instruction_add);
+        }
+        else if (ctx->aOp()->MINUS()) {
+            Operation *copy_right = new Copy(cfg->current_bb, "!regRight", "!reg");
+            IRInstr *instruction_copy_right = new IRInstr(cfg->current_bb, copy_right);
+            cfg->current_bb->add_IRInstr(instruction_copy_right);
+
+            Operation *rmem_left = new Rmem(cfg->current_bb, "!reg", address_left);
+            IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
+            cfg->current_bb->add_IRInstr(instruction_read_left);
+
+            Operation *operation_sub = new Sub(cfg->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_sub = new IRInstr(cfg->current_bb, operation_sub);
+            cfg->current_bb->add_IRInstr(instruction_sub);
+        }
+    }    
+    return std::pair<bool, int>(false, 0);
+}
+
+antlrcpp::Any IRGenVisitor::visitCompExpr(ifccParser::CompExprContext *ctx) {
+    std::pair<bool, int> res_left(visit(ctx->left));
+    if (res_left.first) {
+        std::pair<bool, int> res_right(visit(ctx->right));
+        if (res_right.first) {
+            if (ctx->compOp()->LT()) {
+                return std::pair<bool, int>(true, res_left.second < res_right.second);
+            }
+            else if (ctx->compOp()->LE()) {
+                return std::pair<bool, int>(true, res_left.second <= res_right.second);
+            }
+            else if (ctx->compOp()->GE()) {
+                return std::pair<bool, int>(true, res_left.second >= res_right.second);
+            }
+            else if (ctx->compOp()->GT()) {
+                return std::pair<bool, int>(true, res_left.second > res_right.second);
+            }
+        }
+        // Appliquer l'opération selon l'opérateur
         Operation *copy_right = new Copy(cfg->current_bb, "!regRight", "!reg");
         IRInstr *instruction_copy_right = new IRInstr(cfg->current_bb, copy_right);
         cfg->current_bb->add_IRInstr(instruction_copy_right);
 
+        Operation *op_const = new LdConst(cfg->current_bb, "!reg", res_left.second);  // block, dst, src
+        IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
+        cfg->current_bb->add_IRInstr(instruction_const);
+        if (ctx->compOp()->LT()) {
+            Operation *operation_lt = new CmpLt(cfg->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_lt = new IRInstr(cfg->current_bb, operation_lt);
+            cfg->current_bb->add_IRInstr(instruction_lt);
+        }
+        else if (ctx->compOp()->LE()) {
+            Operation *operation_le = new CmpLe(cfg->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_le = new IRInstr(cfg->current_bb, operation_le);
+            cfg->current_bb->add_IRInstr(instruction_le);
+        }
+        else if (ctx->compOp()->GE()) {
+            Operation *operation_ge = new CmpGe(cfg->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_ge = new IRInstr(cfg->current_bb, operation_ge);
+            cfg->current_bb->add_IRInstr(instruction_ge);
+        }
+        else if (ctx->compOp()->GT()) {
+            Operation *operation_gt = new CmpGt(cfg->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_gt = new IRInstr(cfg->current_bb, operation_gt);
+            cfg->current_bb->add_IRInstr(instruction_gt);
+        }
+    }
+
+    else {
+        std::string temp_left = cfg->create_new_tempvar(Type::INT);
+        std::string address_left = "RBP" + std::to_string(cfg->stv.symbolTable[temp_left].offset);
+        // Copier le résultat de l'expression dans la variable temporaire
+        Operation *wmem_left = new Wmem(cfg->current_bb, address_left, "!reg");
+        IRInstr *instruction_left = new IRInstr(cfg->current_bb, wmem_left);
+        cfg->current_bb->add_IRInstr(instruction_left);
+
+        std::pair<bool, int> res_right(visit(ctx->right));
+        if (res_right.first) {
+            Operation *op_const = new LdConst(cfg->current_bb, "!regRight", res_right.second);  // block, dst, src
+            IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
+            cfg->current_bb->add_IRInstr(instruction_const);
+        }  
+        else {
+            Operation *copy_right = new Copy(cfg->current_bb, "!regRight", "!reg");
+            IRInstr *instruction_copy_right = new IRInstr(cfg->current_bb, copy_right);
+            cfg->current_bb->add_IRInstr(instruction_copy_right);
+        }
+
         Operation *rmem_left = new Rmem(cfg->current_bb, "!reg", address_left);
         IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
         cfg->current_bb->add_IRInstr(instruction_read_left);
-
-        Operation *operation_sub = new Sub(cfg->current_bb, "!reg", "!regRight");
-        IRInstr *instruction_sub = new IRInstr(cfg->current_bb, operation_sub);
-        cfg->current_bb->add_IRInstr(instruction_sub);
+        if (ctx->compOp()->LT()) {
+            Operation *operation_lt = new CmpLt(cfg->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_lt = new IRInstr(cfg->current_bb, operation_lt);
+            cfg->current_bb->add_IRInstr(instruction_lt);
+        }
+        else if (ctx->compOp()->LE()) {
+            Operation *operation_le = new CmpLe(cfg->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_le = new IRInstr(cfg->current_bb, operation_le);
+            cfg->current_bb->add_IRInstr(instruction_le);
+        }
+        else if (ctx->compOp()->GE()) {
+            Operation *operation_ge = new CmpGe(cfg->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_ge = new IRInstr(cfg->current_bb, operation_ge);
+            cfg->current_bb->add_IRInstr(instruction_ge);
+        }
+        else if (ctx->compOp()->GT()) {
+            Operation *operation_gt = new CmpGt(cfg->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_gt = new IRInstr(cfg->current_bb, operation_gt);
+            cfg->current_bb->add_IRInstr(instruction_gt);
+        }
     }
     
-    return 0;
-}
-
-antlrcpp::Any IRGenVisitor::visitCompExpr(ifccParser::CompExprContext *ctx) {
-    // Évaluation de l'expression gauche qu'on place dans le registre universel !reg
-    visit(ctx->left);
-    std::string temp_left = cfg->create_new_tempvar(Type::INT);
-    std::string address_left = "RBP" + std::to_string(cfg->stv.symbolTable[temp_left].offset); 
-    
-    // Copier le résultat de l'expression dans la variable temporaire
-    Operation *wmem_left = new Wmem(cfg->current_bb, address_left, "!reg");
-    IRInstr *instruction_left = new IRInstr(cfg->current_bb, wmem_left);
-    cfg->current_bb->add_IRInstr(instruction_left);
-
-
-
-
-    // Évaluation de l'expression droite qu'on place dans le registre universel !reg
-    visit(ctx->right);   
-
-
-    // Probablement car les opération suivantes ne sont pas commutatives
-    // On prévoit le coup et on déplace le résultat de droite à dans le
-    // registre regRight.
-    // Evite de répété les trois prochaines lignes de codes dans tous les if
-    // then else suivant.
-    Operation *copy_right = new Copy(cfg->current_bb, "!regRight", "!reg");
-    IRInstr *instruction_copy_right = new IRInstr(cfg->current_bb, copy_right);
-    cfg->current_bb->add_IRInstr(instruction_copy_right);
-
-    Operation *rmem_left = new Rmem(cfg->current_bb, "!reg", address_left);
-    IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
-    cfg->current_bb->add_IRInstr(instruction_read_left);
-    
-    // Appliquer l'opération selon l'opérateur
-    if (ctx->compOp()->LT()) {
-        Operation *operation_lt = new CmpLt(cfg->current_bb, "!reg", "!regRight");
-        IRInstr *instruction_lt = new IRInstr(cfg->current_bb, operation_lt);
-        cfg->current_bb->add_IRInstr(instruction_lt);
-    }
-    else if (ctx->compOp()->LE()) {
-        Operation *operation_le = new CmpLe(cfg->current_bb, "!reg", "!regRight");
-        IRInstr *instruction_le = new IRInstr(cfg->current_bb, operation_le);
-        cfg->current_bb->add_IRInstr(instruction_le);
-    }
-    else if (ctx->compOp()->GE()) {
-        Operation *operation_ge = new CmpGe(cfg->current_bb, "!reg", "!regRight");
-        IRInstr *instruction_ge = new IRInstr(cfg->current_bb, operation_ge);
-        cfg->current_bb->add_IRInstr(instruction_ge);
-    }
-    else if (ctx->compOp()->GT()) {
-        Operation *operation_gt = new CmpGt(cfg->current_bb, "!reg", "!regRight");
-        IRInstr *instruction_gt = new IRInstr(cfg->current_bb, operation_gt);
-        cfg->current_bb->add_IRInstr(instruction_gt);
-    }
-    
-    return 0;
+    return std::pair<bool, int>(false, 0);
 }
 
 antlrcpp::Any IRGenVisitor::visitEqExpr(ifccParser::EqExprContext *ctx) {
-    // Évaluation de l'expression droite qu'on place dans le registre universel !reg
-    visit(ctx->left);
-    std::string temp_left = cfg->create_new_tempvar(Type::INT);
-    std::string address_left = "RBP" + std::to_string(cfg->stv.symbolTable[temp_left].offset); 
-    
-    // Copier le résultat de l'expression dans la variable temporaire
-    Operation *wmem_left = new Wmem(cfg->current_bb, address_left, "!reg");
-    IRInstr *instruction_left = new IRInstr(cfg->current_bb, wmem_left);
-    cfg->current_bb->add_IRInstr(instruction_left);
+    std::pair<bool, int> res_left(visit(ctx->left));
+    if (res_left.first) {
+        std::pair<bool, int> res_right(visit(ctx->right));
+        if (res_right.first) {
+            if (ctx->eqOp()->EQ()) {
+                return std::pair<bool, int>(true, res_left.second == res_right.second);
+            }
+            else if (ctx->eqOp()->NEQ()) {
+                return std::pair<bool, int>(true, res_left.second != res_right.second);
+            }
+        }
+        // Appliquer l'opération selon l'opérateur
+        Operation *copy_right = new Copy(cfg->current_bb, "!regRight", "!reg");
+        IRInstr *instruction_copy_right = new IRInstr(cfg->current_bb, copy_right);
+        cfg->current_bb->add_IRInstr(instruction_copy_right);
 
-
-    // Évaluation de l'expression right qu'on place dans le registre universel !reg
-    visit(ctx->right);   
-
-    Operation *copy_right = new Copy(cfg->current_bb, "!regRight", "!reg");
-    IRInstr *instruction_copy_right = new IRInstr(cfg->current_bb, copy_right);
-    cfg->current_bb->add_IRInstr(instruction_copy_right);
-
-    Operation *rmem_left = new Rmem(cfg->current_bb, "!reg", address_left);
-    IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
-    cfg->current_bb->add_IRInstr(instruction_read_left);
-    
-    // Appliquer l'opération selon l'opérateur
-    if (ctx->eqOp()->EQ()) {
-        Operation *operation_eq = new CmpEq(cfg->current_bb, "!reg", "!regRight");
-        IRInstr *instruction_eq = new IRInstr(cfg->current_bb, operation_eq);
-        cfg->current_bb->add_IRInstr(instruction_eq);
+        Operation *op_const = new LdConst(cfg->current_bb, "!reg", res_left.second);  // block, dst, src
+        IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
+        cfg->current_bb->add_IRInstr(instruction_const);
+        if (ctx->eqOp()->EQ()) {
+            Operation *operation_eq = new CmpEq(cfg->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_eq = new IRInstr(cfg->current_bb, operation_eq);
+            cfg->current_bb->add_IRInstr(instruction_eq);
+        }
+        else if (ctx->eqOp()->NEQ()) {
+            Operation *operation_neq = new CmpNeq(cfg->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_neq = new IRInstr(cfg->current_bb, operation_neq);
+            cfg->current_bb->add_IRInstr(instruction_neq);
+        }
     }
-    else if (ctx->eqOp()->NEQ()) {
-        Operation *operation_neq = new CmpNeq(cfg->current_bb, "!reg", "!regRight");
-        IRInstr *instruction_neq = new IRInstr(cfg->current_bb, operation_neq);
-        cfg->current_bb->add_IRInstr(instruction_neq);
+
+    else {
+        std::string temp_left = cfg->create_new_tempvar(Type::INT);
+        std::string address_left = "RBP" + std::to_string(cfg->stv.symbolTable[temp_left].offset);
+        // Copier le résultat de l'expression dans la variable temporaire
+        Operation *wmem_left = new Wmem(cfg->current_bb, address_left, "!reg");
+        IRInstr *instruction_left = new IRInstr(cfg->current_bb, wmem_left);
+        cfg->current_bb->add_IRInstr(instruction_left);
+
+        std::pair<bool, int> res_right(visit(ctx->right));
+        if (res_right.first) {
+            Operation *op_const = new LdConst(cfg->current_bb, "!regRight", res_right.second);  // block, dst, src
+            IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
+            cfg->current_bb->add_IRInstr(instruction_const);
+        } 
+        else {
+            Operation *copy_right = new Copy(cfg->current_bb, "!regRight", "!reg");
+            IRInstr *instruction_copy_right = new IRInstr(cfg->current_bb, copy_right);
+            cfg->current_bb->add_IRInstr(instruction_copy_right);
+        }
+
+        Operation *rmem_left = new Rmem(cfg->current_bb, "!reg", address_left);
+        IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
+        cfg->current_bb->add_IRInstr(instruction_read_left);
+        if (ctx->eqOp()->EQ()) {
+            Operation *operation_eq = new CmpEq(cfg->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_eq = new IRInstr(cfg->current_bb, operation_eq);
+            cfg->current_bb->add_IRInstr(instruction_eq);
+        }
+        else if (ctx->eqOp()->NEQ()) {
+            Operation *operation_neq = new CmpNeq(cfg->current_bb, "!reg", "!regRight");
+            IRInstr *instruction_neq = new IRInstr(cfg->current_bb, operation_neq);
+            cfg->current_bb->add_IRInstr(instruction_neq);
+        }
     }
     
-    return 0;
+    return std::pair<bool, int>(false, 0);
 }
 
 antlrcpp::Any IRGenVisitor::visitAndExpr(ifccParser::AndExprContext *ctx) {
-    // Évaluation de l'expression droite qu'on place dans le registre universel !reg
-    visit(ctx->left);
-    std::string temp_left = cfg->create_new_tempvar(Type::INT);
-    std::string address_left = "RBP" + std::to_string(cfg->stv.symbolTable[temp_left].offset); 
+    std::pair<bool, int> res_left(visit(ctx->left));
+    if (res_left.first) {
+        std::pair<bool, int> res_right(visit(ctx->right));
+        if (res_right.first) {
+            return std::pair<bool, int>(true, res_left.second & res_right.second);
+        }
+        Operation *op_const = new LdConst(cfg->current_bb, "!regLeft", res_left.second);  // block, dst, src
+        IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
+        cfg->current_bb->add_IRInstr(instruction_const);
+
+        Operation *operation_and = new And(cfg->current_bb, "!reg", "!regLeft");
+        IRInstr *instruction_and = new IRInstr(cfg->current_bb, operation_and);
+        cfg->current_bb->add_IRInstr(instruction_and);
+    }
+
+    else {
+        std::string temp_left = cfg->create_new_tempvar(Type::INT);
+        std::string address_left = "RBP" + std::to_string(cfg->stv.symbolTable[temp_left].offset);
+        // Copier le résultat de l'expression dans la variable temporaire
+        Operation *wmem_left = new Wmem(cfg->current_bb, address_left, "!reg");
+        IRInstr *instruction_left = new IRInstr(cfg->current_bb, wmem_left);
+        cfg->current_bb->add_IRInstr(instruction_left);
+
+        std::pair<bool, int> res_right(visit(ctx->right));
+        if (res_right.first) {
+            Operation *op_const = new LdConst(cfg->current_bb, "!reg", res_right.second);  // block, dst, src
+            IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
+            cfg->current_bb->add_IRInstr(instruction_const);
+        } 
+        Operation *rmem_left = new Rmem(cfg->current_bb, "!regLeft", address_left);
+        IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
+        cfg->current_bb->add_IRInstr(instruction_read_left);
+        
+        Operation *operation_and = new And(cfg->current_bb, "!reg", "!regLeft");
+        IRInstr *instruction_and = new IRInstr(cfg->current_bb, operation_and);
+        cfg->current_bb->add_IRInstr(instruction_and);
+    }
     
-    // Copier le résultat de l'expression dans la variable temporaire
-    Operation *wmem_left = new Wmem(cfg->current_bb, address_left, "!reg");
-    IRInstr *instruction_left = new IRInstr(cfg->current_bb, wmem_left);
-    cfg->current_bb->add_IRInstr(instruction_left);
-
-
-    // Évaluation de l'expression left qu'on place dans le registre universel !reg
-    visit(ctx->right);   
-
-    Operation *rmem_left = new Rmem(cfg->current_bb, "!regLeft", address_left);
-    IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
-    cfg->current_bb->add_IRInstr(instruction_read_left);
-
-    Operation *operation_and = new And(cfg->current_bb, "!reg", "!regLeft");
-    IRInstr *instruction_and = new IRInstr(cfg->current_bb, operation_and);
-    cfg->current_bb->add_IRInstr(instruction_and);
-
-    return 0;
+    return std::pair<bool, int>(false, 0);
 }
 
 antlrcpp::Any IRGenVisitor::visitXorExpr(ifccParser::XorExprContext *ctx) {
-    // Évaluation de l'expression droite qu'on place dans le registre universel !reg
-    visit(ctx->left);
-    std::string temp_left = cfg->create_new_tempvar(Type::INT);
-    std::string address_left = "RBP" + std::to_string(cfg->stv.symbolTable[temp_left].offset); 
+    std::pair<bool, int> res_left(visit(ctx->left));
+    if (res_left.first) {
+        std::pair<bool, int> res_right(visit(ctx->right));
+        if (res_right.first) {
+            return std::pair<bool, int>(true, res_left.second ^ res_right.second);
+        }
+        Operation *op_const = new LdConst(cfg->current_bb, "!regLeft", res_left.second);  // block, dst, src
+        IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
+        cfg->current_bb->add_IRInstr(instruction_const);
+
+        Operation *operation_and = new Xor(cfg->current_bb, "!reg", "!regLeft");
+        IRInstr *instruction_and = new IRInstr(cfg->current_bb, operation_and);
+        cfg->current_bb->add_IRInstr(instruction_and);
+    }
+
+    else {
+        std::string temp_left = cfg->create_new_tempvar(Type::INT);
+        std::string address_left = "RBP" + std::to_string(cfg->stv.symbolTable[temp_left].offset);
+        // Copier le résultat de l'expression dans la variable temporaire
+        Operation *wmem_left = new Wmem(cfg->current_bb, address_left, "!reg");
+        IRInstr *instruction_left = new IRInstr(cfg->current_bb, wmem_left);
+        cfg->current_bb->add_IRInstr(instruction_left);
+
+        std::pair<bool, int> res_right(visit(ctx->right));
+        if (res_right.first) {
+            Operation *op_const = new LdConst(cfg->current_bb, "!reg", res_right.second);  // block, dst, src
+            IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
+            cfg->current_bb->add_IRInstr(instruction_const);
+        }   
+
+        Operation *rmem_left = new Rmem(cfg->current_bb, "!regLeft", address_left);
+        IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
+        cfg->current_bb->add_IRInstr(instruction_read_left);
+        
+        Operation *operation_and = new Xor(cfg->current_bb, "!reg", "!regLeft");
+        IRInstr *instruction_and = new IRInstr(cfg->current_bb, operation_and);
+        cfg->current_bb->add_IRInstr(instruction_and);
+    }
     
-    // Copier le résultat de l'expression dans la variable temporaire
-    Operation *wmem_left = new Wmem(cfg->current_bb, address_left, "!reg");
-    IRInstr *instruction_left = new IRInstr(cfg->current_bb, wmem_left);
-    cfg->current_bb->add_IRInstr(instruction_left);
-
-
-    // Évaluation de l'expression left qu'on place dans le registre universel !reg
-    visit(ctx->right);   
-
-    Operation *rmem_left = new Rmem(cfg->current_bb, "!regLeft", address_left);
-    IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
-    cfg->current_bb->add_IRInstr(instruction_read_left);
-
-    Operation *operation_xor = new Xor(cfg->current_bb, "!reg", "!regLeft");
-    IRInstr *instruction_xor = new IRInstr(cfg->current_bb, operation_xor);
-    cfg->current_bb->add_IRInstr(instruction_xor);
-
-    return 0;
+    return std::pair<bool, int>(false, 0);
 }
 
 antlrcpp::Any IRGenVisitor::visitOrExpr(ifccParser::OrExprContext *ctx) {
-    // Évaluation de l'expression droite qu'on place dans le registre universel !reg
-    visit(ctx->left);
-    std::string temp_left = cfg->create_new_tempvar(Type::INT);
-    std::string address_left = "RBP" + std::to_string(cfg->stv.symbolTable[temp_left].offset); 
+    std::pair<bool, int> res_left(visit(ctx->left));
+    if (res_left.first) {
+        std::pair<bool, int> res_right(visit(ctx->right));
+        if (res_right.first) {
+            return std::pair<bool, int>(true, res_left.second | res_right.second);
+        }
+        Operation *op_const = new LdConst(cfg->current_bb, "!regLeft", res_left.second);  // block, dst, src
+        IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
+        cfg->current_bb->add_IRInstr(instruction_const);
+
+        Operation *operation_and = new Or(cfg->current_bb, "!reg", "!regLeft");
+        IRInstr *instruction_and = new IRInstr(cfg->current_bb, operation_and);
+        cfg->current_bb->add_IRInstr(instruction_and);
+    }
+
+    else {
+        std::string temp_left = cfg->create_new_tempvar(Type::INT);
+        std::string address_left = "RBP" + std::to_string(cfg->stv.symbolTable[temp_left].offset);
+        // Copier le résultat de l'expression dans la variable temporaire
+        Operation *wmem_left = new Wmem(cfg->current_bb, address_left, "!reg");
+        IRInstr *instruction_left = new IRInstr(cfg->current_bb, wmem_left);
+        cfg->current_bb->add_IRInstr(instruction_left);
+
+        std::pair<bool, int> res_right(visit(ctx->right));
+        if (res_right.first) {
+            Operation *op_const = new LdConst(cfg->current_bb, "!reg", res_right.second);  // block, dst, src
+            IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
+            cfg->current_bb->add_IRInstr(instruction_const);
+        }  
+
+        Operation *rmem_left = new Rmem(cfg->current_bb, "!regLeft", address_left);
+        IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
+        cfg->current_bb->add_IRInstr(instruction_read_left);
+        
+        Operation *operation_and = new Or(cfg->current_bb, "!reg", "!regLeft");
+        IRInstr *instruction_and = new IRInstr(cfg->current_bb, operation_and);
+        cfg->current_bb->add_IRInstr(instruction_and);
+    }
     
-    // Copier le résultat de l'expression dans la variable temporaire
-    Operation *wmem_left = new Wmem(cfg->current_bb, address_left, "!reg");
-    IRInstr *instruction_left = new IRInstr(cfg->current_bb, wmem_left);
-    cfg->current_bb->add_IRInstr(instruction_left);
+    return std::pair<bool, int>(false, 0);
+}
 
-
-    // Évaluation de l'expression left qu'on place dans le registre universel !reg
-    visit(ctx->right);   
-
-    Operation *rmem_left = new Rmem(cfg->current_bb, "!regLeft", address_left);
-    IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
-    cfg->current_bb->add_IRInstr(instruction_read_left);
-
-    Operation *operation_or = new Or(cfg->current_bb, "!reg", "!regLeft");
-    IRInstr *instruction_or = new IRInstr(cfg->current_bb, operation_or);
-    cfg->current_bb->add_IRInstr(instruction_or);
-
-    return 0;
+antlrcpp::Any IRGenVisitor::visitParExpr(ifccParser::ParExprContext *ctx) {
+    std::pair<bool, int> res(visit(ctx->expr()));
+    return res;
 }

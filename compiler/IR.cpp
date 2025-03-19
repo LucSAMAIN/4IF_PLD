@@ -18,6 +18,9 @@ void IRInstr::gen_x86(ostream &o) {
     op->gen_x86(o);
 }
 
+void IRInstr::gen_wat(ostream &o) {
+    op->gen_wat(o);
+}
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -59,6 +62,18 @@ void BasicBlock::gen_x86(ostream& o) {
         // if return_true vers epilogue, on arrête parce qu'on vient de voir un return et on ne veut pas générer de code après
     }
 }
+
+// Génère une représentation textuelle du bloc de base
+void BasicBlock::gen_wat(ostream& o) {
+    o << label << ":\n";
+    
+    for (IRInstr* instr : instructions) {
+        instr->gen_x86(o);
+        // if return_true vers epilogue, on arrête parce qu'on vient de voir un return et on ne veut pas générer de code après
+    }
+}
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////// NIVEAU CFG //////////////////////////////////////
@@ -170,6 +185,13 @@ void CFG::gen_x86(ostream& o) {
     // Générer le code pour tous les blocs de base
     for (BasicBlock* bb : bbs) {
         bb->gen_x86(o);
+    }
+}
+
+void CFG::gen_wat(ostream& o) {
+    // Générer le code pour tous les blocs de base
+    for (BasicBlock* bb : bbs) {
+        bb->gen_wat(o);
     }
 }
 

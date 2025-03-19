@@ -89,7 +89,7 @@ int main(int argn, const char **argv)
             std::cout << ".globl main\n";
             cfg->gen_x86(std::cout);
         } else {
-            cfg->gen_wasm(std::cout);
+            cfg->gen_wat(std::cout);
         }
 
         delete cfg;

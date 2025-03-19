@@ -327,3 +327,124 @@ std::string Xor::get_operation_name() const {
 void Xor::gen_x86(std::ostream& o) {
     o << "    xorl " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
 }
+
+// Implémentations de gen_wat()
+
+void Prologue::gen_wat(std::ostream& o) {
+    o << "    ;; Prologue\n";
+    o << "    (local $bp i32)\n";
+    o << "    (local.set $bp (global.get $sp))\n";
+    int frameSize = ((-bb->cfg->stv.offsetTable[bb->cfg->functionName] + 15) & ~15);
+    o << "    (global.set $sp (i32.sub (global.get $sp) (i32.const " << frameSize << ")))\n";
+}
+
+void Epilogue::gen_wat(std::ostream& o) {
+    o << "    ;; Epilogue\n";
+    o << "    (global.set $sp (local.get $bp))\n";
+    o << "    (return)\n";
+}
+
+void LdConst::gen_wat(std::ostream& o) {
+    o << "    ;; Load constant\n";
+    o << "    (local.set " << dest << " (i32.const " << value << "))\n";
+}
+
+void Copy::gen_wat(std::ostream& o) {
+    o << "    ;; Copy\n";
+    o << "    (local.set " << dest << " (local.get " << src << "))\n";
+}
+
+void Add::gen_wat(std::ostream& o) {
+    o << "    ;; Addition\n";
+    o << "    (local.set " << dest << " (i32.add (local.get " << dest << ") (local.get " << op2 << ")))\n";
+}
+
+void Sub::gen_wat(std::ostream& o) {
+    o << "    ;; Subtraction\n";
+    o << "    (local.set " << dest << " (i32.sub (local.get " << dest << ") (local.get " << op2 << ")))\n";
+}
+
+void UnaryMinus::gen_wat(std::ostream& o) {
+    o << "    ;; Unary minus\n";
+    o << "    (local.set " << dest << " (i32.sub (i32.const 0) (local.get " << dest << ")))\n";
+}
+
+void Not::gen_wat(std::ostream& o) {
+    o << "    ;; Logical not\n";
+    o << "    (local.set " << dest << " (i32.eqz (local.get " << dest << ")))\n";
+}
+
+void Mul::gen_wat(std::ostream& o) {
+    o << "    ;; Multiplication\n";
+    o << "    (local.set " << dest << " (i32.mul (local.get " << dest << ") (local.get " << op2 << ")))\n";
+}
+
+void Div::gen_wat(std::ostream& o) {
+    o << "    ;; Division\n";
+    o << "    (local.set " << dest << " (i32.div_s (local.get " << dest << ") (local.get " << op2 << ")))\n";
+}
+
+void Mod::gen_wat(std::ostream& o) {
+    o << "    ;; Modulo\n";
+    o << "    (local.set " << dest << " (i32.rem_s (local.get " << dest << ") (local.get " << op2 << ")))\n";
+}
+
+void Rmem::gen_wat(std::ostream& o) {
+    o << "    ;; Read memory\n";
+    o << "    (local.set " << dest << " (i32.load (i32.add (local.get $bp) (i32.const " << addr << "))))\n";
+}
+
+void Wmem::gen_wat(std::ostream& o) {
+    o << "    ;; Write memory\n";
+    o << "    (i32.store (i32.add (local.get $bp) (i32.const " << addr << ")) (local.get " << src << "))\n";
+}
+
+void Call::gen_wat(std::ostream& o) {
+    o << "    ;; Function call\n";
+    o << "    (call $" << func_name << ")\n";
+}
+
+void CmpEq::gen_wat(std::ostream& o) {
+    o << "    ;; Compare equal\n";
+    o << "    (local.set " << dest << " (i32.eq (local.get " << dest << ") (local.get " << op2 << ")))\n";
+}
+
+void CmpNeq::gen_wat(std::ostream& o) {
+    o << "    ;; Compare not equal\n";
+    o << "    (local.set " << dest << " (i32.ne (local.get " << dest << ") (local.get " << op2 << ")))\n";
+}
+
+void CmpLe::gen_wat(std::ostream& o) {
+    o << "    ;; Compare less or equal\n";
+    o << "    (local.set " << dest << " (i32.le_s (local.get " << dest << ") (local.get " << op2 << ")))\n";
+}
+
+void CmpLt::gen_wat(std::ostream& o) {
+    o << "    ;; Compare less than\n";
+    o << "    (local.set " << dest << " (i32.lt_s (local.get " << dest << ") (local.get " << op2 << ")))\n";
+}
+
+void CmpGe::gen_wat(std::ostream& o) {
+    o << "    ;; Compare greater or equal\n";
+    o << "    (local.set " << dest << " (i32.ge_s (local.get " << dest << ") (local.get " << op2 << ")))\n";
+}
+
+void CmpGt::gen_wat(std::ostream& o) {
+    o << "    ;; Compare greater than\n";
+    o << "    (local.set " << dest << " (i32.gt_s (local.get " << dest << ") (local.get " << op2 << ")))\n";
+}
+
+void And::gen_wat(std::ostream& o) {
+    o << "    ;; Logical and\n";
+    o << "    (local.set " << dest << " (i32.and (local.get " << dest << ") (local.get " << op2 << ")))\n";
+}
+
+void Or::gen_wat(std::ostream& o) {
+    o << "    ;; Logical or\n";
+    o << "    (local.set " << dest << " (i32.or (local.get " << dest << ") (local.get " << op2 << ")))\n";
+}
+
+void Xor::gen_wat(std::ostream& o) {
+    o << "    ;; Logical xor\n";
+    o << "    (local.set " << dest << " (i32.xor (local.get " << dest << ") (local.get " << op2 << ")))\n";
+}

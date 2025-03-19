@@ -65,7 +65,7 @@ void BasicBlock::gen_x86(ostream& o) {
 
 // Génère une représentation textuelle du bloc de base
 void BasicBlock::gen_wat(ostream& o) {
-    o << label << ":\n";
+    o << "    ;; Block: " << label << "\n";
     
     for (IRInstr* instr : instructions) {
         instr->gen_wat(o);
@@ -189,10 +189,28 @@ void CFG::gen_x86(ostream& o) {
 }
 
 void CFG::gen_wat(ostream& o) {
+    // Début du module WebAssembly
+    o << "(module\n";
+    
+    // Déclarer la mémoire globale
+    o << "  ;; Import de la mémoire et des fonctions système si nécessaire\n";
+    o << "  (global $sp (mut i32) (i32.const 0))\n";
+    
+    // Commencer la fonction principale
+    o << "  (func $main (export \"main\") (result i32)\n";
+    o << "    (local $reg i32)\n";  // Déclarer un registre local pour stocker les résultats
+    
     // Générer le code pour tous les blocs de base
     for (BasicBlock* bb : bbs) {
         bb->gen_wat(o);
     }
+    
+    // Si le code ne contient pas de return explicite, ajouter un return par défaut
+    o << "    (return (local.get $reg))\n";
+    
+    // Fermer la fonction et le module
+    o << "  )\n";
+    o << ")\n";
 }
 
 // void CFG::add_to_symbol_table(string name, Type t) {
@@ -249,4 +267,11 @@ string CFG::new_BB_name() {
     stringstream ss;
     ss << functionName << bbs.size(); // je pense ça passe car on ajoute le block direct dans la liste après
     return ss.str();
+}
+
+std::string CFG::IR_reg_to_wat(const std::string &reg) {
+    if (reg.substr(0, 4) == "!reg") {
+        return "$reg";
+    }
+    return "$" + reg;  // Ajouter le préfixe $ pour les variables WebAssembly
 } 

@@ -21,19 +21,22 @@ int main(int argc, const char **argv)
     std::stringstream in;
     bool wasm = false;
     std::string input_file;
+    std::string output_file;
     
     // Parse command line arguments
     for(int i = 1; i < argc; i++) {
         std::string arg = argv[i];
         if(arg == "-w" || arg == "--wat") {
             wasm = true;
+        } else if(arg == "-o" && i + 1 < argc) {
+            output_file = argv[++i];
         } else {
             input_file = arg;
         }
     }
     
     if(input_file.empty()) {
-        std::cerr << "usage: ifcc [-w|--wat] path/to/file.c\n";
+        std::cerr << "usage: ifcc [-w|--wat] [-o output_file] path/to/file.c\n";
         return 1;
     }
 
@@ -87,11 +90,33 @@ int main(int argc, const char **argv)
     
     if (cfg) {        
         if (wasm) {
-            cfg->gen_wat(std::cout);
+            std::ofstream outFile;
+            if(!output_file.empty()) {
+                outFile.open(output_file);
+                if(!outFile.is_open()) {
+                    std::cerr << "error: cannot write to file: " << output_file << std::endl;
+                    return 1;
+                }
+                cfg->gen_wat(outFile);
+                outFile.close();
+            } else {
+                cfg->gen_wat(std::cout);
+            }
         } else {
-            std::cout << ".text\n";
+            std::ofstream outFile;
+            if(!output_file.empty()) {
+                outFile.open(output_file);
+                if(!outFile.is_open()) {
+                    std::cerr << "error: cannot write to file: " << output_file << std::endl;
+                    return 1;
+                }
+                cfg->gen_x86(outFile);
+                outFile.close();
+            } else {
+                std::cout << ".text\n";
             std::cout << ".globl main\n";
-            cfg->gen_x86(std::cout);
+                cfg->gen_x86(std::cout);
+            }
         }
         delete cfg;
     }

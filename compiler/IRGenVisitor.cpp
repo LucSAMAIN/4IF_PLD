@@ -291,8 +291,7 @@ antlrcpp::Any IRGenVisitor::visitMulDivExpr(ifccParser::MulDivExprContext *ctx) 
             IRInstr *instruction_mod = new IRInstr(cfg->current_bb, operation_mod);
             cfg->current_bb->add_IRInstr(instruction_mod);
         }
-    }
-    
+    }    
     return std::pair<bool, int>(false, 0);
 }
 
@@ -373,8 +372,7 @@ antlrcpp::Any IRGenVisitor::visitAddSubExpr(ifccParser::AddSubExprContext *ctx) 
             IRInstr *instruction_sub = new IRInstr(cfg->current_bb, operation_sub);
             cfg->current_bb->add_IRInstr(instruction_sub);
         }
-    }
-    
+    }    
     return std::pair<bool, int>(false, 0);
 }
 
@@ -573,8 +571,7 @@ antlrcpp::Any IRGenVisitor::visitAndExpr(ifccParser::AndExprContext *ctx) {
             Operation *op_const = new LdConst(cfg->current_bb, "!reg", res_right.second);  // block, dst, src
             IRInstr *instruction_const = new IRInstr(cfg->current_bb, op_const);
             cfg->current_bb->add_IRInstr(instruction_const);
-        }  
-
+        } 
         Operation *rmem_left = new Rmem(cfg->current_bb, "!regLeft", address_left);
         IRInstr *instruction_read_left = new IRInstr(cfg->current_bb, rmem_left);
         cfg->current_bb->add_IRInstr(instruction_read_left);

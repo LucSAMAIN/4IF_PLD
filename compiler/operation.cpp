@@ -362,3 +362,27 @@ void JumpFalse::gen_x86(std::ostream& o) {
     o << "    je " << dest_false << "\n";
     o << "    jmp " << dest_true << "\n";
 }
+
+Push::Push(BasicBlock* bb, const std::string& p_op) 
+    : Operation(), op(p_op), bb(bb) {}
+
+
+std::string Push::get_operation_name() const {
+    return "push";
+}
+
+void Push::gen_x86(std::ostream& o) {
+    o << "    push " << bb->cfg->IR_reg_to_x86(op) << "\n";
+}
+
+Pop::Pop(BasicBlock* bb, const std::string& p_dest) 
+    : Operation(), dest(p_dest), bb(bb) {}
+
+
+std::string Pop::get_operation_name() const {
+    return "pop";
+}
+
+void Pop::gen_x86(std::ostream& o) {
+    o << "    pop " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+}

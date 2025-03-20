@@ -376,4 +376,29 @@ public:
     void gen_x86(std::ostream& o) override;
 };
 
+class Push : public Operation
+{
+private:
+    std::string op;
+    BasicBlock* bb;
+
+public:
+    Push(BasicBlock* bb, const std::string& operand);
+    std::string get_operation_name() const override;
+    void gen_x86(std::ostream& o) override;
+};
+
+class Pop : public Operation
+{
+private:
+    std::string dest;
+    BasicBlock* bb;
+
+public:
+    Pop(BasicBlock* bb, const std::string& dest);
+    std::string get_operation_name() const override;
+    void gen_x86(std::ostream& o) override;
+};
+
+
 #endif // OPERATION_H

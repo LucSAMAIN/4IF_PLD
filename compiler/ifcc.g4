@@ -90,6 +90,7 @@ CONSTINT : '0' | [1-9][0-9]* ;
 CONSTCHAR : '\''.*?'\'' ;
 
 ID : [a-zA-Z][a-zA-Z0-9_]* ;
-COMMENT : '/*' .*? '*/' -> skip ;
+MULTILINE_COMMENT : '/*' .*? '*/' -> skip ;
+SINGLELINE_COMMENT : '//' .*? '\n' -> skip ;
 DIRECTIVE : '#' .*? '\n' -> skip ;
 WS    : [ \t\r\n] -> channel(HIDDEN);

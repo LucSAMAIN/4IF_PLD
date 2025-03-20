@@ -97,20 +97,34 @@ antlrcpp::Any IRGenVisitor::visitAssign_stmt(ifccParser::Assign_stmtContext *ctx
         }
     }
     std::string nomVar = tried_scope + "_" + ctx->ID()->getText();
-    // std::cout << "# nomVar " << nomVar << "\n";
-    std::string address = "RBP" + std::to_string(cfgs.back()->stv.symbolTable[nomVar].offset); 
-    // std::cout << "# address " << address << "\n";
-
-    // Évaluation de l'expression qu'on place dans le registre universel !reg
     std::pair<bool, int> res(visit(ctx->expr()));
-    if (res.first) {
-        Operation *op_const = new LdConst(cfgs.back()->current_bb, "!reg", res.second);  // block, dst, src
-        IRInstr *instruction_const = new IRInstr(cfgs.back()->current_bb, op_const);
-        cfgs.back()->current_bb->add_IRInstr(instruction_const);
+
+    // on regarde si c'est un argument de la fonction
+    if (cfgs.back()->stv.symbolTable[nomVar].index_arg >= 0) {
+        // Évaluation de l'expression qu'on place dans le registre universel !reg
+        if (res.first) {
+            Operation *op_const = new LdConst(cfgs.back()->current_bb, "!reg", res.second);  // block, dst, src
+            IRInstr *instruction_const = new IRInstr(cfgs.back()->current_bb, op_const);
+            cfgs.back()->current_bb->add_IRInstr(instruction_const);
+        }
+
+        Operation *copy_arg = new Copy(cfgs.back()->current_bb, "!arg" + std::to_string(cfgs.back()->stv.symbolTable[nomVar].index_arg), "!reg");
+        IRInstr *instruction_copy_arg = new IRInstr(cfgs.back()->current_bb, copy_arg);
+        cfgs.back()->current_bb->add_IRInstr(instruction_copy_arg);
     }
-    Operation *wmem = new Wmem(cfgs.back()->current_bb, address, "!reg"); // block, dst, src
-    IRInstr *instruction = new IRInstr(cfgs.back()->current_bb, wmem);
-    cfgs.back()->current_bb->add_IRInstr(instruction);
+    else {
+        std::string address = "RBP" + std::to_string(cfgs.back()->stv.symbolTable[nomVar].offset);
+
+        // Évaluation de l'expression qu'on place dans le registre universel !reg
+        if (res.first) {
+            Operation *op_const = new LdConst(cfgs.back()->current_bb, "!reg", res.second);  // block, dst, src
+            IRInstr *instruction_const = new IRInstr(cfgs.back()->current_bb, op_const);
+            cfgs.back()->current_bb->add_IRInstr(instruction_const);
+        }
+        Operation *wmem = new Wmem(cfgs.back()->current_bb, address, "!reg"); // block, dst, src
+        IRInstr *instruction = new IRInstr(cfgs.back()->current_bb, wmem);
+        cfgs.back()->current_bb->add_IRInstr(instruction);
+    }
     
     return 0;
 }
@@ -149,7 +163,7 @@ antlrcpp::Any IRGenVisitor::visitIf_stmt(ifccParser::If_stmtContext *ctx) {
         cfgs.back()->add_bb(bb_true);
         cfgs.back()->add_bb(bb_endif);
 
-        Operation *op_jump = new JumpFalse(cfgs.back()->current_bb, cfgs.back()->current_bb->exit_false->label, cfgs.back()->current_bb->exit_true->label, "!reg");
+        Operation *op_jump = new JumpFalse(cfgs.back()->current_bb, bb_endif->label, bb_true->label, "!reg");
         IRInstr *instruction_jump = new IRInstr(cfgs.back()->current_bb, op_jump);
         cfgs.back()->current_bb->add_IRInstr(instruction_jump);
 
@@ -163,14 +177,14 @@ antlrcpp::Any IRGenVisitor::visitIf_stmt(ifccParser::If_stmtContext *ctx) {
         BasicBlock* bb_endif = new BasicBlock(cfgs.back(), cfgs.back()->new_BB_name() + "_endif");
         bb_endif->exit_true = cfgs.back()->current_bb->exit_true;
         cfgs.back()->current_bb->exit_true = bb_true;
-        cfgs.back()->current_bb->exit_false = bb_endif;
+        cfgs.back()->current_bb->exit_false = bb_false;
         bb_true->exit_true = bb_endif;
         bb_false->exit_true = bb_endif;
         cfgs.back()->add_bb(bb_true);
         cfgs.back()->add_bb(bb_false);
         cfgs.back()->add_bb(bb_endif);
 
-        Operation *op_jump = new JumpFalse(cfgs.back()->current_bb, cfgs.back()->current_bb->exit_false->label, cfgs.back()->current_bb->exit_true->label, "!reg");
+        Operation *op_jump = new JumpFalse(cfgs.back()->current_bb, bb_false->label, bb_true->label, "!reg");
         IRInstr *instruction_jump = new IRInstr(cfgs.back()->current_bb, op_jump);
         cfgs.back()->current_bb->add_IRInstr(instruction_jump);
 
@@ -261,21 +275,45 @@ antlrcpp::Any IRGenVisitor::visitIdUse(ifccParser::IdUseContext *ctx)
 
 antlrcpp::Any IRGenVisitor::visitAssignExpr(ifccParser::AssignExprContext *ctx) {
     // On récupère le nom et l'adresse stack de la variable en question
-    std::string nomVar = scope + "_" + ctx->ID()->getText();
-    std::string address = "RBP" + std::to_string(cfgs.back()->stv.symbolTable[nomVar].offset); 
-
-    // Évaluation de l'expression qu'on place dans le registre universel !reg
-    std::pair<bool, int> res(visit(ctx->expr()));
-    if (res.first) {
-        Operation *op_const = new LdConst(cfgs.back()->current_bb, "!reg", res.second);  // block, dst, src
-        IRInstr *instruction_const = new IRInstr(cfgs.back()->current_bb, op_const);
-        cfgs.back()->current_bb->add_IRInstr(instruction_const);
+    std::string tried_scope = scope;
+    while (tried_scope != "" && cfgs.back()->stv.symbolTable.find(tried_scope + '_' + ctx->ID()->getText()) == cfgs.back()->stv.symbolTable.end()) {
+        while (tried_scope.size() != 0 && tried_scope.back() != '_') {
+            tried_scope.pop_back();
+        }
+        if (tried_scope.size() != 0) {
+            tried_scope.pop_back();
+        }
     }
-    Operation *wmem = new Wmem(cfgs.back()->current_bb, address, "!reg"); // block, dst, src
-    IRInstr *instruction = new IRInstr(cfgs.back()->current_bb, wmem);
-    cfgs.back()->current_bb->add_IRInstr(instruction);
 
-    // la valeur est retournée dans !reg
+    std::string nomVar = tried_scope + "_" + ctx->ID()->getText();
+    std::pair<bool, int> res(visit(ctx->expr()));
+
+    // on regarde si c'est un argument de la fonction
+    if (cfgs.back()->stv.symbolTable[nomVar].index_arg >= 0) {
+        // Évaluation de l'expression qu'on place dans le registre universel !reg
+        if (res.first) {
+            Operation *op_const = new LdConst(cfgs.back()->current_bb, "!reg", res.second);  // block, dst, src
+            IRInstr *instruction_const = new IRInstr(cfgs.back()->current_bb, op_const);
+            cfgs.back()->current_bb->add_IRInstr(instruction_const);
+        }
+
+        Operation *copy_arg = new Copy(cfgs.back()->current_bb, "!arg" + std::to_string(cfgs.back()->stv.symbolTable[nomVar].index_arg), "!reg");
+        IRInstr *instruction_copy_arg = new IRInstr(cfgs.back()->current_bb, copy_arg);
+        cfgs.back()->current_bb->add_IRInstr(instruction_copy_arg);
+    }
+    else {
+        std::string address = "RBP" + std::to_string(cfgs.back()->stv.symbolTable[nomVar].offset);
+        
+        // Évaluation de l'expression qu'on place dans le registre universel !reg
+        if (res.first) {
+            Operation *op_const = new LdConst(cfgs.back()->current_bb, "!reg", res.second);  // block, dst, src
+            IRInstr *instruction_const = new IRInstr(cfgs.back()->current_bb, op_const);
+            cfgs.back()->current_bb->add_IRInstr(instruction_const);
+        }
+        Operation *wmem = new Wmem(cfgs.back()->current_bb, address, "!reg"); // block, dst, src
+        IRInstr *instruction = new IRInstr(cfgs.back()->current_bb, wmem);
+        cfgs.back()->current_bb->add_IRInstr(instruction);
+    }
     
     return res;
 }
@@ -819,6 +857,14 @@ antlrcpp::Any IRGenVisitor::visitFuncCall(ifccParser::FuncCallContext *ctx) {
         // plus de 6 args ? faire une operation push et pop ?
     }
 
+    // on sauvegarde nos registres
+    std::string callingFunc(cfgs.back()->current_bb->cfg->functionName);
+    for (int i = 0; i < std::min<int>(6, cfgs.back()->stv.symbolTable[callingFunc].index_arg); i++) {
+        Operation *push = new Push(cfgs.back()->current_bb, "!arg"+std::to_string(i)+"64");
+        IRInstr *instruction_push = new IRInstr(cfgs.back()->current_bb, push);
+        cfgs.back()->current_bb->add_IRInstr(instruction_push);
+    }
+
     // on remet les arguments à la bonne place
     for (int i = 0; i < args_temp_addr.size(); i++) {
         Operation *rmem_temp = new Rmem(cfgs.back()->current_bb, "!arg"+std::to_string(i)+"32", args_temp_addr[i]);
@@ -830,6 +876,13 @@ antlrcpp::Any IRGenVisitor::visitFuncCall(ifccParser::FuncCallContext *ctx) {
     Operation *call = new Call(cfgs.back()->current_bb, nomFonction);  // block, dst, src
     IRInstr *instruction_call = new IRInstr(cfgs.back()->current_bb, call);
     cfgs.back()->current_bb->add_IRInstr(instruction_call);
+
+    // on reprend nos registres
+    for (int i = std::min<int>(6, cfgs.back()->stv.symbolTable[callingFunc].index_arg)-1; i >= 0; i--) {
+        Operation *pop = new Pop(cfgs.back()->current_bb, "!arg"+std::to_string(i)+"64");
+        IRInstr *instruction_pop = new IRInstr(cfgs.back()->current_bb, pop);
+        cfgs.back()->current_bb->add_IRInstr(instruction_pop);
+    }
 
     return std::pair<bool, int>(false, 0);
 }

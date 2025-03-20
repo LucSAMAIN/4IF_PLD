@@ -6,24 +6,17 @@
 #include <vector>
 
 /*
-    LISTE DE TOUTES LES CLASSES IMPLEMENTÉES CI-DESSOUS
-    - Operation
-
-    - LdConst
-    - Copy
-    - Add
-    - Sub
-    - Mul
-    - Rmem
-    - Wmem
-    - Call
-    - CmpEq
-    - CmpLt
-    - CmpLe
-    - prologue
-    - epilogue
-
-*/
+ *
+ * Les classes implémentées ci-dessous:
+ * 
+ * 1. La classe de base 'Operation'
+ * 2. Les opérations arithmétiques: 'LdConst', 'Copy', 'Add', 'Sub', 'Mul', 'Div', 'Mod', 'UnaryMinus'
+ * 3. Les opérations logiques: 'Not', 'And', 'Or', 'Xor'
+ * 4. Les opérations de comparaison: 'CmpEq', 'CmpNeq', 'CmpLt', 'CmpLe', 'CmpGt', 'CmpGe'
+ * 5. Les opérations mémoire: 'Rmem', 'Wmem'
+ * 6. La gestion des fonctions: 'Call', 'Prologue', 'Epilogue'
+ * 
+ */
 
 // Déclarations anticipées
 class BasicBlock;

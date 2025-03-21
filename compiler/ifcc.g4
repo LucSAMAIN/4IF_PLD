@@ -31,24 +31,24 @@ while_stmt : WHILE LPAR expr RPAR block ;
 block_stmt : block ;
 
 
-expr : primary # primaryExpr
-     | <assoc=right>NOT primary # notExpr
-     | <assoc=right>MINUS primary # unaryMinusExpr
-     | left=expr mOp right=expr # mulDivExpr
-     | left=expr aOp right=expr # addSubExpr
+expr : primary                     # primaryExpr
+     | <assoc=right>NOT primary    # notExpr
+     | <assoc=right>MINUS primary  # unaryMinusExpr
+     | left=expr mOp right=expr    # mulDivExpr
+     | left=expr aOp right=expr    # addSubExpr
      | left=expr compOp right=expr # compExpr
-     | left=expr eqOp right=expr # eqExpr
-     | left=expr AND right=expr # andExpr
-     | left=expr XOR right=expr # xorExpr
-     | left=expr OR right=expr # orExpr
+     | left=expr eqOp right=expr   # eqExpr
+     | left=expr AND right=expr    # andExpr
+     | left=expr XOR right=expr    # xorExpr
+     | left=expr OR right=expr     # orExpr
      ;
 
-primary : ID # idUse
-        | CONSTINT # intExpr
-        | CONSTCHAR # charExpr
+primary : ID             # idUse
+        | CONSTINT       # intExpr
+        | CONSTCHAR      # charExpr
         | LPAR expr RPAR # parExpr
         | ID ASSIGN expr # assignExpr
-        | funcCall # funcCallExpr
+        | funcCall       # funcCallExpr
         ;
 
 mOp : STAR | SLASH | MOD ;

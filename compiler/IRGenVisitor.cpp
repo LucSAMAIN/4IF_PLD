@@ -198,6 +198,40 @@ antlrcpp::Any IRGenVisitor::visitIf_stmt(ifccParser::If_stmtContext *ctx) {
     return 0;
 }
 
+antlrcpp::Any IRGenVisitor::visitWhile_stmt(ifccParser::While_stmtContext *ctx) {
+    BasicBlock* bb_test_while = new BasicBlock(cfgs.back(), cfgs.back()->new_BB_name() + "_test_while");
+    bb_test_while->exit_true = cfgs.back()->current_bb->exit_true; // pour pas le perdre
+    cfgs.back()->current_bb->exit_true = bb_test_while;
+    cfgs.back()->add_bb(bb_test_while);
+    cfgs.back()->current_bb = bb_test_while;
+
+    std::pair<bool, int> res(visit(ctx->expr()));
+    if (res.first) {
+        Operation *op_const = new LdConst(cfgs.back()->current_bb, "!reg", res.second);  // block, dst, src
+        IRInstr *instruction_const = new IRInstr(cfgs.back()->current_bb, op_const);
+        cfgs.back()->current_bb->add_IRInstr(instruction_const);
+    }
+
+    BasicBlock* bb_true = new BasicBlock(cfgs.back(), cfgs.back()->new_BB_name() + "_while_true");
+    BasicBlock* bb_endwhile = new BasicBlock(cfgs.back(), cfgs.back()->new_BB_name() + "_endwhile");
+    bb_endwhile->exit_true = bb_test_while->exit_true;
+    bb_test_while->exit_true = bb_true;
+    bb_test_while->exit_false = bb_endwhile;
+    bb_true->exit_true = bb_test_while;
+    cfgs.back()->add_bb(bb_true);
+    cfgs.back()->add_bb(bb_endwhile);
+
+    Operation *op_jump = new JumpFalse(cfgs.back()->current_bb, bb_endwhile->label, bb_true->label, "!reg");
+    IRInstr *instruction_jump = new IRInstr(cfgs.back()->current_bb, op_jump);
+    cfgs.back()->current_bb->add_IRInstr(instruction_jump);
+
+    cfgs.back()->current_bb = bb_true;
+    visit(ctx->block());
+    cfgs.back()->current_bb = bb_endwhile;
+
+    return 0;
+}
+
 antlrcpp::Any IRGenVisitor::visitIntExpr(ifccParser::IntExprContext *ctx)
 {
     return std::pair<bool, int>(true, std::stoi(ctx->CONSTINT()->getText()));

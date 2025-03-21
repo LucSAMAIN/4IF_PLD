@@ -13,6 +13,7 @@ stmt : decl_stmt SEMICOLON
      | return_stmt SEMICOLON
      | funcCall_stmt SEMICOLON
      | if_stmt
+     | while_stmt 
      | block_stmt
      ;
      
@@ -26,6 +27,7 @@ expr_stmt : expr ;
 return_stmt : RETURN expr ;
 funcCall_stmt : funcCall ;
 if_stmt : IF LPAR expr RPAR block (ELSE block)? ;
+while_stmt : WHILE LPAR expr RPAR block ;
 block_stmt : block ;
 
 
@@ -79,6 +81,7 @@ COMMA : ',' ;
 RETURN : 'return' ;
 IF : 'if' ;
 ELSE : 'else' ;
+WHILE : 'while' ;
 
 type : INT | CHAR ;
 funcType : INT | CHAR | VOID ;

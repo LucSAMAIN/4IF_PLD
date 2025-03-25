@@ -1,3 +1,0 @@
-Segmentation fault (core dumped)
-
-exit status: 139

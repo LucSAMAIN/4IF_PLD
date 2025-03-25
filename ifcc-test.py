@@ -15,6 +15,12 @@ import shutil
 import sys
 import subprocess
 
+def print_vert(text):
+    print(f"\033[92m{text}\033[0m")
+
+def print_rouge(text):
+    print(f"\033[91m{text}\033[0m")
+
 def run_command(string, logfile=None, toscreen=False):
     """ execute `string` as a shell command. Maybe write stdout+stderr to `logfile` and/or to the toscreen.
         return the exit status""" 
@@ -263,6 +269,7 @@ if args.debug:
 ##            otherwise, this is a fail.
 
 all_ok=True
+test_passed = 0
 
 for jobname in jobs:
     os.chdir(f'{pld_base_dir}/ifcc-test-output')
@@ -285,16 +292,17 @@ for jobname in jobs:
     
     if gccstatus != 0 and ifccstatus != 0:
         ## ifcc correctly rejects invalid program -> test-case ok
-        print("TEST OK")
+        print_vert("TEST OK")
+        test_passed += 1
         continue
     elif gccstatus != 0 and ifccstatus == 0:
         ## ifcc wrongly accepts invalid program -> error
-        print("TEST FAIL (your compiler accepts an invalid program)")
+        print_rouge("TEST FAIL (your compiler accepts an invalid program)")
         all_ok=False
         continue
     elif gccstatus == 0 and ifccstatus != 0:
         ## ifcc wrongly rejects valid program -> error
-        print("TEST FAIL (your compiler rejects a valid program)")
+        print_rouge("TEST FAIL (your compiler rejects a valid program)")
         all_ok=False
         if args.verbose:
             dumpfile("asm-ifcc.s")       # stdout of ifcc
@@ -304,7 +312,7 @@ for jobname in jobs:
         ## ifcc accepts to compile valid program -> let's link it
         ldstatus=run_command("gcc -o exe-ifcc asm-ifcc.s", "ifcc-link.txt")
         if ldstatus:
-            print("TEST FAIL (your compiler produces incorrect assembly)")
+            print_rouge("TEST FAIL (your compiler produces incorrect assembly)")
             all_ok=False
             if args.verbose:
                 dumpfile("asm-ifcc.s")
@@ -316,7 +324,7 @@ for jobname in jobs:
         
     run_command("./exe-ifcc", "ifcc-execute.txt")
     if open("gcc-execute.txt").read() != open("ifcc-execute.txt").read() :
-        print("TEST FAIL (different results at execution)")
+        print_rouge("TEST FAIL (different results at execution)")
         all_ok=False
 
         if args.verbose:
@@ -327,7 +335,7 @@ for jobname in jobs:
         continue
 
     ## last but not least
-    print("TEST OK")
+    print_vert("TEST OK")
+    test_passed += 1
 
-if not (all_ok or args.verbose):
-    print("Some test-cases failed. Run ifcc-test.py with option '--verbose' for more detailed feedback.")
+print(f"{test_passed}/{len(jobs)} test cases passed.")

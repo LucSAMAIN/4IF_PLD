@@ -1,3 +1,0 @@
-error: variable not declared a in scope main
-
-exit status: 0

@@ -1,9 +1,0 @@
-input.c: In function ‘print’:
-input.c:2:5: warning: implicit declaration of function ‘putchar’ [-Wimplicit-function-declaration]
-    2 |     putchar(a);
-      |     ^~~~~~~
-input.c:1:1: note: include ‘<stdio.h>’ or provide a declaration of ‘putchar’
-  +++ |+#include <stdio.h>
-    1 | void print(int a) {
-
-exit status: 0

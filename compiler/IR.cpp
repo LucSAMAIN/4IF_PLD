@@ -6,21 +6,6 @@
 using namespace std;
 
 ////////////////////////////////////////////////////////////////////////////////
-////////////////////////////// NIVEAU INSTRUCTION //////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
-// Constructeur de IRInstr
-IRInstr::IRInstr(BasicBlock* bb_, Operation *op) :
-    bb(bb_), op(op) {}
-
-// Génère une représentation textuelle de l'instruction IR
-void IRInstr::gen_x86(ostream &o) {
-    op->gen_x86(o);
-}
-
-
-
-////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////// NIVEAU BLOCK ////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -70,16 +55,14 @@ void BasicBlock::gen_x86(ostream& o) {
 CFG::CFG(SymbolTableGenVisitor& p_stv, const std::string& p_funcName) : stv(p_stv), current_bb(nullptr), start_block(nullptr), end_block(nullptr), bbs(), functionName(p_funcName) {
     // Ajouter le bloc de base initial
     start_block = new BasicBlock(this, functionName);
-    Operation* op_start = new Prologue(start_block);
-    IRInstr* instr_start = new IRInstr(start_block, op_start);
+    IRInstr* instr_start = new Prologue(start_block);
     start_block->add_IRInstr(instr_start);
 
     current_bb = new BasicBlock(this, new_BB_name());
     start_block->exit_true = current_bb;
 
     end_block = new BasicBlock(this, functionName + "_epilogue");
-    Operation* op_end = new Epilogue(end_block);
-    IRInstr* instr_end = new IRInstr(end_block, op_end);
+    IRInstr* instr_end = new Epilogue(end_block);
     end_block->add_IRInstr(instr_end);
     current_bb->exit_true = end_block;
 

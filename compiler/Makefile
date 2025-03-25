@@ -20,7 +20,7 @@ OBJECTS=build/ifccBaseVisitor.o \
 	build/main.o \
 	build/IRGenVisitor.o \
 	build/SymbolTableGenVisitor.o \
-	build/operation.o \
+	build/IRInstr.o \
 	build/IR.o
 
 ifcc: $(OBJECTS)

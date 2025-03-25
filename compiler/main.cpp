@@ -9,7 +9,6 @@
 #include "generated/ifccParser.h"
 #include "generated/ifccBaseVisitor.h"
 
-#include "CodeGenVisitor.h"
 #include "IRGenVisitor.h"
 #include "SymbolTableGenVisitor.h"
 #include "IR.h"

@@ -11,6 +11,7 @@
 
 #include "IRGenVisitor.h"
 #include "SymbolTableGenVisitor.h"
+#include "TypeCheckVisitor.h"
 #include "IR.h"
 
 using namespace antlr4;
@@ -69,6 +70,14 @@ int main(int argn, const char **argv)
     for (auto const &var : stv.offsetTable)
     {
         std::cout << "# " << var.first << " : " << var.second << "\n";
+    }
+
+    TypeCheckVisitor tcv(stv);
+    tcv.visit(tree);
+    if (tcv.getNumberTypeError() != 0)
+    {
+        std::cerr << "error: type error during type checking\n";
+        exit(1);
     }
 
     IRGenVisitor cgv(stv);

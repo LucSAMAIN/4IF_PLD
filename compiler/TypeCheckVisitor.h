@@ -4,13 +4,13 @@
 #include "generated/ifccBaseVisitor.h"
 #include "IR.h"
 
-class IRGenVisitor : public ifccBaseVisitor
+class TypeCheckVisitor : public ifccBaseVisitor
 {
 public:
-    IRGenVisitor(SymbolTableGenVisitor& symbolTableGenVisitor); 
-    virtual ~IRGenVisitor();
-    
-    std::vector<CFG*>& getCFGs() { return cfgs; }
+    TypeCheckVisitor(SymbolTableGenVisitor& symbolTableGenVisitor); 
+    virtual ~TypeCheckVisitor();
+
+    int getNumberTypeError() { return type_error; }
     
     virtual antlrcpp::Any visitFuncDecl(ifccParser::FuncDeclContext *ctx) override;
     virtual antlrcpp::Any visitBlock(ifccParser::BlockContext *ctx) override;
@@ -37,7 +37,6 @@ public:
     
 private:
     SymbolTableGenVisitor stv;
-    std::vector<CFG*> cfgs;              // Le Control Flow Graph
-    BasicBlock* currentBB; // Le bloc de base courant
     std::string scope;
+    int type_error;
 };

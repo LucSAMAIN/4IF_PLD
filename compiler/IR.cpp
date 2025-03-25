@@ -10,9 +10,6 @@ using namespace std;
 ////////////////////////////////////////////////////////////////////////////////
 
 
-
-
-
 // Implémentation de BasicBlock
 BasicBlock::BasicBlock(CFG* cfg, string entry_label) :
     exit_true(nullptr), exit_false(nullptr), label(entry_label), cfg(cfg), instructions(), test_var_name()
@@ -66,8 +63,8 @@ CFG::CFG(SymbolTableGenVisitor& p_stv, const std::string& p_funcName) : stv(p_st
     end_block->add_IRInstr(instr_end);
     current_bb->exit_true = end_block;
 
-    add_bb(start_block);
-    add_bb(end_block);
+    // add_bb(start_block); // on les a mis dans gen_x86 pour que ce soit "dans le bon ordre" (hein luc)
+    // add_bb(end_block);
     add_bb(current_bb);
 }
 
@@ -248,9 +245,11 @@ std::string CFG::IR_addr_to_x86(const std::string &addr)
 void CFG::gen_x86(ostream& o) {
     // Générer le code pour tous les blocs de base
     o << "\n";
+    start_block->gen_x86(o);
     for (BasicBlock* bb : bbs) {
         bb->gen_x86(o);
     }
+    end_block->gen_x86(o);
 }
 
 // void CFG::add_to_symbol_table(string name, Type t) {

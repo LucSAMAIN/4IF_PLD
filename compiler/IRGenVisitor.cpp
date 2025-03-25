@@ -795,29 +795,10 @@ antlrcpp::Any IRGenVisitor::visitFuncCall(ifccParser::FuncCallContext *ctx) {
         cfgs.back()->current_bb->add_IRInstr(instruction_temp);
         // plus de 6 args ? faire une  et pop ?
     }
-    //
-
-    std::string callingFunc(cfgs.back()->current_bb->cfg->functionName);
-    for (int i = 0; i < std::min<int>(6, stv.symbolTable[callingFunc].index_arg); i++) {
-        IRInstr *instruction_push = new Push(cfgs.back()->current_bb, "!arg"+std::to_string(i)+"64");
-        cfgs.back()->current_bb->add_IRInstr(instruction_push);
-    }
-
-    // on remet les arguments à la bonne place
-    for (int i = 0; i < args_temp_addr.size(); i++) {
-        IRInstr *instruction_temp = new Rmem(cfgs.back()->current_bb, "!arg"+std::to_string(i)+"32", args_temp_addr[i]);
-        cfgs.back()->current_bb->add_IRInstr(instruction_temp);
-    }
 
     // On appelle la fonction
-    IRInstr *instruction_call = new Call(cfgs.back()->current_bb, nomFonction);  // block, dst, src
+    IRInstr *instruction_call = new Call(cfgs.back()->current_bb, nomFonction, args_temp_addr);  // block, dst, src
     cfgs.back()->current_bb->add_IRInstr(instruction_call);
-
-    // on reprend nos registres
-    for (int i = std::min<int>(6, stv.symbolTable[callingFunc].index_arg)-1; i >= 0; i--) {
-        IRInstr *instruction_pop = new Pop(cfgs.back()->current_bb, "!arg"+std::to_string(i)+"64");
-        cfgs.back()->current_bb->add_IRInstr(instruction_pop);
-    }
 
     return std::pair<bool, int>(false, 0);
 }

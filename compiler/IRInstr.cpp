@@ -21,7 +21,8 @@ void Prologue::gen_x86(std::ostream& o) {
     if (frameSize > 0) {
         o << "    subq $" << frameSize << ", %rsp" << "\n";
     }
-    o << "    jmp " << bb->cfg->functionName << "_0\n";
+    // o << "    jmp " << bb->cfg->functionName << "_0\n";
+    // on peut l'enlever car arrive tout le temps juste après
 }
 
 // implémentation de Epilogue
@@ -197,22 +198,31 @@ void Wmem::gen_x86(std::ostream& o) {
 }
 
 // Implémentation de Call
-Call::Call(BasicBlock* p_bb, const std::string& function) : IRInstr(p_bb), func_name(function) {}
+Call::Call(BasicBlock* p_bb, const std::string& function, const std::vector<std::string>& arguments) : IRInstr(p_bb), func_name(function), args(arguments) {}
 
 std::string Call::get_operation_name() const {
     return "call";
 }
 
 void Call::gen_x86(std::ostream& o) {
-    // for (int i = std::max<int>(6, args.size()) - 1; i >= 6; i--) {
-    //     o << "pushl " << bb->cfg->IR_reg_to_x86(args[i]) << "\n";
-    // }
+    // on sauvegarde les registres de la fonction appelante
+    // on pourrait améliorer en sachant combien de registres la fonction utilise
+    // pour ne pas en sauvegarder des inutiles
+    for (int i = 0; i < 6; i++) {
+        o << "    push " << bb->cfg->IR_reg_to_x86("!arg"+std::to_string(i)+"64") << "\n";
+    }
+
+    // on place les variables dans les registres
+    for (int i = 0; i < args.size(); i++) {
+        o << "    movl " << bb->cfg->IR_addr_to_x86(args[i]) << ", " << bb->cfg->IR_reg_to_x86("!arg"+std::to_string(i)+"32") << "\n";
+    }
+
     o << "    call " << func_name << "\n";
 
-    // int to_pop = std::max<int>(0, args.size() - 6);
-    // if (to_pop > 0) { // on a push des arguments, on peut les pop ou juste déplacer rsp
-    //     o << "    addq $" << to_pop * 4 << ", %rsp\n";
-    // }
+    // on remet les registres comme ils étaient
+    for (int i = 5; i >= 0; i--) {
+        o << "    pop " << bb->cfg->IR_reg_to_x86("!arg"+std::to_string(i)+"64") << "\n";
+    }
 }
 
 

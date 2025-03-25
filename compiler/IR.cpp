@@ -6,24 +6,6 @@
 using namespace std;
 
 ////////////////////////////////////////////////////////////////////////////////
-////////////////////////////// NIVEAU INSTRUCTION //////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
-// Constructeur de IRInstr
-IRInstr::IRInstr(BasicBlock* bb_, Operation *op) :
-    bb(bb_), op(op) {}
-
-// Génère une représentation textuelle de l'instruction IR
-void IRInstr::gen_x86(ostream &o) {
-    op->gen_x86(o);
-}
-
-void IRInstr::gen_wat(ostream &o) {
-    op->gen_wat(o);
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////// NIVEAU BLOCK ////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -82,25 +64,23 @@ void BasicBlock::gen_wat(ostream& o) {
 
 // Implémentation de CFG
 
-CFG::CFG(SymbolTableGenVisitor& p_stv) : stv(p_stv), current_bb(nullptr), start_block(nullptr), end_block(nullptr), bbs(), functionName("main") {
+CFG::CFG(SymbolTableGenVisitor& p_stv, const std::string& p_funcName) : stv(p_stv), current_bb(nullptr), start_block(nullptr), end_block(nullptr), bbs(), functionName(p_funcName) {
     // Ajouter le bloc de base initial
     start_block = new BasicBlock(this, functionName);
-    Operation* op_start = new Prologue(start_block);
-    IRInstr* instr_start = new IRInstr(start_block, op_start);
+    IRInstr* instr_start = new Prologue(start_block);
     start_block->add_IRInstr(instr_start);
 
     current_bb = new BasicBlock(this, new_BB_name());
     start_block->exit_true = current_bb;
 
     end_block = new BasicBlock(this, functionName + "_epilogue");
-    Operation* op_end = new Epilogue(end_block);
-    IRInstr* instr_end = new IRInstr(end_block, op_end);
+    IRInstr* instr_end = new Epilogue(end_block);
     end_block->add_IRInstr(instr_end);
     current_bb->exit_true = end_block;
 
     add_bb(start_block);
-    add_bb(current_bb);
     add_bb(end_block);
+    add_bb(current_bb);
 }
 
 CFG::~CFG()
@@ -114,7 +94,103 @@ void CFG::add_bb(BasicBlock* bb) {
 }
 
 string CFG::IR_reg_to_x86(const string &reg) {
-    if (reg.substr(0, 8) == "!regLeft") {
+    if (reg.substr(0, 5) == "!arg0") {
+        if (reg.substr(5) == "64") {
+            return "%rdi";
+        }
+        else if (reg.substr(5) == "32") {
+            return "%edi";
+        }
+        else if (reg.substr(5) == "16") {
+            return "%di";
+        }
+        else if (reg.substr(5) == "8") {
+            return "%dil";
+        }
+        else {
+            return "%edi";
+        }
+    } else if (reg.substr(0, 5) == "!arg1") {
+        if (reg.substr(5) == "64") {
+            return "%rsi";
+        }
+        else if (reg.substr(5) == "32") {
+            return "%esi";
+        }
+        else if (reg.substr(5) == "16") {
+            return "%si";
+        }
+        else if (reg.substr(5) == "8") {
+            return "%sil";
+        }
+        else {
+            return "%esi";
+        }
+    } else if (reg.substr(0, 5) == "!arg2") {
+        if (reg.substr(5) == "64") {
+            return "%rdx";
+        }
+        else if (reg.substr(5) == "32") {
+            return "%edx";
+        }
+        else if (reg.substr(5) == "16") {
+            return "%dx";
+        }
+        else if (reg.substr(5) == "8") {
+            return "%dl";
+        }
+        else {
+            return "%edx";
+        }
+    } else if (reg.substr(0, 5) == "!arg3") {
+        if (reg.substr(5) == "64") {
+            return "%rcx";
+        }
+        else if (reg.substr(5) == "32") {
+            return "%ecx";
+        }
+        else if (reg.substr(5) == "16") {
+            return "%cx";
+        }
+        else if (reg.substr(5) == "8") {
+            return "%cl";
+        }
+        else {
+            return "%ecx";
+        }
+    } else if (reg.substr(0, 5) == "!arg4") {
+        if (reg.substr(5) == "64") {
+            return "%r8";
+        }
+        else if (reg.substr(5) == "32") {
+            return "%r8d";
+        }
+        else if (reg.substr(5) == "16") {
+            return "%r8w";
+        }
+        else if (reg.substr(5) == "8") {
+            return "%r8b";
+        }
+        else {
+            return "%r8d";
+        }
+    } else if (reg.substr(0, 5) == "!arg5") {
+        if (reg.substr(5) == "64") {
+            return "%r9";
+        }
+        else if (reg.substr(5) == "32") {
+            return "%r9d";
+        }
+        else if (reg.substr(5) == "16") {
+            return "%r9w";
+        }
+        else if (reg.substr(5) == "8") {
+            return "%r9b";
+        }
+        else {
+            return "%r9d";
+        }
+    } else if (reg.substr(0, 8) == "!regLeft") {
         if (reg.substr(8) == "64") {
             return "%rbx";
         }
@@ -183,6 +259,7 @@ std::string CFG::IR_addr_to_x86(const std::string &addr)
 // Génère une représentation textuelle du CFG
 void CFG::gen_x86(ostream& o) {
     // Générer le code pour tous les blocs de base
+    o << "\n";
     for (BasicBlock* bb : bbs) {
         bb->gen_x86(o);
     }
@@ -267,7 +344,7 @@ Type CFG::get_var_type(string name) {
 
 string CFG::new_BB_name() {
     stringstream ss;
-    ss << functionName << bbs.size(); // je pense ça passe car on ajoute le block direct dans la liste après
+    ss << functionName << "_" << bbs.size(); // je pense ça passe car on ajoute le block direct dans la liste après
     return ss.str();
 }
 

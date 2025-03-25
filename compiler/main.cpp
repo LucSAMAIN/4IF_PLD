@@ -9,7 +9,6 @@
 #include "generated/ifccParser.h"
 #include "generated/ifccBaseVisitor.h"
 
-#include "CodeGenVisitor.h"
 #include "IRGenVisitor.h"
 #include "SymbolTableGenVisitor.h"
 #include "IR.h"
@@ -64,29 +63,29 @@ int main(int argc, const char **argv)
     SymbolTableGenVisitor stv;
     stv.visit(tree);
 
-    // for (auto const &var : stv.symbolTable)
-    // {
-    //     std::cout << "# " << var.first << " : type " << (int)var.second.type << " offset: " << var.second.offset;
-    //     if (var.second.used)
-    //     {
-    //         std::cout << " (used)";
-    //     }
-    //     if (var.second.declared)
-    //     {
-    //         std::cout << " (declared)";
-    //     }
-    //     std::cout << "\n";
-    // }
-    // for (auto const &var : stv.offsetTable)
-    // {
-    //     std::cout << "# " << var.first << " : " << var.second << "\n";
-    // }
+    for (auto const &var : stv.symbolTable)
+    {
+        std::cout << "# " << var.first << " : type " << (int)var.second.type << " offset: " << var.second.offset << " index_arg: " << var.second.index_arg;
+        if (var.second.used)
+        {
+            std::cout << " (used)";
+        }
+        if (var.second.declared)
+        {
+            std::cout << " (declared)";
+        }
+        std::cout << "\n";
+    }
+    for (auto const &var : stv.offsetTable)
+    {
+        std::cout << "# " << var.first << " : " << var.second << "\n";
+    }
 
     IRGenVisitor cgv(stv);
     cgv.visit(tree);
 
     // Récupération du CFG généré
-    CFG* cfg = cgv.getCFG();
+    std::vector<CFG*> cfgs = cgv.getCFGs();
     
     if (cfg) {        
         if (wasm) {

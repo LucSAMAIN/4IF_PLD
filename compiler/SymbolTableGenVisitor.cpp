@@ -4,10 +4,31 @@
 
 Type fromStringToType(std::string s)
 {   
-    if (s == "CHAR")
+    if (s == "char")
         return Type::CHAR;
+    else if (s == "void")
+        return Type::VOID;
     else
         return Type::INT;
+}
+
+SymbolTableGenVisitor::SymbolTableGenVisitor() : symbolTable(), offsetTable(), scope() {
+    symbolTable["putchar"] = {Type::VOID, 0, 1, true, true};
+    symbolTable["getchar"] = {Type::VOID, 0, 1, true, true};
+}
+
+antlrcpp::Any SymbolTableGenVisitor::visitFuncDecl(ifccParser::FuncDeclContext *ctx) {
+    scope = ctx->funcName->getText();
+    symbolTable[ctx->funcName->getText()] = {fromStringToType(ctx->funcType()->getText()), 0, (int)ctx->type().size(), true, false};
+    for (int i = 1; i < ctx->ID().size(); i++) { // le nom de la fonction est quand même dans la liste 
+        // même si on lui a donné un nom différent
+        if (ctx->type(i-1)->getText() == "int") { // le type de la fonction a un non terminal différent donc pas 
+            // dans la liste des types donc on décale de 1
+            symbolTable[scope + "_" + ctx->ID(i)->getText()] = {Type::INT, 0, i-1, true, false};
+        }
+    }
+    visit(ctx->block());
+    return 0;
 }
 
 antlrcpp::Any SymbolTableGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx) {
@@ -19,9 +40,10 @@ antlrcpp::Any SymbolTableGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext
         std::string funcName;
         std::istringstream ss_scope(scope);
         std::getline(ss_scope, funcName, '_');
+        // std::cout << "# funcName " << funcName << " scope " << scope << "\n";
         if (ctx->type()->getText() == "int") {
             offsetTable[funcName] -= 4;
-            symbolTable[scope + '_' + ctx->decl_element(i)->ID()->getText()] = {Type::INT, offsetTable[funcName], true, false};
+            symbolTable[scope + '_' + ctx->decl_element(i)->ID()->getText()] = {Type::INT, offsetTable[funcName], -1, true, false};
         }
         
         if (ctx->decl_element(i)->expr() != nullptr) {
@@ -118,5 +140,21 @@ antlrcpp::Any SymbolTableGenVisitor::visitAssignExpr(ifccParser::AssignExprConte
     }
     symbolTable[tried_scope + '_' + ctx->ID()->getText()].used = true;
     visit(ctx->expr());
+    return 0;
+}
+
+antlrcpp::Any SymbolTableGenVisitor::visitFuncCall(ifccParser::FuncCallContext *ctx) {
+    if (symbolTable.find(ctx->ID()->getText()) == symbolTable.end()) {
+        std::cerr << "error: function not declared " << ctx->ID()->getText() << " in scope " << scope << "\n";
+        return 0;
+    }
+    if (symbolTable[ctx->ID()->getText()].index_arg != ctx->expr().size()) {
+        std::cerr << "error: function " << ctx->ID()->getText() << " expects " << symbolTable[ctx->ID()->getText()].index_arg << " arguments, got " << ctx->expr().size() << "\n";
+        return 0;
+    }
+    symbolTable[ctx->ID()->getText()].used = true;
+    for (int i = 0; i < ctx->expr().size(); i++) {
+        visit(ctx->expr(i));
+    }
     return 0;
 }

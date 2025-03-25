@@ -10,14 +10,17 @@ public:
     IRGenVisitor(SymbolTableGenVisitor& symbolTableGenVisitor); 
     virtual ~IRGenVisitor();
     
-    CFG* getCFG() { return cfg; }
+    std::vector<CFG*>& getCFGs() { return cfgs; }
     
-    virtual antlrcpp::Any visitProg(ifccParser::ProgContext *ctx) override;
+    virtual antlrcpp::Any visitFuncDecl(ifccParser::FuncDeclContext *ctx) override;
     virtual antlrcpp::Any visitBlock(ifccParser::BlockContext *ctx) override;
     virtual antlrcpp::Any visitReturn_stmt(ifccParser::Return_stmtContext *ctx) override;
     virtual antlrcpp::Any visitDecl_stmt(ifccParser::Decl_stmtContext *ctx) override;
     virtual antlrcpp::Any visitAssign_stmt(ifccParser::Assign_stmtContext *ctx) override;
-    virtual antlrcpp::Any visitConst(ifccParser::ConstContext *ctx) override;
+    virtual antlrcpp::Any visitIf_stmt(ifccParser::If_stmtContext *ctx) override;
+    virtual antlrcpp::Any visitWhile_stmt(ifccParser::While_stmtContext *ctx) override;
+    virtual antlrcpp::Any visitIntExpr(ifccParser::IntExprContext *ctx) override;
+    virtual antlrcpp::Any visitCharExpr(ifccParser::CharExprContext *ctx) override;
     virtual antlrcpp::Any visitIdUse(ifccParser::IdUseContext *ctx) override;
     virtual antlrcpp::Any visitAssignExpr(ifccParser::AssignExprContext *ctx) override;
     virtual antlrcpp::Any visitNotExpr(ifccParser::NotExprContext *ctx) override;
@@ -29,10 +32,12 @@ public:
     virtual antlrcpp::Any visitAndExpr(ifccParser::AndExprContext *ctx) override;
     virtual antlrcpp::Any visitXorExpr(ifccParser::XorExprContext *ctx) override;
     virtual antlrcpp::Any visitOrExpr(ifccParser::OrExprContext *ctx) override;
+    virtual antlrcpp::Any visitParExpr(ifccParser::ParExprContext *ctx) override;
+    virtual antlrcpp::Any visitFuncCall(ifccParser::FuncCallContext *ctx) override;
     
 private:
     SymbolTableGenVisitor symbolTableGenVisitor;
-    CFG* cfg;              // Le Control Flow Graph
+   std::vector<CFG*> cfgs;              // Le Control Flow Graph
     BasicBlock* currentBB; // Le bloc de base courant
     std::string scope;
 };

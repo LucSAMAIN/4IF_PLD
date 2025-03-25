@@ -3,7 +3,7 @@
 #include <sstream>
 #include <cstdlib>
 #include <string>
-
+#include <vector>
 #include "antlr4-runtime.h"
 #include "generated/ifccLexer.h"
 #include "generated/ifccParser.h"
@@ -14,6 +14,18 @@
 #include "IR.h"
 
 using namespace antlr4;
+
+void wat_init(std::ostream& o) {
+    o << "(module\n";
+    o << "  ;; Déclaration de la mémoire\n";
+    o << "  (memory 1)\n";  
+    o << "  (export \"memory\" (memory 0))\n";  // Exporter la mémoire pour pouvoir l'accéder depuis JS
+    o << "  (global $sp (mut i32) (i32.const 1024))\n";  // Commencer avec un stack pointer non nul
+}
+
+void wat_end(std::ostream& o) {
+    o << ")\n";
+}
 
 int main(int argc, const char **argv)
 {
@@ -65,7 +77,7 @@ int main(int argc, const char **argv)
 
     for (auto const &var : stv.symbolTable)
     {
-        std::cout << "# " << var.first << " : type " << (int)var.second.type << " offset: " << var.second.offset << " index_arg: " << var.second.index_arg;
+        std::cout << "# " << var.first << " : type " << fromTypeToString(var.second.type) << " offset: " << var.second.offset << " index_arg: " << var.second.index_arg;
         if (var.second.used)
         {
             std::cout << " (used)";
@@ -86,8 +98,8 @@ int main(int argc, const char **argv)
 
     // Récupération du CFG généré
     std::vector<CFG*> cfgs = cgv.getCFGs();
-    
-    if (cfg) {        
+
+    if (cfgs.size() > 0) {        
         if (wasm) {
             std::ofstream outFile;
             if(!output_file.empty()) {
@@ -96,10 +108,19 @@ int main(int argc, const char **argv)
                     std::cerr << "error: cannot write to file: " << output_file << std::endl;
                     return 1;
                 }
-                cfg->gen_wat(outFile);
+                wat_init(outFile);  
+                // Génère le code pour tous les CFG
+                for (auto cfg : cfgs) {
+                    cfg->gen_wat(outFile);
+                }
+                wat_end(outFile);
                 outFile.close();
             } else {
-                cfg->gen_wat(std::cout);
+                wat_init(std::cout);
+                for (auto cfg : cfgs) {
+                    cfg->gen_wat(std::cout);    
+                }
+                wat_end(std::cout);
             }
         } else {
             std::ofstream outFile;
@@ -109,15 +130,26 @@ int main(int argc, const char **argv)
                     std::cerr << "error: cannot write to file: " << output_file << std::endl;
                     return 1;
                 }
-                cfg->gen_x86(outFile);
+                outFile << ".text\n";
+                outFile << ".globl main\n";
+                // Génère le code pour tous les CFG
+                for (auto cfg : cfgs) {
+                    cfg->gen_x86(outFile);
+                }
                 outFile.close();
             } else {
                 std::cout << ".text\n";
-            std::cout << ".globl main\n";
-                cfg->gen_x86(std::cout);
+                std::cout << ".globl main\n";
+                for (auto cfg : cfgs) {
+                    cfg->gen_x86(std::cout);
+                }
             }
         }
-        delete cfg;
+        
+        // Libération de la mémoire
+        for (auto cfg : cfgs) {
+            delete cfg;
+        }
     }
 
     return 0;

@@ -64,3 +64,5 @@ settings.json
 #tous les fichiers dans tests/ifcc-test-output et tests/ifcc-wat-test-output
 tests/ifcc-test-output/*
 tests/ifcc-wat-test-output/*
+compiler/ifcc-wat-test-output/*
+compiler/ifcc-test-output/*

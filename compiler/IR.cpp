@@ -47,13 +47,15 @@ void BasicBlock::gen_x86(ostream& o) {
 
 // Génère une représentation textuelle du bloc de base
 void BasicBlock::gen_wat(ostream& o) {
-    o << "    ;; Block: " << label << "\n";
+    o << "  ;; Bloc " << label << "\n";
     
     for (IRInstr* instr : instructions) {
         instr->gen_wat(o);
         // if return_true vers epilogue, on arrête parce qu'on vient de voir un return et on ne veut pas générer de code après
     }
 }
+
+// La méthode gen_wat n'est plus utilisée, elle est remplacée par la logique dans CFG::gen_wat
 
 
 
@@ -243,6 +245,27 @@ string CFG::IR_reg_to_x86(const string &reg) {
     return "";
 }
 
+std::string CFG::IR_reg_to_wat(const std::string &reg) {
+    // Gérer tous les registres d'arguments (!arg0, !arg1, etc.) indépendamment de leur taille
+    if (reg.substr(0, 5) == "!arg0" || 
+        reg.substr(0, 5) == "!arg1" ||
+        reg.substr(0, 5) == "!arg2" ||
+        reg.substr(0, 5) == "!arg3" ||
+        reg.substr(0, 5) == "!arg4" ||
+        reg.substr(0, 5) == "!arg5") {
+        // Extraire le numéro de l'argument (0-5)
+        std::string argNum = reg.substr(4, 1);
+        return "$!arg" + argNum;
+    } else if (reg.substr(0, 8) == "!regLeft") {
+        return "$regLeft";
+    } else if (reg.substr(0, 9) == "!regRight") {
+        return "$regRight";
+    } else if (reg.substr(0, 4) == "!reg") {
+        return "$reg";
+    }
+    return "$" + reg;  // Ajouter le préfixe $ pour les variables WebAssembly
+} 
+
 std::string CFG::IR_addr_to_x86(const std::string &addr)
 {
     // std::cout << "# addr IR_addr_to_x86 " << addr << "\n";
@@ -256,6 +279,16 @@ std::string CFG::IR_addr_to_x86(const std::string &addr)
     return "";
 }
 
+std::string CFG::IR_addr_to_wat(const std::string &addr) {
+    if (addr.substr(0, 3) == "RBP") {
+        std::string offset = addr.substr(3);
+        return "(i32.add (local.get $bp) (i32.const " + offset + "))";
+    }
+    std::cerr << "# Erreur conversion adresse IR to wat\n"; 
+    return "";
+}
+
+
 // Génère une représentation textuelle du CFG
 void CFG::gen_x86(ostream& o) {
     // Générer le code pour tous les blocs de base
@@ -266,29 +299,72 @@ void CFG::gen_x86(ostream& o) {
 }
 
 void CFG::gen_wat(ostream& o) {
-    // Début du module WebAssembly
-    o << "(module\n";
-    o << "  ;; Déclaration de la mémoire\n";
-    o << "  (memory 1)\n";  
-    o << "  (export \"memory\" (memory 0))\n";  // Exporter la mémoire pour pouvoir l'accéder depuis JS
-    
-    // Déclarer la mémoire globale
-    o << "  ;; Import de la mémoire et des fonctions système si nécessaire\n";
-    o << "  (global $sp (mut i32) (i32.const 1024))\n";  // Commencer avec un stack pointer non nul
-    
-    // Commencer la fonction principale
-    o << "  (func $main (export \"main\") (result i32)\n";
-    o << "    (local $reg i32)\n";  // Déclarer un registre local pour stocker les résultats
-    o << "    (local $regLeft i32)\n";  // Déclarer le registre pour l'opérande gauche
-    o << "    (local $regRight i32)\n";  // Déclarer le registre pour l'opérande droite
-    
-    // Générer le code pour tous les blocs de base
-    for (BasicBlock* bb : bbs) {
-        bb->gen_wat(o);
+    // Générer une seule fonction WebAssembly par fonction C
+    o << "(func $" << functionName;
+
+    if (functionName == "main") {
+        o << " (export \"main\")";
+    }
+
+    stv.printSymbolTable();
+    // Déclaration des arguments
+    if (stv.offsetTable.find(functionName) != stv.offsetTable.end()) {
+        // Pour chaque argument de la fonction (jusqu'à 6 maximum)
+        int numArgs = std::min(6, stv.symbolTable[functionName].index_arg);
+        for (int i = 0; i < numArgs; i++) {
+            // Déclarer chaque argument comme un paramètre i32
+            o << " (param $!arg" << i << " i32)";
+        }
     }
     
-    // Fermer la fonction et le module
-    o << "  )\n";
+    o << " (result i32)\n";
+    o << "    (local $reg i32)\n";      // Registre pour les résultats
+    o << "    (local $regLeft i32)\n";  // Registre pour l'opérande gauche
+    o << "    (local $regRight i32)\n"; // Registre pour l'opérande droite
+    o << "    (local $bp i32)\n";       // Base pointer
+    
+    // Si c'est la fonction main, déclarer les variables locales pour les arguments
+    if (functionName == "main") {
+        for (int i = 0; i < 6; i++) {
+            o << "    (local $!arg" << i << " i32)\n";
+        }
+    }
+    
+    // Définir le nom du bloc d'épilogue
+    string funcEpilogueBlockName = "$" + functionName + "_body_block";
+    
+    // Définir uniquement le bloc d'épilogue (le seul qui est utilisé pour les sauts)
+    o << "    (block " << funcEpilogueBlockName << "\n";
+    
+    // Générer le prologue d'abord (toujours le bloc start_block)
+    for (IRInstr* instr : start_block->instructions) {
+        instr->gen_wat(o);
+    }
+    
+    // Générer tous les blocs intermédiaires (ni prologue ni épilogue)
+    for (BasicBlock* bb : bbs) {
+        if (bb != start_block && bb != end_block) {
+            o << "      ;; Bloc " << bb->label << "\n";
+            for (IRInstr* instr : bb->instructions) {
+                instr->gen_wat(o);
+            }
+        }
+    }
+    
+    // Si on arrive ici sans sauter à l'épilogue, on continue naturellement
+    
+    // Fermer le bloc d'épilogue
+    o << "    )\n"; // Fin du bloc epilogue
+    
+    // Générer l'épilogue (toujours le bloc end_block)
+    for (IRInstr* instr : end_block->instructions) {
+        instr->gen_wat(o);
+    }
+    
+    // Pas besoin d'autre bloc
+    
+    // Valeur de retour par défaut - ne devrait jamais être atteinte car l'épilogue a son propre return
+    o << "    (return (i32.const 0))\n";
     o << ")\n";
 }
 
@@ -348,13 +424,3 @@ string CFG::new_BB_name() {
     return ss.str();
 }
 
-std::string CFG::IR_reg_to_wat(const std::string &reg) {
-    if (reg.substr(0, 8) == "!regLeft") {
-        return "$regLeft";
-    } else if (reg.substr(0, 9) == "!regRight") {
-        return "$regRight";
-    } else if (reg.substr(0, 4) == "!reg") {
-        return "$reg";
-    }
-    return "$" + reg;  // Ajouter le préfixe $ pour les variables WebAssembly
-} 

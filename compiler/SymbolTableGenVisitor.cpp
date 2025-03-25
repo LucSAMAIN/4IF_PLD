@@ -12,6 +12,14 @@ Type fromStringToType(std::string s)
         return Type::INT;
 }
 
+std::string fromTypeToString(Type t) {
+    if (t == Type::INT)
+        return "INT";
+    else if (t == Type::CHAR)
+        return "CHAR";
+    else
+        return "VOID";
+}
 SymbolTableGenVisitor::SymbolTableGenVisitor() : symbolTable(), offsetTable(), scope() {
     symbolTable["putchar"] = {Type::VOID, 0, 1, true, true};
     symbolTable["getchar"] = {Type::VOID, 0, 1, true, true};
@@ -24,7 +32,8 @@ antlrcpp::Any SymbolTableGenVisitor::visitFuncDecl(ifccParser::FuncDeclContext *
         // même si on lui a donné un nom différent
         if (ctx->type(i-1)->getText() == "int") { // le type de la fonction a un non terminal différent donc pas 
             // dans la liste des types donc on décale de 1
-            symbolTable[scope + "_" + ctx->ID(i)->getText()] = {Type::INT, 0, i-1, true, false};
+            std::string argName = scope + "_" + ctx->ID(i)->getText();
+            symbolTable[argName] = {Type::INT, 0, i-1, true, false};
         }
     }
     visit(ctx->block());
@@ -157,4 +166,17 @@ antlrcpp::Any SymbolTableGenVisitor::visitFuncCall(ifccParser::FuncCallContext *
         visit(ctx->expr(i));
     }
     return 0;
+}
+
+void SymbolTableGenVisitor::printSymbolTable() {
+    std::cout << "Symbol Table:\n";
+    for (const auto& pair : symbolTable) {
+        std::cout << "Variable: " << pair.first << "\n";
+        std::cout << "Type: " << fromTypeToString(pair.second.type) << "\n";
+        std::cout << "Offset: " << pair.second.offset << "\n";
+        std::cout << "Index Arg: " << pair.second.index_arg << "\n";
+        std::cout << "Declared: " << (pair.second.declared ? "true" : "false") << "\n";
+        std::cout << "Used: " << (pair.second.used ? "true" : "false") << "\n";
+        std::cout << "--------------------------------\n";
+    }
 }

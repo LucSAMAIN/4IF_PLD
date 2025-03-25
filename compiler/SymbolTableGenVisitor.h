@@ -17,6 +17,7 @@ enum class Type {
 }; 
 
 Type fromStringToType(std::string s);
+std::string fromTypeToString(Type t);
 
 typedef struct VarInfos
 {
@@ -26,6 +27,7 @@ typedef struct VarInfos
     bool declared;
     bool used;
 } VarInfos;
+
 
 class SymbolTableGenVisitor : public ifccBaseVisitor
 {
@@ -43,4 +45,7 @@ public:
     std::map<std::string, VarInfos> symbolTable;
     std::map<std::string, int> offsetTable; // pour les fonctions connaitre le début d'offset.
     std::string scope;
+
+    //fonction pour print la symbol table
+    void printSymbolTable();
 };

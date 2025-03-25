@@ -84,6 +84,7 @@ public:
 	std::string IR_reg_to_x86(const std::string &reg); /**< helper method: inputs a IR reg or input variable, returns e.g. "-24(%rbp)" for the proper value of 24 */
 	std::string IR_addr_to_x86 (const std::string &Iraddr);
 	std::string IR_reg_to_wat(const std::string &reg); /**< helper method: inputs a IR reg, returns WebAssembly local variable name */
+	std::string IR_addr_to_wat(const std::string &Iraddr);
 
 	// symbol table methods
 	// void add_to_symbol_table(std::string name, Type t); pas besoin car visiteur symbol table

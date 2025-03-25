@@ -59,3 +59,8 @@ settings.json
 *.wasm
 *.wat.txt
 *.wasm.txt
+
+
+#tous les fichiers dans tests/ifcc-test-output et tests/ifcc-wat-test-output
+tests/ifcc-test-output/*
+tests/ifcc-wat-test-output/*

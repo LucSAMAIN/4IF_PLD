@@ -191,22 +191,24 @@ void CFG::gen_x86(ostream& o) {
 void CFG::gen_wat(ostream& o) {
     // Début du module WebAssembly
     o << "(module\n";
+    o << "  ;; Déclaration de la mémoire\n";
+    o << "  (memory 1)\n";  
+    o << "  (export \"memory\" (memory 0))\n";  // Exporter la mémoire pour pouvoir l'accéder depuis JS
     
     // Déclarer la mémoire globale
     o << "  ;; Import de la mémoire et des fonctions système si nécessaire\n";
-    o << "  (global $sp (mut i32) (i32.const 0))\n";
+    o << "  (global $sp (mut i32) (i32.const 1024))\n";  // Commencer avec un stack pointer non nul
     
     // Commencer la fonction principale
     o << "  (func $main (export \"main\") (result i32)\n";
     o << "    (local $reg i32)\n";  // Déclarer un registre local pour stocker les résultats
+    o << "    (local $regLeft i32)\n";  // Déclarer le registre pour l'opérande gauche
+    o << "    (local $regRight i32)\n";  // Déclarer le registre pour l'opérande droite
     
     // Générer le code pour tous les blocs de base
     for (BasicBlock* bb : bbs) {
         bb->gen_wat(o);
     }
-    
-    // Si le code ne contient pas de return explicite, ajouter un return par défaut
-    o << "    (return (local.get $reg))\n";
     
     // Fermer la fonction et le module
     o << "  )\n";
@@ -270,7 +272,11 @@ string CFG::new_BB_name() {
 }
 
 std::string CFG::IR_reg_to_wat(const std::string &reg) {
-    if (reg.substr(0, 4) == "!reg") {
+    if (reg.substr(0, 8) == "!regLeft") {
+        return "$regLeft";
+    } else if (reg.substr(0, 9) == "!regRight") {
+        return "$regRight";
+    } else if (reg.substr(0, 4) == "!reg") {
         return "$reg";
     }
     return "$" + reg;  // Ajouter le préfixe $ pour les variables WebAssembly

@@ -335,12 +335,14 @@ void Prologue::gen_wat(std::ostream& o) {
     o << "    (local $bp i32)\n";
     o << "    (local.set $bp (global.get $sp))\n";
     int frameSize = ((-bb->cfg->stv.offsetTable[bb->cfg->functionName] + 15) & ~15);
+    frameSize = std::max(16, frameSize); // Au moins 16 octets pour le cadre de pile
     o << "    (global.set $sp (i32.sub (global.get $sp) (i32.const " << frameSize << ")))\n";
 }
 
 void Epilogue::gen_wat(std::ostream& o) {
     o << "    ;; Epilogue\n";
     o << "    (global.set $sp (local.get $bp))\n";
+    o << "    (return (local.get $reg))\n"; // Retourne explicitement la valeur
 }
 
 void LdConst::gen_wat(std::ostream& o) {
@@ -390,12 +392,12 @@ void Mod::gen_wat(std::ostream& o) {
 
 void Rmem::gen_wat(std::ostream& o) {
     o << "    ;; Read memory\n";
-    o << "    (local.set " << bb->cfg->IR_reg_to_wat(dest) << " (i32.load (i32.add (local.get $bp) (i32.const " << addr.substr(3) << "))))\n";
+    o << "    (local.set " << bb->cfg->IR_reg_to_wat(dest) << " (i32.load (i32.add (local.get $bp) (i32.const " << std::stoi(addr.substr(3)) << "))))\n";
 }
 
 void Wmem::gen_wat(std::ostream& o) {
     o << "    ;; Write memory\n";
-    o << "    (i32.store (i32.add (local.get $bp) (i32.const " << addr.substr(3) << ")) (local.get " << bb->cfg->IR_reg_to_wat(src) << "))\n";
+    o << "    (i32.store (i32.add (local.get $bp) (i32.const " << std::stoi(addr.substr(3)) << ")) (local.get " << bb->cfg->IR_reg_to_wat(src) << "))\n";
 }
 
 void Call::gen_wat(std::ostream& o) {

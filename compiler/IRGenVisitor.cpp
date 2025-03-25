@@ -91,6 +91,7 @@ antlrcpp::Any IRGenVisitor::visitReturn_stmt(ifccParser::Return_stmtContext *ctx
     // Évaluation de l'expression qu'on place dans le registre universel !reg
     visit(ctx->expr());
     
+    // On marque explicitement que le bloc courant quitte vers l'épilogue
     cfg->current_bb->exit_true = cfg->end_block; // default exit
     cfg->current_bb->exit_false = nullptr;
     

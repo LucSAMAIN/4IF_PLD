@@ -1,14 +1,10 @@
-#include "operation.h"
-#include "IR.h" // Pour accéder à BasicBlock et CFG
+#include "IRInstr.h"
+#include "IR.h"
 
-// Implémentation de la classe Operation
-Operation::Operation() {}
-
-Operation::~Operation() {}
 
 // implémentation de Prologue
 Prologue::Prologue(BasicBlock* p_bb)
-    : Operation(), bb(p_bb)
+    : IRInstr(p_bb)
 {
 }
 
@@ -30,7 +26,7 @@ void Prologue::gen_x86(std::ostream& o) {
 
 // implémentation de Epilogue
 Epilogue::Epilogue(BasicBlock* p_bb)
-    : Operation(), bb(p_bb)
+    : IRInstr(p_bb)
 {
 }
 
@@ -45,8 +41,8 @@ void Epilogue::gen_x86(std::ostream& o) {
 }
 
 // Implémentation de LdConst
-LdConst::LdConst(BasicBlock* bb, const std::string& dest_reg, int val) 
-    : Operation(), dest(dest_reg), value(val), bb(bb) {}
+LdConst::LdConst(BasicBlock* p_bb, const std::string& dest_reg, int val) 
+    : IRInstr(p_bb), dest(dest_reg), value(val) {}
 
 
 std::string LdConst::get_operation_name() const {
@@ -58,8 +54,8 @@ void LdConst::gen_x86(std::ostream& o) {
 }
 
 // Implémentation de Copy
-Copy::Copy(BasicBlock* bb, const std::string& dest_reg, const std::string& src_reg) 
-    : Operation(), dest(dest_reg), src(src_reg), bb(bb) {}
+Copy::Copy(BasicBlock* p_bb, const std::string& dest_reg, const std::string& src_reg) 
+    : IRInstr(p_bb), dest(dest_reg), src(src_reg) {}
 
 
 std::string Copy::get_operation_name() const {
@@ -71,8 +67,8 @@ void Copy::gen_x86(std::ostream& o) {
 }
 
 // Implémentation de Add
-Add::Add(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2) 
-    : Operation(), dest(dest_reg), op2(operand2), bb(bb) {}
+Add::Add(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+    : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 
 std::string Add::get_operation_name() const {
@@ -84,8 +80,8 @@ void Add::gen_x86(std::ostream& o) {
 }
 
 // Implémentation de Sub
-Sub::Sub(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2) 
-    : Operation(), dest(dest_reg), op2(operand2), bb(bb) {}
+Sub::Sub(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+    : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 
 std::string Sub::get_operation_name() const {
@@ -99,8 +95,8 @@ void Sub::gen_x86(std::ostream& o) {
 }
 
 // UnaryMinus
-UnaryMinus::UnaryMinus(BasicBlock* bb, const std::string& dest_reg) 
-    : Operation(), dest(dest_reg), bb(bb) {}
+UnaryMinus::UnaryMinus(BasicBlock* p_bb, const std::string& dest_reg) 
+    : IRInstr(p_bb), dest(dest_reg) {}
 
 
 std::string UnaryMinus::get_operation_name() const {
@@ -112,8 +108,8 @@ void UnaryMinus::gen_x86(std::ostream& o) {
 }
 
 
-Not::Not(BasicBlock* bb, const std::string& dest_reg) 
-    : Operation(), dest(dest_reg), bb(bb) {}
+Not::Not(BasicBlock* p_bb, const std::string& dest_reg) 
+    : IRInstr(p_bb), dest(dest_reg) {}
 
 
 std::string Not::get_operation_name() const {
@@ -127,8 +123,8 @@ void Not::gen_x86(std::ostream& o) {
 }
 
 // Implémentation de Mul
-Mul::Mul(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2) 
-    : Operation(), dest(dest_reg), op2(operand2), bb(bb) {}
+Mul::Mul(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+    : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 
 std::string Mul::get_operation_name() const {
@@ -140,8 +136,8 @@ void Mul::gen_x86(std::ostream& o) {
 }
 
 // Implémentation de Div
-Div::Div(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2) 
-    : Operation(), dest(dest_reg), op2(operand2), bb(bb) {}
+Div::Div(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+    : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 
 std::string Div::get_operation_name() const {
@@ -157,8 +153,8 @@ void Div::gen_x86(std::ostream& o) {
 }
 
 // Implémentation de Mod
-Mod::Mod(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2) 
-    : Operation(), dest(dest_reg), op2(operand2), bb(bb) {}
+Mod::Mod(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+    : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 
 std::string Mod::get_operation_name() const {
@@ -174,8 +170,8 @@ void Mod::gen_x86(std::ostream& o) {
 }
 
 // Implémentation de Rmem
-Rmem::Rmem(BasicBlock* bb, const std::string& dest_reg, const std::string& address) 
-    : Operation(), dest(dest_reg), addr(address), bb(bb) {}
+Rmem::Rmem(BasicBlock* p_bb, const std::string& dest_reg, const std::string& address) 
+    : IRInstr(p_bb), dest(dest_reg), addr(address) {}
 
 
 std::string Rmem::get_operation_name() const {
@@ -188,8 +184,8 @@ void Rmem::gen_x86(std::ostream& o) {
 }
 
 // Implémentation de Wmem
-Wmem::Wmem(BasicBlock* bb, const std::string& address, const std::string& src_reg) 
-    : Operation(), addr(address), src(src_reg), bb(bb) {}
+Wmem::Wmem(BasicBlock* p_bb, const std::string& address, const std::string& src_reg) 
+    : IRInstr(p_bb), addr(address), src(src_reg) {}
 
 
 std::string Wmem::get_operation_name() const {
@@ -201,7 +197,7 @@ void Wmem::gen_x86(std::ostream& o) {
 }
 
 // Implémentation de Call
-Call::Call(BasicBlock* bb, const std::string& function) : func_name(function), bb(bb) {}
+Call::Call(BasicBlock* p_bb, const std::string& function) : IRInstr(p_bb), func_name(function) {}
 
 std::string Call::get_operation_name() const {
     return "call";
@@ -221,8 +217,8 @@ void Call::gen_x86(std::ostream& o) {
 
 
 // Implémentation de CmpEq
-CmpEq::CmpEq(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2) 
-    : Operation(), dest(dest_reg), op2(operand2), bb(bb) {}
+CmpEq::CmpEq(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+    : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 std::string CmpEq::get_operation_name() const {
     return "cmp_eq";
@@ -235,8 +231,8 @@ void CmpEq::gen_x86(std::ostream& o) {
 }
 
 // Implémentation de CmpLt
-CmpNeq::CmpNeq(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2) 
-    : Operation(), dest(dest_reg), op2(operand2), bb(bb) {}
+CmpNeq::CmpNeq(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+    : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 std::string CmpNeq::get_operation_name() const {
     return "cmp_neq";
@@ -249,8 +245,8 @@ void CmpNeq::gen_x86(std::ostream& o) {
 }
 
 // Implémentation de CmpLe
-CmpLe::CmpLe(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2)
-    : Operation(), dest(dest_reg), op2(operand2), bb(bb) {}
+CmpLe::CmpLe(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2)
+    : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 std::string CmpLe::get_operation_name() const {
     return "cmp_le";
@@ -262,8 +258,8 @@ void CmpLe::gen_x86(std::ostream& o) {
     o << "    movzbl " << bb->cfg->IR_reg_to_x86(dest+"8") << ", " << bb->cfg->IR_reg_to_x86(dest+"32") << "\n";
 }
 
-CmpLt::CmpLt(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2) 
-    : Operation(), dest(dest_reg), op2(operand2), bb(bb) {}
+CmpLt::CmpLt(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+    : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 std::string CmpLt::get_operation_name() const {
     return "cmp_lt";
@@ -275,8 +271,8 @@ void CmpLt::gen_x86(std::ostream& o) {
     o << "    movzbl " << bb->cfg->IR_reg_to_x86(dest+"8") << ", " << bb->cfg->IR_reg_to_x86(dest+"32") << "\n";
 }
 
-CmpGe::CmpGe(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2) 
-    : Operation(), dest(dest_reg), op2(operand2), bb(bb) {}
+CmpGe::CmpGe(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+    : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 std::string CmpGe::get_operation_name() const {
     return "cmp_ge";
@@ -288,8 +284,8 @@ void CmpGe::gen_x86(std::ostream& o) {
     o << "    movzbl " << bb->cfg->IR_reg_to_x86(dest+"8") << ", " << bb->cfg->IR_reg_to_x86(dest+"32") << "\n";
 }
 
-CmpGt::CmpGt(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2) 
-    : Operation(), dest(dest_reg), op2(operand2), bb(bb) {}
+CmpGt::CmpGt(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+    : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 std::string CmpGt::get_operation_name() const {
     return "cmp_gt";
@@ -301,8 +297,8 @@ void CmpGt::gen_x86(std::ostream& o) {
     o << "    movzbl " << bb->cfg->IR_reg_to_x86(dest+"8") << ", " << bb->cfg->IR_reg_to_x86(dest+"32") << "\n";
 }
 
-And::And(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2) 
-    : Operation(), dest(dest_reg), op2(operand2), bb(bb) {}
+And::And(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+    : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 
 std::string And::get_operation_name() const {
@@ -313,8 +309,8 @@ void And::gen_x86(std::ostream& o) {
     o << "    andl " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
 }
 
-Or::Or(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2) 
-    : Operation(), dest(dest_reg), op2(operand2), bb(bb) {}
+Or::Or(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+    : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 
 std::string Or::get_operation_name() const {
@@ -325,8 +321,8 @@ void Or::gen_x86(std::ostream& o) {
     o << "    orl " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
 }
 
-Xor::Xor(BasicBlock* bb, const std::string& dest_reg, const std::string& operand2) 
-    : Operation(), dest(dest_reg), op2(operand2), bb(bb) {}
+Xor::Xor(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+    : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 
 std::string Xor::get_operation_name() const {
@@ -337,8 +333,8 @@ void Xor::gen_x86(std::ostream& o) {
     o << "    xorl " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
 }
 
-Jump::Jump(BasicBlock* bb, const std::string& p_dest_label) 
-    : Operation(), dest_label(p_dest_label), bb(bb) {}
+Jump::Jump(BasicBlock* p_bb, const std::string& p_dest_label) 
+    : IRInstr(p_bb), dest_label(p_dest_label) {}
 
 
 std::string Jump::get_operation_name() const {
@@ -349,8 +345,8 @@ void Jump::gen_x86(std::ostream& o) {
     o << "    jmp " << dest_label << "\n";
 }
 
-JumpFalse::JumpFalse(BasicBlock* bb, const std::string& p_dest_false, const std::string& p_dest_true, const std::string& p_op) 
-    : Operation(), dest_false(p_dest_false), dest_true(p_dest_true), op(p_op), bb(bb) {}
+JumpFalse::JumpFalse(BasicBlock* p_bb, const std::string& p_dest_false, const std::string& p_dest_true, const std::string& p_op) 
+    : IRInstr(p_bb), dest_false(p_dest_false), dest_true(p_dest_true), op(p_op) {}
 
 
 std::string JumpFalse::get_operation_name() const {
@@ -363,8 +359,8 @@ void JumpFalse::gen_x86(std::ostream& o) {
     o << "    jmp " << dest_true << "\n";
 }
 
-Push::Push(BasicBlock* bb, const std::string& p_op) 
-    : Operation(), op(p_op), bb(bb) {}
+Push::Push(BasicBlock* p_bb, const std::string& p_op) 
+    : IRInstr(p_bb), op(p_op) {}
 
 
 std::string Push::get_operation_name() const {
@@ -375,8 +371,8 @@ void Push::gen_x86(std::ostream& o) {
     o << "    push " << bb->cfg->IR_reg_to_x86(op) << "\n";
 }
 
-Pop::Pop(BasicBlock* bb, const std::string& p_dest) 
-    : Operation(), dest(p_dest), bb(bb) {}
+Pop::Pop(BasicBlock* p_bb, const std::string& p_dest) 
+    : IRInstr(p_bb), dest(p_dest) {}
 
 
 std::string Pop::get_operation_name() const {

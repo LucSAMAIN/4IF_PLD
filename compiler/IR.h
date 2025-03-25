@@ -7,33 +7,9 @@
 
 #include "generated/ifccParser.h"
 #include "SymbolTableGenVisitor.h"
-#include "operation.h"
+#include "IRInstr.h"
 
 class CFG;
-class BasicBlock;
-
-//! The class for one 3-address instruction
-class IRInstr {
-public:
-
-	/**  constructor */
-	IRInstr(BasicBlock* bb_, Operation *op);
-	~IRInstr() { delete op; }
-
-	// Destructor
-	// ?? a faire ?
-
-	/** Actual code generation */
-	void gen_x86(std::ostream &o); /**< Representation textuelle de l'instruction IR */
-
-private:
-	BasicBlock* bb; /**< The BB this instruction belongs to, which provides a pointer to the CFG this instruction belong to */
-	Operation* op;	// if you subclass IRInstr, each IRInstr subclass has its parameters and the previous (very important) comment becomes useless: it would be a better design. 
-};
-
-
-
-
 
 
 /**  The class for a basic block */

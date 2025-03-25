@@ -160,7 +160,7 @@ antlrcpp::Any TypeCheckVisitor::visitAssignExpr(ifccParser::AssignExprContext *c
         type_error++;
     }
     
-    return 0;
+    return type_expr;
 }
 
 

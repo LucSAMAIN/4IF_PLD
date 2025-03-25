@@ -24,7 +24,9 @@ Type fromStringToType(std::string s)
 
 SymbolTableGenVisitor::SymbolTableGenVisitor() : symbolTable(), offsetTable(), scope(), error_count(0) {
     symbolTable["putchar"] = {Type::VOID, 0, 1, true, true};
+    symbolTable["putchar_0"] = {Type::INT, 0, 0, true, false}; //arg0
     symbolTable["getchar"] = {Type::VOID, 0, 1, true, true};
+    symbolTable["getchar_0"] = {Type::INT, 0, 0, true, false}; // arg0
 }
 
 antlrcpp::Any SymbolTableGenVisitor::visitFuncDecl(ifccParser::FuncDeclContext *ctx) {

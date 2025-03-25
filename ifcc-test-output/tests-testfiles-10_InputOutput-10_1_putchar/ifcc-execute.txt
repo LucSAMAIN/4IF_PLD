@@ -1,0 +1,2 @@
+a
+exit status: 0

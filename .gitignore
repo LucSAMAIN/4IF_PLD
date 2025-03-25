@@ -7,6 +7,12 @@
 *.err
 *.err.txt
 *.err.log
+*.wat
+*.wasm
+*.wat.txt
+*.wasm.txt
+*.s
+*-gcc   
 
 # Compiled Object files
 *.slo

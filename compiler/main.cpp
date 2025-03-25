@@ -87,9 +87,7 @@ int main(int argc, const char **argv)
     // Récupération du CFG généré
     std::vector<CFG*> cfgs = cgv.getCFGs();
 
-    CFG* cfg = cfgs[0];
-    
-    if (cfg) {        
+    if (cfgs.size() > 0) {        
         if (wasm) {
             std::ofstream outFile;
             if(!output_file.empty()) {
@@ -98,10 +96,15 @@ int main(int argc, const char **argv)
                     std::cerr << "error: cannot write to file: " << output_file << std::endl;
                     return 1;
                 }
-                cfg->gen_wat(outFile);
+                // Génère le code pour tous les CFG
+                for (auto cfg : cfgs) {
+                    cfg->gen_wat(outFile);
+                }
                 outFile.close();
             } else {
-                cfg->gen_wat(std::cout);
+                for (auto cfg : cfgs) {
+                    cfg->gen_wat(std::cout);
+                }
             }
         } else {
             std::ofstream outFile;
@@ -111,15 +114,26 @@ int main(int argc, const char **argv)
                     std::cerr << "error: cannot write to file: " << output_file << std::endl;
                     return 1;
                 }
-                cfg->gen_x86(outFile);
+                outFile << ".text\n";
+                outFile << ".globl main\n";
+                // Génère le code pour tous les CFG
+                for (auto cfg : cfgs) {
+                    cfg->gen_x86(outFile);
+                }
                 outFile.close();
             } else {
                 std::cout << ".text\n";
-            std::cout << ".globl main\n";
-                cfg->gen_x86(std::cout);
+                std::cout << ".globl main\n";
+                for (auto cfg : cfgs) {
+                    cfg->gen_x86(std::cout);
+                }
             }
         }
-        delete cfg;
+        
+        // Libération de la mémoire
+        for (auto cfg : cfgs) {
+            delete cfg;
+        }
     }
 
     return 0;

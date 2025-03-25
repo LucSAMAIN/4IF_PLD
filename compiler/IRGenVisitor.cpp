@@ -48,7 +48,10 @@ antlrcpp::Any IRGenVisitor::visitBlock(ifccParser::BlockContext *ctx)
             }
         }
     }
-    if (cfgs.back()->current_bb->exit_true) {
+    
+    // On ne génère le saut (jump) que si on est pas dans l'épilogue et que le bloc a une sortie
+    if (cfgs.back()->current_bb->exit_true && 
+        cfgs.back()->current_bb->exit_true != cfgs.back()->end_block) {
         IRInstr *instruction_jump = new Jump(cfgs.back()->current_bb, cfgs.back()->current_bb->exit_true->label);
         cfgs.back()->current_bb->add_IRInstr(instruction_jump);
     }
@@ -131,8 +134,14 @@ antlrcpp::Any IRGenVisitor::visitReturn_stmt(ifccParser::Return_stmtContext *ctx
         cfgs.back()->current_bb->add_IRInstr(instruction_const);
     }
     
+    // Pour WebAssembly, pas besoin de sauter à l'épilogue, on peut retourner directement
+    // On va quand même mettre que le bloc suivant est l'epilogue pour la génération x86
     cfgs.back()->current_bb->exit_true = cfgs.back()->end_block; // default exit
     cfgs.back()->current_bb->exit_false = nullptr;
+    
+    // Ajout d'un saut vers l'épilogue pour la génération x86 et wat
+    IRInstr *instruction_jump = new Jump(cfgs.back()->current_bb, cfgs.back()->end_block->label);
+    cfgs.back()->current_bb->add_IRInstr(instruction_jump);
     
     return 0; // pour savoir qu'on a un return
 }

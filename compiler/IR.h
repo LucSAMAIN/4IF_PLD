@@ -43,7 +43,6 @@ public:
 	BasicBlock(CFG* cfg, std::string entry_label);
 	virtual ~BasicBlock();	
 	void gen_x86(std::ostream &o); /**< x86 assembly code generation for this basic block */
-	void gen_wat(std::ostream &o); /**< wat code generation for this basic block */
 
 	// Méthode originale pour ajouter une instruction IRInstr (pour compatibilité)
 	void add_IRInstr(IRInstr *instruction);

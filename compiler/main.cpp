@@ -3,7 +3,7 @@
 #include <sstream>
 #include <cstdlib>
 #include <string>
-
+#include <vector>
 #include "antlr4-runtime.h"
 #include "generated/ifccLexer.h"
 #include "generated/ifccParser.h"
@@ -86,6 +86,8 @@ int main(int argc, const char **argv)
 
     // Récupération du CFG généré
     std::vector<CFG*> cfgs = cgv.getCFGs();
+
+    CFG* cfg = cfgs[0];
     
     if (cfg) {        
         if (wasm) {

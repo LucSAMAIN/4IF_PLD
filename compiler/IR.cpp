@@ -45,15 +45,7 @@ void BasicBlock::gen_x86(ostream& o) {
     }
 }
 
-// Génère une représentation textuelle du bloc de base
-void BasicBlock::gen_wat(ostream& o) {
-    o << "    ;; Block: " << label << "\n";
-    
-    for (IRInstr* instr : instructions) {
-        instr->gen_wat(o);
-        // if return_true vers epilogue, on arrête parce qu'on vient de voir un return et on ne veut pas générer de code après
-    }
-}
+// La méthode gen_wat n'est plus utilisée, elle est remplacée par la logique dans CFG::gen_wat
 
 
 
@@ -278,14 +270,59 @@ void CFG::gen_wat(ostream& o) {
     
     // Commencer la fonction principale
     o << "  (func $main (export \"main\") (result i32)\n";
-    o << "    (local $reg i32)\n";  // Déclarer un registre local pour stocker les résultats
+    o << "    (local $reg i32)\n";      // Déclarer un registre local pour stocker les résultats
     o << "    (local $regLeft i32)\n";  // Déclarer le registre pour l'opérande gauche
-    o << "    (local $regRight i32)\n";  // Déclarer le registre pour l'opérande droite
+    o << "    (local $regRight i32)\n"; // Déclarer le registre pour l'opérande droite
+    o << "    (local $bp i32)\n";       // Déclarer le base pointer
     
-    // Générer le code pour tous les blocs de base
+    // Ici, nous allons utiliser un unique block englobant tous les autres
+    o << "    (block $main_block\n";
+    
+    // Nous déclarons l'épilogue comme un bloc à l'intérieur du bloc principal
+    o << "      (block $main_epilogue\n";
+    
+    // Prologue et code principal
+    // Générer le code pour le bloc principal
     for (BasicBlock* bb : bbs) {
-        bb->gen_wat(o);
+        if (bb->label == functionName) {
+            // Générer le prologue
+            for (IRInstr* instr : bb->instructions) {
+                instr->gen_wat(o);
+            }
+        }
     }
+    
+    // Générer le code pour les blocs intermédiaires
+    for (BasicBlock* bb : bbs) {
+        if (bb->label != functionName && bb->label != functionName + "_epilogue") {
+            // Générer le code intermédiaire
+            for (IRInstr* instr : bb->instructions) {
+                instr->gen_wat(o);
+            }
+        }
+    }
+    
+    // Si on arrive ici, c'est qu'on a dépassé tous les blocs intermédiaires sans sauter à l'épilogue
+    // On saute directement à l'épilogue pour éviter d'exécuter son code qui suit
+    o << "      (br $main_epilogue)\n";
+    
+    // Ici on définit le code de l'épilogue qui sera exécuté après tous les sauts à l'épilogue
+    o << "      )\n"; // Fin du bloc $main_epilogue
+    
+    // Générer le code de l'épilogue
+    for (BasicBlock* bb : bbs) {
+        if (bb->label == functionName + "_epilogue") {
+            for (IRInstr* instr : bb->instructions) {
+                instr->gen_wat(o);
+            }
+        }
+    }
+    
+    o << "    )\n"; // Fin du bloc $main_block
+    
+    // S'assurer que la fonction retourne bien une valeur par défaut au cas où
+    o << "    ;; Default return value (should not be reached)\n";
+    o << "    (return (i32.const 0))\n";
     
     // Fermer la fonction et le module
     o << "  )\n";

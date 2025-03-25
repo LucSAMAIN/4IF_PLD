@@ -1,4 +1,5 @@
-#pragma once
+#ifndef SYMBOL_TABLE_GEN_VISITOR_H
+#define SYMBOL_TABLE_GEN_VISITOR_H
 
 #include <string>
 #include <map>
@@ -14,7 +15,9 @@ enum class Type {
     INT32_T,
     INT16_T,
     INT8_T
-}; 
+};
+
+extern std::string typeToString[];
 
 Type fromStringToType(std::string s);
 
@@ -33,6 +36,8 @@ public:
     SymbolTableGenVisitor();
     virtual ~SymbolTableGenVisitor() {}
 
+    int getErrorCount() { return error_count; }
+
     virtual antlrcpp::Any visitFuncDecl(ifccParser::FuncDeclContext *ctx) override;
     virtual antlrcpp::Any visitDecl_stmt(ifccParser::Decl_stmtContext *ctx) override;
     virtual antlrcpp::Any visitAssign_stmt(ifccParser::Assign_stmtContext *ctx) override;
@@ -43,4 +48,7 @@ public:
     std::map<std::string, VarInfos> symbolTable;
     std::map<std::string, int> offsetTable; // pour les fonctions connaitre le début d'offset.
     std::string scope;
+    int error_count;
 };
+
+#endif // SYMBOL_TABLE_GEN_VISITOR_H

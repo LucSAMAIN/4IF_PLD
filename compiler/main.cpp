@@ -1,18 +1,8 @@
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <cstdlib>
-#include <vector>
 
-#include "antlr4-runtime.h"
 #include "generated/ifccLexer.h"
-#include "generated/ifccParser.h"
-#include "generated/ifccBaseVisitor.h"
 
 #include "IRGenVisitor.h"
-#include "SymbolTableGenVisitor.h"
 #include "TypeCheckVisitor.h"
-#include "IR.h"
 
 using namespace antlr4;
 
@@ -53,6 +43,12 @@ int main(int argn, const char **argv)
 
     SymbolTableGenVisitor stv;
     stv.visit(tree);
+
+    if (stv.getErrorCount() != 0)
+    {
+        std::cerr << "error: symbol table generation error\n";
+        exit(1);
+    }
 
     for (auto const &var : stv.symbolTable)
     {

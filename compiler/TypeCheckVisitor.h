@@ -1,8 +1,9 @@
-#pragma once
+#ifndef TYPECHECKVISITOR_H
+#define TYPECHECKVISITOR_H
 
 #include "antlr4-runtime.h"
 #include "generated/ifccBaseVisitor.h"
-#include "IR.h"
+#include "SymbolTableGenVisitor.h"
 
 class TypeCheckVisitor : public ifccBaseVisitor
 {
@@ -40,3 +41,5 @@ private:
     std::string scope;
     int type_error;
 };
+
+#endif

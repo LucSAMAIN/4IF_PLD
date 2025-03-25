@@ -1,4 +1,5 @@
-#pragma once
+#ifndef IRINSTR_H
+#define IRINSTR_H
 
 #include <iostream>
 
@@ -345,3 +346,5 @@ public:
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
 };
+
+#endif // IRINSTR_H

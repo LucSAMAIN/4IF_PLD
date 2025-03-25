@@ -52,7 +52,7 @@ antlrcpp::Any TypeCheckVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx
 
             Type type_expr = visit(ctx->decl_element(i)->expr());
             if (type_expr != stv.symbolTable[nomVar].type) {
-                std::cerr << "error: type mismatch in declaration of variable " << ctx->decl_element(i)->ID()->getText() << " in scope " << scope << "\n";
+                std::cerr << "error: type mismatch in declaration of variable " << nomVar << ", expected " << typeToString[(int)stv.symbolTable[nomVar].type] << " found " << typeToString[(int)type_expr] << "\n";
                 type_error++;
             }
         }
@@ -74,7 +74,7 @@ antlrcpp::Any TypeCheckVisitor::visitAssign_stmt(ifccParser::Assign_stmtContext 
     std::string nomVar = tried_scope + "_" + ctx->ID()->getText();
     Type type_expr = visit(ctx->expr());
     if (type_expr != stv.symbolTable[nomVar].type) {
-        std::cerr << "error: type mismatch in assignment of variable " << ctx->ID()->getText() << " in scope " << scope << "\n";
+        std::cerr << "error: type mismatch in assignment of variable " << nomVar << ", expected " << typeToString[(int)stv.symbolTable[nomVar].type] << " found " << typeToString[(int)type_expr] << "\n";
         type_error++;
     }
     
@@ -89,7 +89,7 @@ antlrcpp::Any TypeCheckVisitor::visitReturn_stmt(ifccParser::Return_stmtContext 
     std::getline(ss, func_name, '_');
 
     if (type_expr != stv.symbolTable[func_name].type) {
-        std::cerr << "error: type mismatch in return statement of function " << func_name << " in scope " << scope << "\n";
+        std::cerr << "error: type mismatch in return statement of function " << func_name << ", expected " << typeToString[(int)stv.symbolTable[func_name].type] << " found " << typeToString[(int)type_expr] << "\n";
         type_error++;
     }
     
@@ -99,7 +99,7 @@ antlrcpp::Any TypeCheckVisitor::visitReturn_stmt(ifccParser::Return_stmtContext 
 antlrcpp::Any TypeCheckVisitor::visitIf_stmt(ifccParser::If_stmtContext *ctx) {
     Type type_expr = visit(ctx->expr());
     if (type_expr != Type::INT) {
-        std::cerr << "error: type mismatch in if statement, expected int, found " << (int)type_expr << " in scope " << scope << "\n";
+        std::cerr << "error: type mismatch in if statement, expected int, found " << (int)type_expr << ", expected " << typeToString[(int)Type::INT] << " found " << typeToString[(int)type_expr] << "\n";
         type_error++;
     }
 
@@ -109,7 +109,7 @@ antlrcpp::Any TypeCheckVisitor::visitIf_stmt(ifccParser::If_stmtContext *ctx) {
 antlrcpp::Any TypeCheckVisitor::visitWhile_stmt(ifccParser::While_stmtContext *ctx) {
     Type type_expr = visit(ctx->expr());
     if (type_expr != Type::INT) {
-        std::cerr << "error: type mismatch in if statement, expected int, found " << (int)type_expr << " in scope " << scope << "\n";
+        std::cerr << "error: type mismatch in if statement, expected int, found " << typeToString[(int)type_expr] << "\n";
         type_error++;
     }
 
@@ -156,7 +156,7 @@ antlrcpp::Any TypeCheckVisitor::visitAssignExpr(ifccParser::AssignExprContext *c
     std::string nomVar = tried_scope + "_" + ctx->ID()->getText();
     Type type_expr = visit(ctx->expr());
     if (type_expr != stv.symbolTable[nomVar].type) {
-        std::cerr << "error: type mismatch in assignment of variable " << ctx->ID()->getText() << " in scope " << scope << "\n";
+        std::cerr << "error: type mismatch in assignment of variable " << nomVar << ", expected " << typeToString[(int)stv.symbolTable[nomVar].type] << " found " << typeToString[(int)type_expr] << "\n";
         type_error++;
     }
     
@@ -167,7 +167,7 @@ antlrcpp::Any TypeCheckVisitor::visitAssignExpr(ifccParser::AssignExprContext *c
 antlrcpp::Any TypeCheckVisitor::visitNotExpr(ifccParser::NotExprContext *ctx) {
     Type type_expr = visit(ctx->primary());
     if (type_expr != Type::INT) {
-        std::cerr << "error: type mismatch in not expression, expected int, found " << (int)type_expr << " in scope " << scope << "\n";
+        std::cerr << "error: type mismatch in not expression, expected int, found " << (int)type_expr << ", expected " << typeToString[(int)Type::INT] << " found " << typeToString[(int)type_expr] << "\n";
         type_error++;
     }
     
@@ -177,7 +177,7 @@ antlrcpp::Any TypeCheckVisitor::visitNotExpr(ifccParser::NotExprContext *ctx) {
 antlrcpp::Any TypeCheckVisitor::visitUnaryMinusExpr(ifccParser::UnaryMinusExprContext *ctx) {
     Type type_expr = visit(ctx->primary());
     if (type_expr != Type::INT) {
-        std::cerr << "error: type mismatch in unary minus expression, expected int, found " << (int)type_expr << " in scope " << scope << "\n";
+        std::cerr << "error: type mismatch in unary minus expression, expected int, found " << (int)type_expr << ", expected " << typeToString[(int)Type::INT] << " found " << typeToString[(int)type_expr] << "\n";
         type_error++;
     }
     
@@ -188,7 +188,7 @@ antlrcpp::Any TypeCheckVisitor::visitMulDivExpr(ifccParser::MulDivExprContext *c
     Type type_left = visit(ctx->left);
     Type type_right = visit(ctx->right);
     if (type_left != Type::INT || type_right != Type::INT) {
-        std::cerr << "error: type mismatch in multiplication/division expression, expected int, found " << (int)type_left << " and " << (int)type_right << " in scope " << scope << "\n";
+        std::cerr << "error: type mismatch in multiplication/division expression, expected int, found " << typeToString[(int)type_left] << " and " << typeToString[(int)type_right] << "\n";
         type_error++;
     }
 
@@ -199,7 +199,7 @@ antlrcpp::Any TypeCheckVisitor::visitAddSubExpr(ifccParser::AddSubExprContext *c
     Type type_left = visit(ctx->left);
     Type type_right = visit(ctx->right);
     if (type_left != Type::INT || type_right != Type::INT) {
-        std::cerr << "error: type mismatch in multiplication/division expression, expected int, found " << (int)type_left << " and " << (int)type_right << " in scope " << scope << "\n";
+        std::cerr << "error: type mismatch in multiplication/division expression, expected int, found " << typeToString[(int)type_left] << " and " << typeToString[(int)type_right] << "\n";
         type_error++;
     }
 
@@ -210,7 +210,7 @@ antlrcpp::Any TypeCheckVisitor::visitCompExpr(ifccParser::CompExprContext *ctx) 
     Type type_left = visit(ctx->left);
     Type type_right = visit(ctx->right);
     if (type_left != Type::INT || type_right != Type::INT) {
-        std::cerr << "error: type mismatch in multiplication/division expression, expected int, found " << (int)type_left << " and " << (int)type_right << " in scope " << scope << "\n";
+        std::cerr << "error: type mismatch in multiplication/division expression, expected int, found " << typeToString[(int)type_left] << " and " << typeToString[(int)type_right] << "\n";
         type_error++;
     }
 
@@ -221,7 +221,7 @@ antlrcpp::Any TypeCheckVisitor::visitEqExpr(ifccParser::EqExprContext *ctx) {
     Type type_left = visit(ctx->left);
     Type type_right = visit(ctx->right);
     if (type_left != Type::INT || type_right != Type::INT) {
-        std::cerr << "error: type mismatch in multiplication/division expression, expected int, found " << (int)type_left << " and " << (int)type_right << " in scope " << scope << "\n";
+        std::cerr << "error: type mismatch in multiplication/division expression, expected int, found " << typeToString[(int)type_left] << " and " << typeToString[(int)type_right] << "\n";
         type_error++;
     }
 
@@ -232,7 +232,7 @@ antlrcpp::Any TypeCheckVisitor::visitAndExpr(ifccParser::AndExprContext *ctx) {
     Type type_left = visit(ctx->left);
     Type type_right = visit(ctx->right);
     if (type_left != Type::INT || type_right != Type::INT) {
-        std::cerr << "error: type mismatch in multiplication/division expression, expected int, found " << (int)type_left << " and " << (int)type_right << " in scope " << scope << "\n";
+        std::cerr << "error: type mismatch in multiplication/division expression, expected int, found " << typeToString[(int)type_left] << " and " << typeToString[(int)type_right] << "\n";
         type_error++;
     }
 
@@ -243,7 +243,7 @@ antlrcpp::Any TypeCheckVisitor::visitOrExpr(ifccParser::OrExprContext *ctx) {
     Type type_left = visit(ctx->left);
     Type type_right = visit(ctx->right);
     if (type_left != Type::INT || type_right != Type::INT) {
-        std::cerr << "error: type mismatch in multiplication/division expression, expected int, found " << (int)type_left << " and " << (int)type_right << " in scope " << scope << "\n";
+        std::cerr << "error: type mismatch in multiplication/division expression, expected int, found " << typeToString[(int)type_left] << " and " << typeToString[(int)type_right] << "\n";
         type_error++;
     }
 
@@ -254,7 +254,7 @@ antlrcpp::Any TypeCheckVisitor::visitXorExpr(ifccParser::XorExprContext *ctx) {
     Type type_left = visit(ctx->left);
     Type type_right = visit(ctx->right);
     if (type_left != Type::INT || type_right != Type::INT) {
-        std::cerr << "error: type mismatch in multiplication/division expression, expected int, found " << (int)type_left << " and " << (int)type_right << " in scope " << scope << "\n";
+        std::cerr << "error: type mismatch in multiplication/division expression, expected int, found " << typeToString[(int)type_left] << " and " << typeToString[(int)type_right] << "\n";
         type_error++;
     }
 
@@ -267,6 +267,14 @@ antlrcpp::Any TypeCheckVisitor::visitParExpr(ifccParser::ParExprContext *ctx) {
 
 antlrcpp::Any TypeCheckVisitor::visitFuncCall(ifccParser::FuncCallContext *ctx) {
     std::string func_name = ctx->ID()->getText();
+
+    for (int i = 0; i < std::min<int>(ctx->expr().size(), stv.symbolTable[func_name].index_arg); i++) {
+        Type type_expr = visit(ctx->expr(i));
+        if (type_expr != stv.symbolTable[func_name+"_"+std::to_string(i)].type) {
+            std::cerr << "error: type mismatch in argument of function call of " << func_name << ", expected " << typeToString[(int)stv.symbolTable[func_name+"_"+std::to_string(i)].type] << " found " << typeToString[(int)type_expr] << "\n";
+            type_error++;
+        }
+    }
 
     return stv.symbolTable[func_name].type;
 }

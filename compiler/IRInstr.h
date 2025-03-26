@@ -1,7 +1,9 @@
-#pragma once
+#ifndef IRINSTR_H
+#define IRINSTR_H
 
 #include <iostream>
 #include <vector>
+#include <string>
 
 class BasicBlock;
 
@@ -198,9 +200,9 @@ class Call : public IRInstr
 private:
     std::string func_name;
     std::vector<std::string> args;
-    
+
 public:
-    Call(BasicBlock* bb, const std::string& function);
+    Call(BasicBlock* bb, const std::string& function, const std::vector<std::string>& arguments);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
     void gen_wat(std::ostream& o) override;
@@ -374,3 +376,5 @@ public:
     void gen_x86(std::ostream& o) override;
     void gen_wat(std::ostream& o) override;
 };
+
+#endif // IRINSTR_H

@@ -39,7 +39,7 @@
 *.app
 
 *.pdf
-*/ifcc-test-output
+**/ifcc-test-output
 */generated/
 settings.json
 */ifcc

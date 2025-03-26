@@ -6,12 +6,9 @@
 #include <vector>
 #include "antlr4-runtime.h"
 #include "generated/ifccLexer.h"
-#include "generated/ifccParser.h"
-#include "generated/ifccBaseVisitor.h"
 
 #include "IRGenVisitor.h"
-#include "SymbolTableGenVisitor.h"
-#include "IR.h"
+#include "TypeCheckVisitor.h"
 
 using namespace antlr4;
 
@@ -75,6 +72,12 @@ int main(int argc, const char **argv)
     SymbolTableGenVisitor stv;
     stv.visit(tree);
 
+    if (stv.getErrorCount() != 0)
+    {
+        std::cerr << "error: symbol table generation error\n";
+        exit(1);
+    }
+
     for (auto const &var : stv.symbolTable)
     {
         std::cout << "# " << var.first << " : type " << fromTypeToString(var.second.type) << " offset: " << var.second.offset << " index_arg: " << var.second.index_arg;
@@ -91,6 +94,14 @@ int main(int argc, const char **argv)
     for (auto const &var : stv.offsetTable)
     {
         std::cout << "# " << var.first << " : " << var.second << "\n";
+    }
+
+    TypeCheckVisitor tcv(stv);
+    tcv.visit(tree);
+    if (tcv.getNumberTypeError() != 0)
+    {
+        std::cerr << "error: type error during type checking\n";
+        exit(1);
     }
 
     IRGenVisitor cgv(stv);

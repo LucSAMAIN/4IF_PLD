@@ -779,58 +779,26 @@ antlrcpp::Any IRGenVisitor::visitParExpr(ifccParser::ParExprContext *ctx) {
 }
 
 antlrcpp::Any IRGenVisitor::visitFuncCall(ifccParser::FuncCallContext *ctx) {
-    // Récupération du nom de la fonction appelée
     std::string nomFonction = ctx->ID()->getText();
 
-    // Vecteur pour stocker les adresses temporaires des arguments
     std::vector<std::string> args_temp_addr;
     
-    // Pour chaque argument passé à la fonction
     for (int i = 0; i < ctx->expr().size(); i++) {
-        // Création d'une variable temporaire pour stocker l'argument
         std::string temp(cfgs.back()->create_new_tempvar(Type::INT));
-        // Conversion en adresse mémoire relative à RBP
         args_temp_addr.push_back("RBP" + std::to_string(stv.symbolTable[temp].offset));
-        
-        // Évaluation de l'expression de l'argument
         std::pair<bool, int> res(visit(ctx->expr(i)));
         if (res.first) {
-            // Si l'expression est une constante, chargement direct dans !reg
-            IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!reg", res.second);
+            IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!reg", res.second);  // block, dst, src
             cfgs.back()->current_bb->add_IRInstr(instruction_const);
         }
-        // Sauvegarde de la valeur de l'argument dans la mémoire temporaire
         IRInstr *instruction_temp = new Wmem(cfgs.back()->current_bb, args_temp_addr.back(), "!reg");
         cfgs.back()->current_bb->add_IRInstr(instruction_temp);
-        // Note: pour plus de 6 arguments, il faudrait une stratégie différente
+        // plus de 6 args ? faire une  et pop ?
     }
 
-    // Sauvegarde des registres d'arguments actuels sur la pile
-    std::string callingFunc(cfgs.back()->current_bb->cfg->functionName);
-    for (int i = 0; i < std::min<int>(6, cfgs.back()->stv.symbolTable[callingFunc].index_arg); i++) {
-        // Push des registres d'arguments sur la pile pour les préserver
-        IRInstr *instruction_push = new Push(cfgs.back()->current_bb, "!arg"+std::to_string(i)+"64");
-        cfgs.back()->current_bb->add_IRInstr(instruction_push);
-    }
-
-    // Chargement des arguments dans les registres dédiés
-    for (int i = 0; i < args_temp_addr.size(); i++) {
-        // Lecture depuis la mémoire temporaire vers les registres d'arguments
-        IRInstr *instruction_temp = new Rmem(cfgs.back()->current_bb, "!arg"+std::to_string(i)+"32", args_temp_addr[i]);
-        cfgs.back()->current_bb->add_IRInstr(instruction_temp);
-    }
-
-    // Génération de l'instruction d'appel de fonction
-    IRInstr *instruction_call = new Call(cfgs.back()->current_bb, nomFonction);
+    // On appelle la fonction
+    IRInstr *instruction_call = new Call(cfgs.back()->current_bb, nomFonction, args_temp_addr);  // block, dst, src
     cfgs.back()->current_bb->add_IRInstr(instruction_call);
 
-    // Restauration des registres d'arguments précédents depuis la pile
-    for (int i = std::min<int>(6, cfgs.back()->stv.symbolTable[callingFunc].index_arg)-1; i >= 0; i--) {
-        // Pop des registres d'arguments dans l'ordre inverse du push
-        IRInstr *instruction_pop = new Pop(cfgs.back()->current_bb, "!arg"+std::to_string(i)+"64");
-        cfgs.back()->current_bb->add_IRInstr(instruction_pop);
-    }
-
-    // Retourne une paire indiquant que la valeur n'est pas une constante
     return std::pair<bool, int>(false, 0);
 }

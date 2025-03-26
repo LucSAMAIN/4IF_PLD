@@ -304,7 +304,7 @@ void Call::gen_wat(std::ostream& o) {
     
     // Passer les arguments depuis les registres d'arguments
     for (int i = 0; i < numArgs; i++) {
-        o << " (local.get $!arg" << i << ")";
+        o << bb->cfg->IR_addr_to_wat(args[i]) << ")";
     }
     
     o << "))\n";

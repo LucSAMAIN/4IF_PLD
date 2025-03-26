@@ -22,7 +22,7 @@ SOURCENAME=$2
 shift 2
 
 # Pass all remaining arguments to ifcc, followed by -o and the destination file
-$(dirname $0)/../compiler/ifcc "$@" -o "$DESTNAME" "$SOURCENAME"
+$(dirname $0)/./compiler/ifcc "$@" -o "$DESTNAME" "$SOURCENAME"
 
 retcode=$?
 exit $retcode

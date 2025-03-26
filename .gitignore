@@ -66,3 +66,5 @@ tests/ifcc-test-output/*
 tests/ifcc-wat-test-output/*
 compiler/ifcc-wat-test-output/*
 compiler/ifcc-test-output/*
+
+ifcc-wat-test-output/*

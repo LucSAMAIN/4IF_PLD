@@ -30,7 +30,7 @@ std::string fromTypeToString(Type t) {
     else
         return "VOID";
 }
-SymbolTableGenVisitor::SymbolTableGenVisitor() : symbolTable(), offsetTable(), scope() {
+SymbolTableGenVisitor::SymbolTableGenVisitor() : symbolTable(), offsetTable(), scope(), error_count(0) {
     symbolTable["putchar"] = {Type::VOID, 0, 1, true, true};
     symbolTable["putchar_0"] = {Type::INT, 0, 0, true, false}; //arg0
     symbolTable["getchar"] = {Type::VOID, 0, 1, true, true};

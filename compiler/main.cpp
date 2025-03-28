@@ -14,6 +14,7 @@ using namespace antlr4;
 
 void wat_init(std::ostream& o) {
     o << "(module\n";
+    o << "(import \"env\" \"putchar\" (func $putchar (param i32) (result i32)))\n";
     o << "  ;; Déclaration de la mémoire\n";
     o << "  (memory 1)\n";  
     o << "  (export \"memory\" (memory 0))\n";  // Exporter la mémoire pour pouvoir l'accéder depuis JS

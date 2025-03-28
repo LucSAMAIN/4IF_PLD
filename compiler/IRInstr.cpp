@@ -530,8 +530,67 @@ void JumpFalse::gen_wat(std::ostream& o) {
         o << "        (then (br " << epilogueBlockName << "))\n";
         o << "      )\n";
     } else {
-        // Les sauts conditionnels vers d'autres blocs sont gérés par l'exécution linéaire
-        o << "      ;; Conditional jump: if " << op << " == 0 then " << dest_false << " else " << dest_true << " (handled by linear execution)\n";
+        // Implémentation correcte des sauts conditionnels vers d'autres blocs
+        o << "      (if (i32.eqz (local.get " << bb->cfg->IR_reg_to_wat(op) << "))\n";
+        o << "        (then\n";
+        o << "          ;; Exécution du bloc " << dest_false << "\n";
+        
+        // Recherche du bloc de destination false dans le CFG
+        BasicBlock* false_block = nullptr;
+        for (BasicBlock* block : bb->cfg->bbs) {
+            if (block->label == dest_false) {
+                false_block = block;
+                break;
+            }
+        }
+        
+        // Instructions du bloc false
+        if (false_block) {
+            for (IRInstr* instr : false_block->instructions) {
+                std::stringstream ss;
+                instr->gen_wat(ss);
+                std::string instr_str = ss.str();
+                // Ajouter une indentation pour chaque ligne
+                size_t pos = 0;
+                while ((pos = instr_str.find('\n', pos)) != std::string::npos) {
+                    instr_str.insert(pos + 1, "          ");
+                    pos += 11; // 10 espaces + 1 pour le \n
+                }
+                o << instr_str;
+            }
+        }
+        
+        o << "        )\n";
+        o << "        (else\n";
+        o << "          ;; Exécution du bloc " << dest_true << "\n";
+        
+        // Recherche du bloc de destination true dans le CFG
+        BasicBlock* true_block = nullptr;
+        for (BasicBlock* block : bb->cfg->bbs) {
+            if (block->label == dest_true) {
+                true_block = block;
+                break;
+            }
+        }
+        
+        // Instructions du bloc true
+        if (true_block) {
+            for (IRInstr* instr : true_block->instructions) {
+                std::stringstream ss;
+                instr->gen_wat(ss);
+                std::string instr_str = ss.str();
+                // Ajouter une indentation pour chaque ligne
+                size_t pos = 0;
+                while ((pos = instr_str.find('\n', pos)) != std::string::npos) {
+                    instr_str.insert(pos + 1, "          ");
+                    pos += 11; // 10 espaces + 1 pour le \n
+                }
+                o << instr_str;
+            }
+        }
+        
+        o << "        )\n";
+        o << "      )\n";
     }
 }
 

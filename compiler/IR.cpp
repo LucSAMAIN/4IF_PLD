@@ -340,9 +340,24 @@ void CFG::gen_wat(ostream& o) {
         instr->gen_wat(o);
     }
     
-    // Générer tous les blocs intermédiaires (ni prologue ni épilogue)
+    // Créer une liste des blocs déjà traités par les instructions JumpFalse
+    std::set<std::string> processed_blocks;
     for (BasicBlock* bb : bbs) {
-        if (bb != start_block && bb != end_block) {
+        for (IRInstr* instr : bb->instructions) {
+            if (instr->get_operation_name() == "jumpfalse") {
+                // Ce bloc contient un JumpFalse, donc ses cibles seront générées en ligne
+                JumpFalse* jump = dynamic_cast<JumpFalse*>(instr);
+                if (jump) {
+                    processed_blocks.insert(jump->dest_false);
+                    processed_blocks.insert(jump->dest_true);
+                }
+            }
+        }
+    }
+    
+    // Générer tous les blocs intermédiaires (ni prologue ni épilogue) qui ne sont pas traités par JumpFalse
+    for (BasicBlock* bb : bbs) {
+        if (bb != start_block && bb != end_block && processed_blocks.find(bb->label) == processed_blocks.end()) {
             o << "      ;; Bloc " << bb->label << "\n";
             for (IRInstr* instr : bb->instructions) {
                 instr->gen_wat(o);

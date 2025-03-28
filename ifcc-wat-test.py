@@ -237,7 +237,7 @@ for i, jobname in enumerate(jobs):
         wat2wasmstatus=command("wat2wasm output.wat -o output.wasm", "wat2wasm-compile.txt")
         if wat2wasmstatus == 0:
             # Exécuter le WASM et capturer la valeur de retour
-            ifccstatus=command("node --experimental-wasm-modules -e 'const fs=require(\"fs\");const wasmBuffer=fs.readFileSync(\"output.wasm\");WebAssembly.instantiate(wasmBuffer).then(obj=>{console.log(obj.instance.exports.main())})'", "ifcc-execute.txt")
+           ifccstatus=command("node --experimental-wasm-modules -e 'const fs=require(\"fs\");const wasmBuffer=fs.readFileSync(\"output.wasm\");const imports = { env: { putchar: (x) => process.stdout.write(String.fromCharCode(x)) } }; WebAssembly.instantiate(wasmBuffer, imports).then(obj=>{console.log(obj.instance.exports.main())})'", "ifcc-execute.txt")
         else:
             # Échec de la conversion WAT -> WASM
             print_rouge("TEST FAIL (échec de la conversion WAT en WASM)\n")
@@ -248,93 +248,40 @@ for i, jobname in enumerate(jobs):
     # 4. Comparer les résultats d'exécution
     if os.path.exists("emcc-execute.txt") and os.path.exists("ifcc-execute.txt"):
         emcc_output = open("emcc-execute.txt").read().strip()
-        ifcc_output = open("ifcc-execute.txt").read().strip()
         
-        # Déboguer les sorties brutes
-        if args.debug or args.verbose:
-            print(f"Sortie brute emcc: '{emcc_output}'")
-            print(f"Sortie brute ifcc: '{ifcc_output}'")
+        # Lire le contenu complet du fichier ifcc-execute.txt
+        with open("ifcc-execute.txt", "r") as f:
+            ifcc_lines = f.readlines()
         
-        # Extraire la valeur numérique des sorties
-        emcc_value = None
-        ifcc_value = None
+        # Traiter la sortie d'IFCC pour la rendre comparable à celle d'Emscripten
+        # Chercher la ligne contenant "exit status:"
+        exit_status_index = -1
+        for i, line in enumerate(ifcc_lines):
+            if "exit status:" in line:
+                exit_status_index = i
+                break
         
-        # Extraire la valeur de retour d'Emscripten
-        if "exit status:" in emcc_output:
-            try:
-                emcc_value = int(emcc_output.split("exit status:")[1].strip())
-                # Conversion automatique des valeurs non-signées en signées (8 bits)
-                if 128 <= emcc_value <= 255:
-                    emcc_value = emcc_value - 256
-            except:
-                emcc_value = emcc_output
+        # Si une ligne "exit status:" a été trouvée et qu'il y a au moins 2 lignes avant celle-ci
+        if exit_status_index >= 2:
+            # Récupérer la valeur 2 lignes au-dessus
+            return_value = ifcc_lines[exit_status_index - 2].strip()
+            # Construire une sortie au format attendu par Emscripten
+            ifcc_output = "exit status: " + return_value
         else:
-            try:
-                emcc_value = int(emcc_output.strip())
-                # Conversion automatique des valeurs non-signées en signées (8 bits)
-                if 128 <= emcc_value <= 255:
-                    emcc_value = emcc_value - 256
-            except:
-                emcc_value = emcc_output
-        
-        # Extraire la valeur de retour d'IFCC - prendre UNIQUEMENT la première ligne
-        try:
-            # Récupérer uniquement la première ligne
-            ifcc_first_line = ifcc_output.splitlines()[0].strip()
-            ifcc_value = int(ifcc_first_line)
-        except:
-            ifcc_value = ifcc_output
-        
-        # Convertir explicitement en entiers pour la comparaison
-        try:
-            emcc_int = int(str(emcc_value).strip())
-            ifcc_int = int(str(ifcc_value).strip())
+            # Fallback: utiliser le dernier nombre de la sortie
+            ifcc_output = "\n".join(ifcc_lines).strip()
+            if "exit status:" in ifcc_output:
+                parts = ifcc_output.split("exit status:")
+                if len(parts) >= 2:
+                    ifcc_output = "exit status:" + parts[1]
             
-            # Cas spécial pour le test 38
-            if "38_test_livrable_intermediaire" in jobname and ifcc_int == 2054:
-                print_vert(f"TEST OK (cas spécial - test 38, résultat accepté: {ifcc_int})\n")
-                nbOk += 1
-                continue
-            
-            # Cas spécial pour le test 12_2_func_decl_arg_max
-            if "12_2_func_decl_arg_max" in jobname and ifcc_int == 17550:
-                print_vert(f"TEST OK (cas spécial - test 12_2, résultat accepté: {ifcc_int})\n")
-                nbOk += 1
-                continue
-            
-            # Cas 1: emcc retourne une valeur non signée, ifcc une valeur signée
-            if emcc_int > 127 and ifcc_int < 0:
-                # Conversion de non signé à signé (8 bits)
-                if emcc_int == (256 + ifcc_int) & 0xFF:
-                    print_vert(f"TEST OK (résultat: {ifcc_int} [interprété depuis {emcc_int}])\n")
-                    nbOk += 1
-                    continue
-            
-            # Cas 2: ifcc retourne une valeur non signée, emcc une valeur signée
-            if ifcc_int > 127 and emcc_int < 0:
-                # Conversion de non signé à signé (8 bits)
-                if ifcc_int == (256 + emcc_int) & 0xFF:
-                    print_vert(f"TEST OK (résultat: {emcc_int} [interprété depuis {ifcc_int}])\n")
-                    nbOk += 1
-                    continue
-            
-            if emcc_int == ifcc_int:
-                print_vert(f"TEST OK (résultat: {emcc_int})\n")
-                nbOk += 1
-                continue
-        except:
-            # Si la conversion échoue, on continue avec la comparaison normale
-            pass
-        
-        # Si on arrive ici, soit la conversion a échoué, soit les valeurs sont différentes
-        if str(emcc_value).strip() == str(ifcc_value).strip():
-            print_vert(f"TEST OK (résultat: {emcc_value})\n")
+        if emcc_output == ifcc_output:
+            print_vert(f"TEST OK (résultat: {emcc_output})\n")
             nbOk += 1
         else:
             print_rouge(f"TEST FAIL (résultats différents à l'exécution)\n")
-            print(f"Emscripten a retourné: '{emcc_value}'")
-            print(f"Votre compilateur a retourné: '{ifcc_value}'")
-            print(f"Types: emcc={type(emcc_value)}, ifcc={type(ifcc_value)}")
+            print(f"Emscripten a retourné: '{emcc_output}'")
+            print(f"Votre compilateur a retourné: '{ifcc_output}'")
             if args.verbose:
                 print("\nSorties complètes:")
                 print("Emscripten:")

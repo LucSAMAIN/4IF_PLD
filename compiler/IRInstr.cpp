@@ -62,16 +62,32 @@ void Epilogue::gen_wat(std::ostream& o) {
 }
 
 // Implémentation de LdConst
-LdConst::LdConst(BasicBlock* p_bb, const std::string& dest_reg, int val) 
+LdConstInt::LdConstInt(BasicBlock* p_bb, const std::string& dest_reg, int val) 
     : IRInstr(p_bb), dest(dest_reg), value(val) {}
 
 
-std::string LdConst::get_operation_name() const {
-    return "ldconst";
+std::string LdConstInt::get_operation_name() const {
+    return "ldconstint";
 }
 
-void LdConst::gen_x86(std::ostream& o) {
+void LdConstInt::gen_x86(std::ostream& o) {
     o << "    movl $" << value << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+}
+
+
+
+LdConstDouble::LdConstDouble(BasicBlock* p_bb, const std::string& dest_reg, double val) 
+    : IRInstr(p_bb), dest(dest_reg), value(val) {}
+
+
+std::string LdConstDouble::get_operation_name() const {
+    return "ldconstdouble";
+}
+
+void LdConstDouble::gen_x86(std::ostream& o) {
+    uint64_t bits = *reinterpret_cast<uint64_t*>(&value);
+    o << "mov rax, 0x" << std::hex << bits << std::dec << "\n";
+    o << "movq " << bb->cfg->IR_reg_to_x86(dest) << ", rax\n";
 }
 
 void LdConst::gen_wat(std::ostream& o) {

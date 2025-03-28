@@ -45,7 +45,7 @@ public:
 };
 
 // Sous-classe pour l'opération de chargement d'une constante
-class LdConst : public IRInstr
+class LdConstInt : public IRInstr
 {
 private:
     // Registre destination
@@ -54,7 +54,21 @@ private:
     int value;
 
 public:
-    LdConst(BasicBlock* bb, const std::string& dest_reg, int val);
+    LdConstInt(BasicBlock* bb, const std::string& dest_reg, int val);
+    std::string get_operation_name() const override;
+    void gen_x86(std::ostream& o) override;
+};
+
+class LdConstDouble : public IRInstr
+{
+private:
+    // Registre destination
+    std::string dest;
+    // Valeur constante à charger
+    double value;
+
+public:
+    LdConstDouble(BasicBlock* bb, const std::string& dest_reg, double val);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
     void gen_wat(std::ostream& o) override;

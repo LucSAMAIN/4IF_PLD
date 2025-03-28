@@ -271,10 +271,8 @@ void CFG::gen_x86(ostream& o) {
 string CFG::create_new_tempvar(Type t) {    
     // Récupérer l'offset:
     int offset = 0;
-    if (t == Type::INT) {
-        stv.funcTable[functionName].offset -= 4;
-        offset = stv.funcTable[functionName].offset;
-    }
+    stv.funcTable[functionName].offset -= typeSize(t);
+    offset = stv.funcTable[functionName].offset;
     
     // Créer le vrai nom avec l'offset dans la pile
     string temp_name("!tmp"+offset);

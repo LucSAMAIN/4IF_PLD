@@ -5,6 +5,14 @@
 #include <vector>
 #include <utility> // pour std::pair
 
+typedef struct ExprReturn {
+    bool isConst;
+    Type type;
+    union {
+        int32_t ivalue;
+        double dvalue;
+    };
+} ExprReturn;
 
 IRGenVisitor::IRGenVisitor(SymbolTableGenVisitor& p_stv) 
     : stv(p_stv), cfgs(), currentBB(nullptr), scope() {}
@@ -69,9 +77,9 @@ antlrcpp::Any IRGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx)
             // std::cout << "# address " << address << "\n";
 
             // Évaluation de l'expression qu'on place dans le registre universel !reg
-            std::pair<bool, int> res(visit(ctx->decl_element(i)->expr()));
-            if (res.first) {
-                IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!reg", res.second);  // block, dst, src
+            ExprReturn res(visit(ctx->decl_element(i)->expr()));
+            if (res.isConst) {
+                IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!reg", res.value);  // block, dst, src
                 cfgs.back()->current_bb->add_IRInstr(instruction_const);
             }
             IRInstr *instruction = new Wmem(cfgs.back()->current_bb, address, "!reg"); // block, dst, src
@@ -374,7 +382,7 @@ antlrcpp::Any IRGenVisitor::visitMulDivExpr(ifccParser::MulDivExprContext *ctx) 
     }
 
     else {
-        std::string temp_left = cfgs.back()->create_new_tempvar(Type::INT);
+        std::string temp_left = cfgs.back()->create_new_tempvar(Type::INT32_T);
         std::string address_left = "RBP" + std::to_string(stv.varTable[temp_left].offset);
         // Copier le résultat de l'expression dans la variable temporaire
         IRInstr *instruction_left = new Wmem(cfgs.back()->current_bb, address_left, "!reg");
@@ -453,7 +461,7 @@ antlrcpp::Any IRGenVisitor::visitAddSubExpr(ifccParser::AddSubExprContext *ctx) 
     }
 
     else {
-        std::string temp_left = cfgs.back()->create_new_tempvar(Type::INT);
+        std::string temp_left = cfgs.back()->create_new_tempvar(Type::INT32_T);
         std::string address_left = "RBP" + std::to_string(stv.varTable[temp_left].offset);
         // Copier le résultat de l'expression dans la variable temporaire
         IRInstr *instruction_left = new Wmem(cfgs.back()->current_bb, address_left, "!reg");
@@ -531,7 +539,7 @@ antlrcpp::Any IRGenVisitor::visitCompExpr(ifccParser::CompExprContext *ctx) {
     }
 
     else {
-        std::string temp_left = cfgs.back()->create_new_tempvar(Type::INT);
+        std::string temp_left = cfgs.back()->create_new_tempvar(Type::INT32_T);
         std::string address_left = "RBP" + std::to_string(stv.varTable[temp_left].offset);
         // Copier le résultat de l'expression dans la variable temporaire
         IRInstr *instruction_left = new Wmem(cfgs.back()->current_bb, address_left, "!reg");
@@ -599,7 +607,7 @@ antlrcpp::Any IRGenVisitor::visitEqExpr(ifccParser::EqExprContext *ctx) {
     }
 
     else {
-        std::string temp_left = cfgs.back()->create_new_tempvar(Type::INT);
+        std::string temp_left = cfgs.back()->create_new_tempvar(Type::INT32_T);
         std::string address_left = "RBP" + std::to_string(stv.varTable[temp_left].offset);
         // Copier le résultat de l'expression dans la variable temporaire
         IRInstr *instruction_left = new Wmem(cfgs.back()->current_bb, address_left, "!reg");
@@ -645,7 +653,7 @@ antlrcpp::Any IRGenVisitor::visitAndExpr(ifccParser::AndExprContext *ctx) {
     }
 
     else {
-        std::string temp_left = cfgs.back()->create_new_tempvar(Type::INT);
+        std::string temp_left = cfgs.back()->create_new_tempvar(Type::INT32_T);
         std::string address_left = "RBP" + std::to_string(stv.varTable[temp_left].offset);
         // Copier le résultat de l'expression dans la variable temporaire
         IRInstr *instruction_left = new Wmem(cfgs.back()->current_bb, address_left, "!reg");
@@ -681,7 +689,7 @@ antlrcpp::Any IRGenVisitor::visitXorExpr(ifccParser::XorExprContext *ctx) {
     }
 
     else {
-        std::string temp_left = cfgs.back()->create_new_tempvar(Type::INT);
+        std::string temp_left = cfgs.back()->create_new_tempvar(Type::INT32_T);
         std::string address_left = "RBP" + std::to_string(stv.varTable[temp_left].offset);
         // Copier le résultat de l'expression dans la variable temporaire
         IRInstr *instruction_left = new Wmem(cfgs.back()->current_bb, address_left, "!reg");
@@ -718,7 +726,7 @@ antlrcpp::Any IRGenVisitor::visitOrExpr(ifccParser::OrExprContext *ctx) {
     }
 
     else {
-        std::string temp_left = cfgs.back()->create_new_tempvar(Type::INT);
+        std::string temp_left = cfgs.back()->create_new_tempvar(Type::INT32_T);
         std::string address_left = "RBP" + std::to_string(stv.varTable[temp_left].offset);
         // Copier le résultat de l'expression dans la variable temporaire
         IRInstr *instruction_left = new Wmem(cfgs.back()->current_bb, address_left, "!reg");

@@ -2,15 +2,19 @@
 
 #include "SymbolTableGenVisitor.h"
 
-std::string typeToString[] = {
-    "void",
-    "int",
-    "char",
-    "int64_t",
-    "int32_t",
-    "int16_t",
-    "int8_t"
-};
+std::string typeToString(Type t)
+{
+    std::string typeToString[] = {
+        "void",
+        "int",
+        "char",
+        "int64_t",
+        "int32_t",
+        "int16_t",
+        "int8_t"
+    };
+    return typeToString[(int)t];
+}
 
 Type fromStringToType(std::string s)
 {   
@@ -22,22 +26,35 @@ Type fromStringToType(std::string s)
         return Type::INT;
 }
 
-SymbolTableGenVisitor::SymbolTableGenVisitor() : symbolTable(), offsetTable(), scope(), error_count(0) {
-    symbolTable["putchar"] = {Type::VOID, 0, 1, true, true};
-    symbolTable["putchar_0"] = {Type::INT, 0, 0, true, false}; //arg0
-    symbolTable["getchar"] = {Type::VOID, 0, 1, true, true};
-    symbolTable["getchar_0"] = {Type::INT, 0, 0, true, false}; // arg0
+SymbolTableGenVisitor::SymbolTableGenVisitor() : varTable(), funcTable(), scope(), error_count(0) {
+    funcTable["putchar"] = {.type = Type::VOID, .offset = 0, .args = {}, .used = false};
+    varTable["putchar_0"] = {.type = Type::INT, .name = "putchar_0", .offset = 0, .declared = true, .used = false};
+    funcTable["putchar"].args.push_back(&varTable["putchar_0"]);
+
+    funcTable["putchar"] = {.type = Type::VOID, .offset = 0, .args = {}, .used = false};
+    varTable["putchar_0"] = {.type = Type::INT, .name = "putchar_0", .offset = 0, .declared = true, .used = false};
+    funcTable["putchar"].args.push_back(&varTable["putchar_0"]);
 }
 
 antlrcpp::Any SymbolTableGenVisitor::visitFuncDecl(ifccParser::FuncDeclContext *ctx) {
     scope = ctx->funcName->getText();
-    symbolTable[ctx->funcName->getText()] = {fromStringToType(ctx->funcType()->getText()), 0, (int)ctx->type().size(), true, false};
-    for (int i = 1; i < ctx->ID().size(); i++) { // le nom de la fonction est quand même dans la liste 
-        // même si on lui a donné un nom différent
+    funcTable[ctx->funcName->getText()] = {.type = fromStringToType(ctx->funcType()->getText()),
+                                            .offset = 0, 
+                                            .args = {}, 
+                                            .used = false};
+
+    for (int i = 1; i < ctx->ID().size(); i++) { // le nom de la fonction est quand même dans la liste  des ID
+        // même si on lui a donné un nom différent dans la grammaire, on commence à 1
         if (ctx->type(i-1)->getText() == "int") { // le type de la fonction a un non terminal différent donc pas 
             // dans la liste des types donc on décale de 1
-            symbolTable[scope + "_" + ctx->ID(i)->getText()] = {Type::INT, 0, i-1, true, false};
-            symbolTable[scope + "_" + std::to_string(i-1)] = {Type::INT, 0, i-1, true, false}; // utile pour vérifier type des arguments dans visiteur type
+            std::string varName = scope + "_" + ctx->ID(i)->getText();
+            funcTable[ctx->funcName->getText()].offset -= 4;
+            varTable[varName] = {.type = fromStringToType(ctx->type(i-1)->getText()),
+                                .name = varName, 
+                                .offset = funcTable[ctx->funcName->getText()].offset, 
+                                .declared = true, 
+                                .used = false};
+            funcTable[ctx->funcName->getText()].args.push_back(&varTable[varName]);
         }
     }
     visit(ctx->block());
@@ -46,7 +63,7 @@ antlrcpp::Any SymbolTableGenVisitor::visitFuncDecl(ifccParser::FuncDeclContext *
 
 antlrcpp::Any SymbolTableGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx) {
     for (int i = 0; i < ctx->decl_element().size(); i++) {
-        if (symbolTable.find(scope + '_' + ctx->decl_element(i)->ID()->getText()) != symbolTable.end()) {
+        if (varTable.find(scope + '_' + ctx->decl_element(i)->ID()->getText()) != varTable.end()) {
             std::cerr << "error: variable name already declared " << ctx->decl_element(i)->ID()->getText() << "\n";
             error_count++;
         }
@@ -54,9 +71,16 @@ antlrcpp::Any SymbolTableGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext
         std::istringstream ss_scope(scope);
         std::getline(ss_scope, funcName, '_');
         // std::cout << "# funcName " << funcName << " scope " << scope << "\n";
+
+        std::string varName = scope + "_" + ctx->decl_element(i)->ID()->getText();
+
         if (ctx->type()->getText() == "int") {
-            offsetTable[funcName] -= 4;
-            symbolTable[scope + '_' + ctx->decl_element(i)->ID()->getText()] = {Type::INT, offsetTable[funcName], -1, true, false};
+            funcTable[funcName].offset -= 4;
+            varTable[varName] = {.type = fromStringToType(ctx->type()->getText()),
+                .name = varName, 
+                .offset = funcTable[funcName].offset, 
+                .declared = true, 
+                .used = false};
         }
         
         if (ctx->decl_element(i)->expr() != nullptr) {
@@ -68,7 +92,7 @@ antlrcpp::Any SymbolTableGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext
 
 antlrcpp::Any SymbolTableGenVisitor::visitAssign_stmt(ifccParser::Assign_stmtContext *ctx) {
     std::string tried_scope = scope;
-    while (tried_scope != "" && symbolTable.find(tried_scope + '_' + ctx->ID()->getText()) == symbolTable.end()) {
+    while (tried_scope != "" && varTable.find(tried_scope + '_' + ctx->ID()->getText()) == varTable.end()) {
         while (tried_scope.size() != 0 && tried_scope.back() != '_') {
             tried_scope.pop_back();
         }
@@ -103,7 +127,7 @@ antlrcpp::Any SymbolTableGenVisitor::visitIdUse(ifccParser::IdUseContext *ctx) {
     */
     std::string tried_scope = scope;
     // On parcourt notre scope pour savoir dans quel contexte se trouve l'IDUse!
-    while (tried_scope != "" && symbolTable.find(tried_scope + '_' + ctx->ID()->getText()) == symbolTable.end()) {
+    while (tried_scope != "" && varTable.find(tried_scope + '_' + ctx->ID()->getText()) == varTable.end()) {
         // on update le scope:
         while (tried_scope.size() != 0 && tried_scope.back() != '_') {
             tried_scope.pop_back();
@@ -116,7 +140,7 @@ antlrcpp::Any SymbolTableGenVisitor::visitIdUse(ifccParser::IdUseContext *ctx) {
         std::cerr << "error: variable not declared " << ctx->ID()->getText() << " in scope " << scope << "\n";
         error_count++;
     }
-    symbolTable[tried_scope + '_' + ctx->ID()->getText()].used = true;
+    varTable[tried_scope + '_' + ctx->ID()->getText()].used = true;
     return 0;
 }
 
@@ -139,7 +163,7 @@ antlrcpp::Any SymbolTableGenVisitor::visitBlock(ifccParser::BlockContext *ctx) {
 
 antlrcpp::Any SymbolTableGenVisitor::visitAssignExpr(ifccParser::AssignExprContext *ctx) {
     std::string tried_scope = scope;
-    while (tried_scope != "" && symbolTable.find(tried_scope + '_' + ctx->ID()->getText()) == symbolTable.end()) {
+    while (tried_scope != "" && varTable.find(tried_scope + '_' + ctx->ID()->getText()) == varTable.end()) {
         while (tried_scope.size() != 0 && tried_scope.back() != '_') {
             tried_scope.pop_back();
         }
@@ -151,21 +175,21 @@ antlrcpp::Any SymbolTableGenVisitor::visitAssignExpr(ifccParser::AssignExprConte
         std::cerr << "error: variable not declared " << ctx->ID()->getText() << " in scope " << scope << "\n";
         error_count++;
     }
-    symbolTable[tried_scope + '_' + ctx->ID()->getText()].used = true;
+    varTable[tried_scope + '_' + ctx->ID()->getText()].used = true;
     visit(ctx->expr());
     return 0;
 }
 
 antlrcpp::Any SymbolTableGenVisitor::visitFuncCall(ifccParser::FuncCallContext *ctx) {
-    if (symbolTable.find(ctx->ID()->getText()) == symbolTable.end()) {
+    if (funcTable.find(ctx->ID()->getText()) == funcTable.end()) {
         std::cerr << "error: function not declared " << ctx->ID()->getText() << " in scope " << scope << "\n";
         error_count++;
     }
-    if (symbolTable[ctx->ID()->getText()].index_arg != ctx->expr().size()) {
-        std::cerr << "error: function " << ctx->ID()->getText() << " expects " << symbolTable[ctx->ID()->getText()].index_arg << " arguments, got " << ctx->expr().size() << "\n";
+    if (funcTable[ctx->ID()->getText()].args.size() != ctx->expr().size()) {
+        std::cerr << "error: function " << ctx->ID()->getText() << " expects " << funcTable[ctx->ID()->getText()].args.size() << " arguments, got " << ctx->expr().size() << "\n";
         error_count++;
     }
-    symbolTable[ctx->ID()->getText()].used = true;
+    funcTable[ctx->ID()->getText()].used = true;
     for (int i = 0; i < ctx->expr().size(); i++) {
         visit(ctx->expr(i));
     }

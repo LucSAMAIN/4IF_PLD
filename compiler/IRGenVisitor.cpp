@@ -65,7 +65,7 @@ antlrcpp::Any IRGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx)
         {
             std::string nomVar = scope + "_" + ctx->decl_element(i)->ID()->getText();
             // std::cout << "# nomVar " << i << " : " << nomVar << "\n";
-            std::string address = "RBP" + std::to_string(stv.symbolTable[nomVar].offset);
+            std::string address = "RBP" + std::to_string(stv.varTable[nomVar].offset);
             // std::cout << "# address " << address << "\n";
 
             // Évaluation de l'expression qu'on place dans le registre universel !reg
@@ -85,7 +85,7 @@ antlrcpp::Any IRGenVisitor::visitAssign_stmt(ifccParser::Assign_stmtContext *ctx
 {
     // On récupère le nom et l'adresse stack de la variable en question
     std::string tried_scope = scope;
-    while (tried_scope != "" && stv.symbolTable.find(tried_scope + '_' + ctx->ID()->getText()) == stv.symbolTable.end()) {
+    while (tried_scope != "" && stv.varTable.find(tried_scope + '_' + ctx->ID()->getText()) == stv.varTable.end()) {
         while (tried_scope.size() != 0 && tried_scope.back() != '_') {
             tried_scope.pop_back();
         }
@@ -96,28 +96,15 @@ antlrcpp::Any IRGenVisitor::visitAssign_stmt(ifccParser::Assign_stmtContext *ctx
     std::string nomVar = tried_scope + "_" + ctx->ID()->getText();
     std::pair<bool, int> res(visit(ctx->expr()));
 
-    // on regarde si c'est un argument de la fonction
-    if (stv.symbolTable[nomVar].index_arg >= 0) {
-        // Évaluation de l'expression qu'on place dans le registre universel !reg
-        if (res.first) {
-            IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!reg", res.second);  // block, dst, src
-            cfgs.back()->current_bb->add_IRInstr(instruction_const);
-        }
+    std::string address = "RBP" + std::to_string(stv.varTable[nomVar].offset);
 
-        IRInstr *instruction_copy_arg = new Copy(cfgs.back()->current_bb, "!arg" + std::to_string(stv.symbolTable[nomVar].index_arg), "!reg");
-        cfgs.back()->current_bb->add_IRInstr(instruction_copy_arg);
+    // Évaluation de l'expression qu'on place dans le registre universel !reg
+    if (res.first) {
+        IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!reg", res.second);  // block, dst, src
+        cfgs.back()->current_bb->add_IRInstr(instruction_const);
     }
-    else {
-        std::string address = "RBP" + std::to_string(stv.symbolTable[nomVar].offset);
-
-        // Évaluation de l'expression qu'on place dans le registre universel !reg
-        if (res.first) {
-            IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!reg", res.second);  // block, dst, src
-            cfgs.back()->current_bb->add_IRInstr(instruction_const);
-        }
-        IRInstr *instruction = new Wmem(cfgs.back()->current_bb, address, "!reg"); // block, dst, src
-        cfgs.back()->current_bb->add_IRInstr(instruction);
-    }
+    IRInstr *instruction = new Wmem(cfgs.back()->current_bb, address, "!reg"); // block, dst, src
+    cfgs.back()->current_bb->add_IRInstr(instruction);
     
     return 0;
 }
@@ -267,7 +254,7 @@ antlrcpp::Any IRGenVisitor::visitIdUse(ifccParser::IdUseContext *ctx)
 {
     // On récupère le nom et l'adresse stack de la variable en question
     std::string tried_scope = scope;
-    while (tried_scope != "" && stv.symbolTable.find(tried_scope + '_' + ctx->ID()->getText()) == stv.symbolTable.end()) {
+    while (tried_scope != "" && stv.varTable.find(tried_scope + '_' + ctx->ID()->getText()) == stv.varTable.end()) {
         while (tried_scope.size() != 0 && tried_scope.back() != '_') {
             tried_scope.pop_back();
         }
@@ -277,17 +264,10 @@ antlrcpp::Any IRGenVisitor::visitIdUse(ifccParser::IdUseContext *ctx)
     }
     std::string nomVar = tried_scope + "_" + ctx->ID()->getText();
 
-    // on regarde si c'est un argument de la fonction
-    if (stv.symbolTable[nomVar].index_arg >= 0) {
-        IRInstr *instruction_copy_arg = new Copy(cfgs.back()->current_bb, "!reg", "!arg" + std::to_string(stv.symbolTable[nomVar].index_arg));
-        cfgs.back()->current_bb->add_IRInstr(instruction_copy_arg);
-    }
-    else {
-        std::string address = "RBP" + std::to_string(stv.symbolTable[nomVar].offset); 
+    std::string address = "RBP" + std::to_string(stv.varTable[nomVar].offset); 
 
-        IRInstr *instruction = new Rmem(cfgs.back()->current_bb, "!reg", address);
-        cfgs.back()->current_bb->add_IRInstr(instruction);
-    }
+    IRInstr *instruction = new Rmem(cfgs.back()->current_bb, "!reg", address);
+    cfgs.back()->current_bb->add_IRInstr(instruction);
 
     return std::pair<bool, int>(false, 0);
 }
@@ -295,7 +275,7 @@ antlrcpp::Any IRGenVisitor::visitIdUse(ifccParser::IdUseContext *ctx)
 antlrcpp::Any IRGenVisitor::visitAssignExpr(ifccParser::AssignExprContext *ctx) {
     // On récupère le nom et l'adresse stack de la variable en question
     std::string tried_scope = scope;
-    while (tried_scope != "" && stv.symbolTable.find(tried_scope + '_' + ctx->ID()->getText()) == stv.symbolTable.end()) {
+    while (tried_scope != "" && stv.varTable.find(tried_scope + '_' + ctx->ID()->getText()) == stv.varTable.end()) {
         while (tried_scope.size() != 0 && tried_scope.back() != '_') {
             tried_scope.pop_back();
         }
@@ -307,28 +287,15 @@ antlrcpp::Any IRGenVisitor::visitAssignExpr(ifccParser::AssignExprContext *ctx) 
     std::string nomVar = tried_scope + "_" + ctx->ID()->getText();
     std::pair<bool, int> res(visit(ctx->expr()));
 
-    // on regarde si c'est un argument de la fonction
-    if (stv.symbolTable[nomVar].index_arg >= 0) {
-        // Évaluation de l'expression qu'on place dans le registre universel !reg
-        if (res.first) {
-            IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!reg", res.second);  // block, dst, src
-            cfgs.back()->current_bb->add_IRInstr(instruction_const);
-        }
-
-        IRInstr *instruction_copy_arg = new Copy(cfgs.back()->current_bb, "!arg" + std::to_string(stv.symbolTable[nomVar].index_arg), "!reg");
-        cfgs.back()->current_bb->add_IRInstr(instruction_copy_arg);
+    std::string address = "RBP" + std::to_string(stv.varTable[nomVar].offset);
+    
+    // Évaluation de l'expression qu'on place dans le registre universel !reg
+    if (res.first) {
+        IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!reg", res.second);  // block, dst, src
+        cfgs.back()->current_bb->add_IRInstr(instruction_const);
     }
-    else {
-        std::string address = "RBP" + std::to_string(stv.symbolTable[nomVar].offset);
-        
-        // Évaluation de l'expression qu'on place dans le registre universel !reg
-        if (res.first) {
-            IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!reg", res.second);  // block, dst, src
-            cfgs.back()->current_bb->add_IRInstr(instruction_const);
-        }
-        IRInstr *instruction = new Wmem(cfgs.back()->current_bb, address, "!reg"); // block, dst, src
-        cfgs.back()->current_bb->add_IRInstr(instruction);
-    }
+    IRInstr *instruction = new Wmem(cfgs.back()->current_bb, address, "!reg"); // block, dst, src
+    cfgs.back()->current_bb->add_IRInstr(instruction);
     
     return res;
 }
@@ -408,7 +375,7 @@ antlrcpp::Any IRGenVisitor::visitMulDivExpr(ifccParser::MulDivExprContext *ctx) 
 
     else {
         std::string temp_left = cfgs.back()->create_new_tempvar(Type::INT);
-        std::string address_left = "RBP" + std::to_string(stv.symbolTable[temp_left].offset);
+        std::string address_left = "RBP" + std::to_string(stv.varTable[temp_left].offset);
         // Copier le résultat de l'expression dans la variable temporaire
         IRInstr *instruction_left = new Wmem(cfgs.back()->current_bb, address_left, "!reg");
         cfgs.back()->current_bb->add_IRInstr(instruction_left);
@@ -487,7 +454,7 @@ antlrcpp::Any IRGenVisitor::visitAddSubExpr(ifccParser::AddSubExprContext *ctx) 
 
     else {
         std::string temp_left = cfgs.back()->create_new_tempvar(Type::INT);
-        std::string address_left = "RBP" + std::to_string(stv.symbolTable[temp_left].offset);
+        std::string address_left = "RBP" + std::to_string(stv.varTable[temp_left].offset);
         // Copier le résultat de l'expression dans la variable temporaire
         IRInstr *instruction_left = new Wmem(cfgs.back()->current_bb, address_left, "!reg");
         cfgs.back()->current_bb->add_IRInstr(instruction_left);
@@ -565,7 +532,7 @@ antlrcpp::Any IRGenVisitor::visitCompExpr(ifccParser::CompExprContext *ctx) {
 
     else {
         std::string temp_left = cfgs.back()->create_new_tempvar(Type::INT);
-        std::string address_left = "RBP" + std::to_string(stv.symbolTable[temp_left].offset);
+        std::string address_left = "RBP" + std::to_string(stv.varTable[temp_left].offset);
         // Copier le résultat de l'expression dans la variable temporaire
         IRInstr *instruction_left = new Wmem(cfgs.back()->current_bb, address_left, "!reg");
         cfgs.back()->current_bb->add_IRInstr(instruction_left);
@@ -633,7 +600,7 @@ antlrcpp::Any IRGenVisitor::visitEqExpr(ifccParser::EqExprContext *ctx) {
 
     else {
         std::string temp_left = cfgs.back()->create_new_tempvar(Type::INT);
-        std::string address_left = "RBP" + std::to_string(stv.symbolTable[temp_left].offset);
+        std::string address_left = "RBP" + std::to_string(stv.varTable[temp_left].offset);
         // Copier le résultat de l'expression dans la variable temporaire
         IRInstr *instruction_left = new Wmem(cfgs.back()->current_bb, address_left, "!reg");
         cfgs.back()->current_bb->add_IRInstr(instruction_left);
@@ -679,7 +646,7 @@ antlrcpp::Any IRGenVisitor::visitAndExpr(ifccParser::AndExprContext *ctx) {
 
     else {
         std::string temp_left = cfgs.back()->create_new_tempvar(Type::INT);
-        std::string address_left = "RBP" + std::to_string(stv.symbolTable[temp_left].offset);
+        std::string address_left = "RBP" + std::to_string(stv.varTable[temp_left].offset);
         // Copier le résultat de l'expression dans la variable temporaire
         IRInstr *instruction_left = new Wmem(cfgs.back()->current_bb, address_left, "!reg");
         cfgs.back()->current_bb->add_IRInstr(instruction_left);
@@ -715,7 +682,7 @@ antlrcpp::Any IRGenVisitor::visitXorExpr(ifccParser::XorExprContext *ctx) {
 
     else {
         std::string temp_left = cfgs.back()->create_new_tempvar(Type::INT);
-        std::string address_left = "RBP" + std::to_string(stv.symbolTable[temp_left].offset);
+        std::string address_left = "RBP" + std::to_string(stv.varTable[temp_left].offset);
         // Copier le résultat de l'expression dans la variable temporaire
         IRInstr *instruction_left = new Wmem(cfgs.back()->current_bb, address_left, "!reg");
         cfgs.back()->current_bb->add_IRInstr(instruction_left);
@@ -752,7 +719,7 @@ antlrcpp::Any IRGenVisitor::visitOrExpr(ifccParser::OrExprContext *ctx) {
 
     else {
         std::string temp_left = cfgs.back()->create_new_tempvar(Type::INT);
-        std::string address_left = "RBP" + std::to_string(stv.symbolTable[temp_left].offset);
+        std::string address_left = "RBP" + std::to_string(stv.varTable[temp_left].offset);
         // Copier le résultat de l'expression dans la variable temporaire
         IRInstr *instruction_left = new Wmem(cfgs.back()->current_bb, address_left, "!reg");
         cfgs.back()->current_bb->add_IRInstr(instruction_left);
@@ -784,11 +751,11 @@ antlrcpp::Any IRGenVisitor::visitFuncCall(ifccParser::FuncCallContext *ctx) {
     std::vector<std::string> args_temp_addr;
     
     for (int i = 0; i < ctx->expr().size(); i++) {
-        std::string temp(cfgs.back()->create_new_tempvar(Type::INT));
-        args_temp_addr.push_back("RBP" + std::to_string(stv.symbolTable[temp].offset));
+        std::string temp(cfgs.back()->create_new_tempvar(stv.funcTable[nomFonction].args[i]->type));
+        args_temp_addr.push_back("RBP" + std::to_string(stv.varTable[temp].offset));
         std::pair<bool, int> res(visit(ctx->expr(i)));
         if (res.first) {
-            IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!reg", res.second);  // block, dst, src
+            IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!reg", res.second);
             cfgs.back()->current_bb->add_IRInstr(instruction_const);
         }
         IRInstr *instruction_temp = new Wmem(cfgs.back()->current_bb, args_temp_addr.back(), "!reg");
@@ -797,7 +764,7 @@ antlrcpp::Any IRGenVisitor::visitFuncCall(ifccParser::FuncCallContext *ctx) {
     }
 
     // On appelle la fonction
-    IRInstr *instruction_call = new Call(cfgs.back()->current_bb, nomFonction, args_temp_addr);  // block, dst, src
+    IRInstr *instruction_call = new Call(cfgs.back()->current_bb, nomFonction, args_temp_addr);
     cfgs.back()->current_bb->add_IRInstr(instruction_call);
 
     return std::pair<bool, int>(false, 0);

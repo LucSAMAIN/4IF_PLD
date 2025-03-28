@@ -550,34 +550,25 @@ string CFG::create_new_tempvar(Type t) {
     // Récupérer l'offset:
     int offset = 0;
     if (t == Type::INT) {
-        stv.offsetTable[functionName] -= 4;
-        offset = stv.offsetTable[functionName];
+        stv.funcTable[functionName].offset -= 4;
+        offset = stv.funcTable[functionName].offset;
     }
     
     // Créer le vrai nom avec l'offset dans la pile
     string temp_name("!tmp"+offset);
 
     // Mettre à jour la table des symboles avec le nouveau nom
-    stv.symbolTable[temp_name].offset = offset;
-    stv.symbolTable[temp_name].type = t;
-    stv.symbolTable[temp_name].declared = true;
-    stv.symbolTable[temp_name].used = false;
+    stv.varTable[temp_name] = {.type = t, .name = temp_name, .offset = offset, .declared = true, .used = false};
     
     return temp_name;
 }
 
 int CFG::get_var_offset(string name) {
-    if (stv.symbolTable.find(name) != stv.symbolTable.end()) {
-        return stv.symbolTable[name].offset;
-    }
-    return 0;  // Erreur, la variable n'existe pas
+    return stv.varTable[name].offset;
 }
 
 Type CFG::get_var_type(string name) {
-    if (stv.symbolTable.find(name) != stv.symbolTable.end()) {
-        return stv.symbolTable[name].type;
-    }
-    return Type::INT;  // Par défaut
+    return stv.varTable[name].type;
 }
 
 string CFG::new_BB_name() {

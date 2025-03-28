@@ -17,10 +17,16 @@ void Prologue::gen_x86(std::ostream& o) {
     o << "    movq %rsp, %rbp" << "\n";
     
     // Allouer de l'espace pour les variables locales
-    int frameSize = ((-bb->cfg->stv.offsetTable[bb->cfg->functionName] + 15) & ~15);  // Alignement sur 16 octets uniquement
+    int frameSize = ((-bb->cfg->stv.funcTable[bb->cfg->functionName].offset + 15) & ~15);  // Alignement sur 16 octets uniquement
     if (frameSize > 0) {
         o << "    subq $" << frameSize << ", %rsp" << "\n";
     }
+
+    // on sauvegarde les registres
+    for (int i = 0; i < std::min<int>(6, bb->cfg->stv.funcTable[bb->cfg->functionName].args.size()); i++) {
+        o << "    movl " << bb->cfg->IR_reg_to_x86("!arg" + std::to_string(i) + "32") << ", " << bb->cfg->IR_addr_to_x86("RBP" + std::to_string(bb->cfg->stv.varTable[bb->cfg->stv.funcTable[bb->cfg->functionName].args[i]->name].offset)) << "\n";
+    }
+
     // o << "    jmp " << bb->cfg->functionName << "_0\n";
     // on peut l'enlever car arrive tout le temps juste après
 }

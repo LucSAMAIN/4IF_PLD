@@ -78,22 +78,25 @@ int main(int argc, const char **argv)
         exit(1);
     }
 
-    for (auto const &var : stv.symbolTable)
+    // Print the content of the variable table
+    std::cout << "# Variable Table:\n";
+    for (const auto &entry : stv.varTable)
     {
-        std::cout << "# " << var.first << " : type " << fromTypeToString(var.second.type) << " offset: " << var.second.offset << " index_arg: " << var.second.index_arg;
-        if (var.second.used)
+        std::cout << "# Name: " << entry.first << ", Type: " << typeToString(entry.second.type)
+                  << ", offset: " << entry.second.offset << ", declared: " << entry.second.declared << ", used: " << entry.second.used << "\n";
+    }
+
+    // Print the content of the function table
+    std::cout << "# Function Table:\n";
+    for (const auto &entry : stv.funcTable)
+    {
+        std::cout << "# Name: " << entry.first << ", Return Type: " << typeToString(entry.second.type)
+                  << ", Parameters: ";
+        for (const auto &param : entry.second.args)
         {
-            std::cout << " (used)";
-        }
-        if (var.second.declared)
-        {
-            std::cout << " (declared)";
+            std::cout << typeToString(param->type) << " " << param->name << ", ";
         }
         std::cout << "\n";
-    }
-    for (auto const &var : stv.offsetTable)
-    {
-        std::cout << "# " << var.first << " : " << var.second << "\n";
     }
 
     TypeCheckVisitor tcv(stv);

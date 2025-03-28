@@ -3,6 +3,7 @@
 
 #include <string>
 #include <map>
+#include <vector>
 
 #include "antlr4-runtime.h"
 #include "generated/ifccBaseVisitor.h"
@@ -17,20 +18,26 @@ enum class Type {
     INT8_T
 };
 
-extern std::string typeToString[];
-
+std::string typeToString(Type t);
 Type fromStringToType(std::string s);
 std::string fromTypeToString(Type t);
 
 typedef struct VarInfos
 {
     Type type;
+    std::string name;
     int offset;
-    int index_arg;
     bool declared;
     bool used;
 } VarInfos;
 
+typedef struct FuncInfos
+{
+    Type type;
+    int offset;
+    std::vector<VarInfos*> args;
+    bool used;
+} FuncInfos;
 
 class SymbolTableGenVisitor : public ifccBaseVisitor
 {
@@ -47,8 +54,8 @@ public:
     virtual antlrcpp::Any visitFuncCall(ifccParser::FuncCallContext *ctx) override;
     virtual antlrcpp::Any visitBlock(ifccParser::BlockContext *ctx) override;
     virtual antlrcpp::Any visitAssignExpr(ifccParser::AssignExprContext *ctx) override;
-    std::map<std::string, VarInfos> symbolTable;
-    std::map<std::string, int> offsetTable; // pour les fonctions connaitre le début d'offset.
+    std::map<std::string, VarInfos> varTable;
+    std::map<std::string, FuncInfos> funcTable;
     std::string scope;
     int error_count;
 

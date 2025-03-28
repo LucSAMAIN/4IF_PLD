@@ -1,5 +1,4 @@
 #include "IRInstr.h"
-#include "IR.h"
 
 
 // implémentation de Prologue
@@ -48,7 +47,7 @@ void Epilogue::gen_x86(std::ostream& o) {
 }
 
 // Implémentation de LdConst
-LdConstInt::LdConstInt(BasicBlock* p_bb, const std::string& dest_reg, int val) 
+LdConstInt::LdConstInt(BasicBlock* p_bb, const VirtualRegister& dest_reg, int val) 
     : IRInstr(p_bb), dest(dest_reg), value(val) {}
 
 
@@ -60,7 +59,7 @@ void LdConstInt::gen_x86(std::ostream& o) {
     o << "    movl $" << value << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
 }
 
-LdConstDouble::LdConstDouble(BasicBlock* p_bb, const std::string& dest_reg, double val) 
+LdConstDouble::LdConstDouble(BasicBlock* p_bb, const VirtualRegister& dest_reg, double val) 
     : IRInstr(p_bb), dest(dest_reg), value(val) {}
 
 
@@ -75,7 +74,7 @@ void LdConstDouble::gen_x86(std::ostream& o) {
 }
 
 // Implémentation de Copy
-Copy::Copy(BasicBlock* p_bb, const std::string& dest_reg, const std::string& src_reg) 
+Copy::Copy(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& src_reg) 
     : IRInstr(p_bb), dest(dest_reg), src(src_reg) {}
 
 
@@ -88,7 +87,7 @@ void Copy::gen_x86(std::ostream& o) {
 }
 
 // Implémentation de Add
-Add::Add(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+Add::Add(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
     : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 
@@ -101,7 +100,7 @@ void Add::gen_x86(std::ostream& o) {
 }
 
 // Implémentation de Sub
-Sub::Sub(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+Sub::Sub(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
     : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 
@@ -116,7 +115,7 @@ void Sub::gen_x86(std::ostream& o) {
 }
 
 // UnaryMinus
-UnaryMinus::UnaryMinus(BasicBlock* p_bb, const std::string& dest_reg) 
+UnaryMinus::UnaryMinus(BasicBlock* p_bb, const VirtualRegister& dest_reg) 
     : IRInstr(p_bb), dest(dest_reg) {}
 
 
@@ -129,7 +128,7 @@ void UnaryMinus::gen_x86(std::ostream& o) {
 }
 
 
-Not::Not(BasicBlock* p_bb, const std::string& dest_reg) 
+Not::Not(BasicBlock* p_bb, const VirtualRegister& dest_reg) 
     : IRInstr(p_bb), dest(dest_reg) {}
 
 
@@ -139,12 +138,13 @@ std::string Not::get_operation_name() const {
 
 void Not::gen_x86(std::ostream& o) {
     o << "    cmpl $0, " << bb->cfg->IR_reg_to_x86(dest) << "\n";
-    o << "    sete " << bb->cfg->IR_reg_to_x86(dest+"8") << "\n";
-    o << "    movzbl " << bb->cfg->IR_reg_to_x86(dest+"8") << ", " << bb->cfg->IR_reg_to_x86(dest+"32") << "\n";
+    VirtualRegister byte_dest(dest.regFunc, RegisterSize::SIZE_8, dest.regType);
+    o << "    sete " << bb->cfg->IR_reg_to_x86(byte_dest) << "\n";
+    o << "    movzbl " << bb->cfg->IR_reg_to_x86(byte_dest) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
 }
 
 // Implémentation de Mul
-Mul::Mul(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+Mul::Mul(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
     : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 
@@ -157,7 +157,7 @@ void Mul::gen_x86(std::ostream& o) {
 }
 
 // Implémentation de Div
-Div::Div(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+Div::Div(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
     : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 
@@ -174,7 +174,7 @@ void Div::gen_x86(std::ostream& o) {
 }
 
 // Implémentation de Mod
-Mod::Mod(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+Mod::Mod(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
     : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 
@@ -191,7 +191,7 @@ void Mod::gen_x86(std::ostream& o) {
 }
 
 // Implémentation de Rmem
-Rmem::Rmem(BasicBlock* p_bb, const std::string& dest_reg, const std::string& address) 
+Rmem::Rmem(BasicBlock* p_bb, const VirtualRegister& dest_reg, const std::string& address) 
     : IRInstr(p_bb), dest(dest_reg), addr(address) {}
 
 
@@ -205,7 +205,7 @@ void Rmem::gen_x86(std::ostream& o) {
 }
 
 // Implémentation de Wmem
-Wmem::Wmem(BasicBlock* p_bb, const std::string& address, const std::string& src_reg) 
+Wmem::Wmem(BasicBlock* p_bb, const std::string& address, const VirtualRegister& src_reg) 
     : IRInstr(p_bb), addr(address), src(src_reg) {}
 
 
@@ -247,7 +247,7 @@ void Call::gen_x86(std::ostream& o) {
 
 
 // Implémentation de CmpEq
-CmpEq::CmpEq(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+CmpEq::CmpEq(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
     : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 std::string CmpEq::get_operation_name() const {
@@ -256,12 +256,13 @@ std::string CmpEq::get_operation_name() const {
 
 void CmpEq::gen_x86(std::ostream& o) {
     o << "    cmp " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
-    o << "    sete " << bb->cfg->IR_reg_to_x86(dest+"8") << "\n";
-    o << "    movzbl " << bb->cfg->IR_reg_to_x86(dest+"8") << ", " << bb->cfg->IR_reg_to_x86(dest+"32") << "\n";
+    VirtualRegister byte_dest(dest.regFunc, RegisterSize::SIZE_8, dest.regType);
+    o << "    sete " << bb->cfg->IR_reg_to_x86(byte_dest) << "\n";
+    o << "    movzbl " << bb->cfg->IR_reg_to_x86(byte_dest) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
 }
 
 // Implémentation de CmpLt
-CmpNeq::CmpNeq(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+CmpNeq::CmpNeq(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
     : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 std::string CmpNeq::get_operation_name() const {
@@ -270,12 +271,13 @@ std::string CmpNeq::get_operation_name() const {
 
 void CmpNeq::gen_x86(std::ostream& o) {
     o << "    cmp " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
-    o << "    setne " << bb->cfg->IR_reg_to_x86(dest+"8") << "\n";
-    o << "    movzbl " << bb->cfg->IR_reg_to_x86(dest+"8") << ", " << bb->cfg->IR_reg_to_x86(dest+"32") << "\n";
+    VirtualRegister byte_dest(dest.regFunc, RegisterSize::SIZE_8, dest.regType);
+    o << "    setne " << bb->cfg->IR_reg_to_x86(byte_dest) << "\n";
+    o << "    movzbl " << bb->cfg->IR_reg_to_x86(byte_dest) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
 }
 
 // Implémentation de CmpLe
-CmpLe::CmpLe(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2)
+CmpLe::CmpLe(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2)
     : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 std::string CmpLe::get_operation_name() const {
@@ -284,11 +286,12 @@ std::string CmpLe::get_operation_name() const {
 
 void CmpLe::gen_x86(std::ostream& o) {
     o << "    cmp " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
-    o << "    setle " << bb->cfg->IR_reg_to_x86(dest+"8") << "\n";
-    o << "    movzbl " << bb->cfg->IR_reg_to_x86(dest+"8") << ", " << bb->cfg->IR_reg_to_x86(dest+"32") << "\n";
+    VirtualRegister byte_dest(dest.regFunc, RegisterSize::SIZE_8, dest.regType);
+    o << "    setle " << bb->cfg->IR_reg_to_x86(byte_dest) << "\n";
+    o << "    movzbl " << bb->cfg->IR_reg_to_x86(byte_dest) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
 }
 
-CmpLt::CmpLt(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+CmpLt::CmpLt(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
     : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 std::string CmpLt::get_operation_name() const {
@@ -297,11 +300,12 @@ std::string CmpLt::get_operation_name() const {
 
 void CmpLt::gen_x86(std::ostream& o) {
     o << "    cmp " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
-    o << "    setl " << bb->cfg->IR_reg_to_x86(dest+"8") << "\n";
-    o << "    movzbl " << bb->cfg->IR_reg_to_x86(dest+"8") << ", " << bb->cfg->IR_reg_to_x86(dest+"32") << "\n";
+    VirtualRegister byte_dest(dest.regFunc, RegisterSize::SIZE_8, dest.regType);
+    o << "    setl " << bb->cfg->IR_reg_to_x86(byte_dest) << "\n";
+    o << "    movzbl " << bb->cfg->IR_reg_to_x86(byte_dest) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
 }
 
-CmpGe::CmpGe(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+CmpGe::CmpGe(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
     : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 std::string CmpGe::get_operation_name() const {
@@ -310,11 +314,12 @@ std::string CmpGe::get_operation_name() const {
 
 void CmpGe::gen_x86(std::ostream& o) {
     o << "    cmp " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
-    o << "    setge " << bb->cfg->IR_reg_to_x86(dest+"8") << "\n";
-    o << "    movzbl " << bb->cfg->IR_reg_to_x86(dest+"8") << ", " << bb->cfg->IR_reg_to_x86(dest+"32") << "\n";
+    VirtualRegister byte_dest(dest.regFunc, RegisterSize::SIZE_8, dest.regType);
+    o << "    setge " << bb->cfg->IR_reg_to_x86(byte_dest) << "\n";
+    o << "    movzbl " << bb->cfg->IR_reg_to_x86(byte_dest) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
 }
 
-CmpGt::CmpGt(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+CmpGt::CmpGt(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
     : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 std::string CmpGt::get_operation_name() const {
@@ -323,11 +328,12 @@ std::string CmpGt::get_operation_name() const {
 
 void CmpGt::gen_x86(std::ostream& o) {
     o << "    cmp " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
-    o << "    setg " << bb->cfg->IR_reg_to_x86(dest+"8") << "\n";
-    o << "    movzbl " << bb->cfg->IR_reg_to_x86(dest+"8") << ", " << bb->cfg->IR_reg_to_x86(dest+"32") << "\n";
+    VirtualRegister byte_dest(dest.regFunc, RegisterSize::SIZE_8, dest.regType);
+    o << "    setg " << bb->cfg->IR_reg_to_x86(byte_dest) << "\n";
+    o << "    movzbl " << bb->cfg->IR_reg_to_x86(byte_dest) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
 }
 
-And::And(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+And::And(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
     : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 
@@ -339,7 +345,7 @@ void And::gen_x86(std::ostream& o) {
     o << "    andl " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
 }
 
-Or::Or(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+Or::Or(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
     : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 
@@ -351,7 +357,7 @@ void Or::gen_x86(std::ostream& o) {
     o << "    orl " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
 }
 
-Xor::Xor(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+Xor::Xor(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
     : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 
@@ -375,7 +381,7 @@ void Jump::gen_x86(std::ostream& o) {
     o << "    jmp " << dest_label << "\n";
 }
 
-JumpFalse::JumpFalse(BasicBlock* p_bb, const std::string& p_dest_false, const std::string& p_dest_true, const std::string& p_op) 
+JumpFalse::JumpFalse(BasicBlock* p_bb, const std::string& p_dest_false, const std::string& p_dest_true, const VirtualRegister& p_op) 
     : IRInstr(p_bb), dest_false(p_dest_false), dest_true(p_dest_true), op(p_op) {}
 
 
@@ -389,7 +395,7 @@ void JumpFalse::gen_x86(std::ostream& o) {
     o << "    jmp " << dest_true << "\n";
 }
 
-Push::Push(BasicBlock* p_bb, const std::string& p_op) 
+Push::Push(BasicBlock* p_bb, const VirtualRegister& p_op) 
     : IRInstr(p_bb), op(p_op) {}
 
 
@@ -401,7 +407,7 @@ void Push::gen_x86(std::ostream& o) {
     o << "    push " << bb->cfg->IR_reg_to_x86(op) << "\n";
 }
 
-Pop::Pop(BasicBlock* p_bb, const std::string& p_dest) 
+Pop::Pop(BasicBlock* p_bb, const VirtualRegister& p_dest)
     : IRInstr(p_bb), dest(p_dest) {}
 
 

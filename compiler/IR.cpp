@@ -86,6 +86,8 @@ CFG::~CFG()
 {
     for (auto block : bbs)
         delete block;
+    delete start_block;
+    delete end_block;
 }
 
 void CFG::add_bb(BasicBlock* bb) {

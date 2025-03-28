@@ -10,17 +10,16 @@
 
 enum class Type {
     VOID,
-    INT,
-    CHAR,
     INT64_T,
     INT32_T,
     INT16_T,
-    INT8_T
+    INT8_T,
+    FLOAT64_T
 };
 
 std::string typeToString(Type t);
-Type fromStringToType(std::string s);
-std::string fromTypeToString(Type t);
+Type stringToType(std::string s);
+int typeSize(Type t);
 
 typedef struct VarInfos
 {

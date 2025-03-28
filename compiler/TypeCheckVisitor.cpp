@@ -98,8 +98,8 @@ antlrcpp::Any TypeCheckVisitor::visitReturn_stmt(ifccParser::Return_stmtContext 
 
 antlrcpp::Any TypeCheckVisitor::visitIf_stmt(ifccParser::If_stmtContext *ctx) {
     Type type_expr = visit(ctx->expr());
-    if (type_expr != Type::INT) {
-        std::cerr << "error: type mismatch in if statement, expected " << typeToString(Type::INT) << " found " << typeToString(type_expr) << "\n";
+    if (type_expr != Type::INT32_T) {
+        std::cerr << "error: type mismatch in if statement, expected " << typeToString(Type::INT32_T) << " found " << typeToString(type_expr) << "\n";
         type_error++;
     }
 
@@ -108,8 +108,8 @@ antlrcpp::Any TypeCheckVisitor::visitIf_stmt(ifccParser::If_stmtContext *ctx) {
 
 antlrcpp::Any TypeCheckVisitor::visitWhile_stmt(ifccParser::While_stmtContext *ctx) {
     Type type_expr = visit(ctx->expr());
-    if (type_expr != Type::INT) {
-        std::cerr << "error: type mismatch in if statement, expected " << typeToString(Type::INT) << " found " << typeToString(type_expr) << "\n";
+    if (type_expr != Type::INT32_T) {
+        std::cerr << "error: type mismatch in if statement, expected " << typeToString(Type::INT32_T) << " found " << typeToString(type_expr) << "\n";
         type_error++;
     }
 
@@ -118,12 +118,17 @@ antlrcpp::Any TypeCheckVisitor::visitWhile_stmt(ifccParser::While_stmtContext *c
 
 antlrcpp::Any TypeCheckVisitor::visitIntExpr(ifccParser::IntExprContext *ctx)
 {
-    return Type::INT;
+    return Type::INT32_T;
 }
 
 antlrcpp::Any TypeCheckVisitor::visitCharExpr(ifccParser::CharExprContext *ctx)
 {
-    return Type::INT;
+    return Type::INT32_T;
+}
+
+antlrcpp::Any TypeCheckVisitor::visitDoubleExpr(ifccParser::DoubleExprContext *ctx)
+{
+    return Type::FLOAT64_T;
 }
 
 antlrcpp::Any TypeCheckVisitor::visitIdUse(ifccParser::IdUseContext *ctx)
@@ -166,8 +171,8 @@ antlrcpp::Any TypeCheckVisitor::visitAssignExpr(ifccParser::AssignExprContext *c
 
 antlrcpp::Any TypeCheckVisitor::visitNotExpr(ifccParser::NotExprContext *ctx) {
     Type type_expr = visit(ctx->primary());
-    if (type_expr != Type::INT) {
-        std::cerr << "error: type mismatch in not expression, expected " << typeToString(Type::INT) << " found " << typeToString(type_expr) << "\n";
+    if (type_expr != Type::INT32_T) {
+        std::cerr << "error: type mismatch in not expression, expected " << typeToString(Type::INT32_T) << " found " << typeToString(type_expr) << "\n";
         type_error++;
     }
     
@@ -176,8 +181,8 @@ antlrcpp::Any TypeCheckVisitor::visitNotExpr(ifccParser::NotExprContext *ctx) {
 
 antlrcpp::Any TypeCheckVisitor::visitUnaryMinusExpr(ifccParser::UnaryMinusExprContext *ctx) {
     Type type_expr = visit(ctx->primary());
-    if (type_expr != Type::INT) {
-        std::cerr << "error: type mismatch in unary minus expression, expected " << typeToString(Type::INT) << " found " << typeToString(type_expr) << "\n";
+    if (type_expr != Type::INT32_T) {
+        std::cerr << "error: type mismatch in unary minus expression, expected " << typeToString(Type::INT32_T) << " found " << typeToString(type_expr) << "\n";
         type_error++;
     }
     
@@ -187,78 +192,78 @@ antlrcpp::Any TypeCheckVisitor::visitUnaryMinusExpr(ifccParser::UnaryMinusExprCo
 antlrcpp::Any TypeCheckVisitor::visitMulDivExpr(ifccParser::MulDivExprContext *ctx) {
     Type type_left = visit(ctx->left);
     Type type_right = visit(ctx->right);
-    if (type_left != Type::INT || type_right != Type::INT) {
+    if (type_left != Type::INT32_T || type_right != Type::INT32_T) {
         std::cerr << "error: type mismatch in multiplication/division expression, expected int, found " << typeToString(type_left) << " and " << typeToString(type_right) << "\n";
         type_error++;
     }
 
-    return Type::INT;
+    return Type::INT32_T;
 }
 
 antlrcpp::Any TypeCheckVisitor::visitAddSubExpr(ifccParser::AddSubExprContext *ctx) {
     Type type_left = visit(ctx->left);
     Type type_right = visit(ctx->right);
-    if (type_left != Type::INT || type_right != Type::INT) {
+    if (type_left != Type::INT32_T || type_right != Type::INT32_T) {
         std::cerr << "error: type mismatch in multiplication/division expression, expected int, found " << typeToString(type_left) << " and " << typeToString(type_right) << "\n";
         type_error++;
     }
 
-    return Type::INT;
+    return Type::INT32_T;
 }
 
 antlrcpp::Any TypeCheckVisitor::visitCompExpr(ifccParser::CompExprContext *ctx) {
     Type type_left = visit(ctx->left);
     Type type_right = visit(ctx->right);
-    if (type_left != Type::INT || type_right != Type::INT) {
+    if (type_left != Type::INT32_T || type_right != Type::INT32_T) {
         std::cerr << "error: type mismatch in multiplication/division expression, expected int, found " << typeToString(type_left) << " and " << typeToString(type_right) << "\n";
         type_error++;
     }
 
-    return Type::INT;
+    return Type::INT32_T;
 }
 
 antlrcpp::Any TypeCheckVisitor::visitEqExpr(ifccParser::EqExprContext *ctx) {
     Type type_left = visit(ctx->left);
     Type type_right = visit(ctx->right);
-    if (type_left != Type::INT || type_right != Type::INT) {
+    if (type_left != Type::INT32_T || type_right != Type::INT32_T) {
         std::cerr << "error: type mismatch in multiplication/division expression, expected int, found " << typeToString(type_left) << " and " << typeToString(type_right) << "\n";
         type_error++;
     }
 
-    return Type::INT;
+    return Type::INT32_T;
 }
 
 antlrcpp::Any TypeCheckVisitor::visitAndExpr(ifccParser::AndExprContext *ctx) {
     Type type_left = visit(ctx->left);
     Type type_right = visit(ctx->right);
-    if (type_left != Type::INT || type_right != Type::INT) {
+    if (type_left != Type::INT32_T || type_right != Type::INT32_T) {
         std::cerr << "error: type mismatch in multiplication/division expression, expected int, found " << typeToString(type_left) << " and " << typeToString(type_right) << "\n";
         type_error++;
     }
 
-    return Type::INT;
+    return Type::INT32_T;
 }
 
 antlrcpp::Any TypeCheckVisitor::visitOrExpr(ifccParser::OrExprContext *ctx) {
     Type type_left = visit(ctx->left);
     Type type_right = visit(ctx->right);
-    if (type_left != Type::INT || type_right != Type::INT) {
+    if (type_left != Type::INT32_T || type_right != Type::INT32_T) {
         std::cerr << "error: type mismatch in multiplication/division expression, expected int, found " << typeToString(type_left) << " and " << typeToString(type_right) << "\n";
         type_error++;
     }
 
-    return Type::INT;
+    return Type::INT32_T;
 }
 
 antlrcpp::Any TypeCheckVisitor::visitXorExpr(ifccParser::XorExprContext *ctx) {
     Type type_left = visit(ctx->left);
     Type type_right = visit(ctx->right);
-    if (type_left != Type::INT || type_right != Type::INT) {
+    if (type_left != Type::INT32_T || type_right != Type::INT32_T) {
         std::cerr << "error: type mismatch in multiplication/division expression, expected int, found " << typeToString(type_left) << " and " << typeToString(type_right) << "\n";
         type_error++;
     }
 
-    return Type::INT;
+    return Type::INT32_T;
 }
 
 antlrcpp::Any TypeCheckVisitor::visitParExpr(ifccParser::ParExprContext *ctx) {

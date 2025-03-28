@@ -46,6 +46,7 @@ expr : primary                     # primaryExpr
 primary : ID             # idUse
         | CONSTINT       # intExpr
         | CONSTCHAR      # charExpr
+        | CONSTDOUBLE    # doubleExpr
         | LPAR expr RPAR # parExpr
         | ID ASSIGN expr # assignExpr
         | funcCall       # funcCallExpr
@@ -83,14 +84,16 @@ IF : 'if' ;
 ELSE : 'else' ;
 WHILE : 'while' ;
 
-type : INT | CHAR ;
-funcType : INT | CHAR | VOID ;
+type : INT | CHAR | DOUBLE ;
+funcType : INT | CHAR | DOUBLE | VOID ;
 INT : 'int' ;
 CHAR : 'char' ;
 VOID : 'void' ;
+DOUBLE : 'double' ;
 
 CONSTINT : '0' | [1-9][0-9]* ;
 CONSTCHAR : '\''.*?'\'' ;
+CONSTDOUBLE : [0-9]+ '.' [0-9]+ ;
 
 ID : [a-zA-Z][a-zA-Z0-9_]* ;
 MULTILINE_COMMENT : '/*' .*? '*/' -> skip ;

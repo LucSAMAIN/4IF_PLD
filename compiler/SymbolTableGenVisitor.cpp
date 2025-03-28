@@ -6,24 +6,39 @@ std::string typeToString(Type t)
 {
     std::string typeToString[] = {
         "void",
-        "int",
-        "char",
         "int64_t",
         "int32_t",
         "int16_t",
-        "int8_t"
+        "int8_t",
+        "float64_t"
     };
     return typeToString[(int)t];
 }
 
-Type fromStringToType(std::string s)
+Type stringToType(std::string s)
 {   
-    if (s == "char")
-        return Type::CHAR;
+    if (s == "int")
+        return Type::INT32_T;
     else if (s == "void")
         return Type::VOID;
-    else
-        return Type::INT;
+    else if (s == "char")
+        return Type::INT8_T;
+    else if (s == "double")
+        return Type::FLOAT64_T;
+    return Type::INT32_T;
+}
+
+int typeSize(Type t)
+{
+    int typeSize[] = {
+        0,
+        8,
+        4,
+        2,
+        1,
+        8
+    };
+    return typeSize[(int)t];
 }
 
 std::string fromTypeToString(Type t) {
@@ -36,34 +51,31 @@ std::string fromTypeToString(Type t) {
 }
 SymbolTableGenVisitor::SymbolTableGenVisitor() : varTable(), funcTable(), scope(), error_count(0) {
     funcTable["putchar"] = {.type = Type::VOID, .offset = 0, .args = {}, .used = false};
-    varTable["putchar_0"] = {.type = Type::INT, .name = "putchar_0", .offset = 0, .declared = true, .used = false};
+    varTable["putchar_0"] = {.type = Type::INT32_T, .name = "putchar_0", .offset = 0, .declared = true, .used = false};
     funcTable["putchar"].args.push_back(&varTable["putchar_0"]);
 
     funcTable["putchar"] = {.type = Type::VOID, .offset = 0, .args = {}, .used = false};
-    varTable["putchar_0"] = {.type = Type::INT, .name = "putchar_0", .offset = 0, .declared = true, .used = false};
+    varTable["putchar_0"] = {.type = Type::INT32_T, .name = "putchar_0", .offset = 0, .declared = true, .used = false};
     funcTable["putchar"].args.push_back(&varTable["putchar_0"]);
 }
 
 antlrcpp::Any SymbolTableGenVisitor::visitFuncDecl(ifccParser::FuncDeclContext *ctx) {
     scope = ctx->funcName->getText();
-    funcTable[ctx->funcName->getText()] = {.type = fromStringToType(ctx->funcType()->getText()),
+    funcTable[ctx->funcName->getText()] = {.type = stringToType(ctx->funcType()->getText()),
                                             .offset = 0, 
                                             .args = {}, 
                                             .used = false};
 
     for (int i = 1; i < ctx->ID().size(); i++) { // le nom de la fonction est quand même dans la liste  des ID
         // même si on lui a donné un nom différent dans la grammaire, on commence à 1
-        if (ctx->type(i-1)->getText() == "int") { // le type de la fonction a un non terminal différent donc pas 
-            // dans la liste des types donc on décale de 1
-            std::string varName = scope + "_" + ctx->ID(i)->getText();
-            funcTable[ctx->funcName->getText()].offset -= 4;
-            varTable[varName] = {.type = fromStringToType(ctx->type(i-1)->getText()),
-                                .name = varName, 
-                                .offset = funcTable[ctx->funcName->getText()].offset, 
-                                .declared = true, 
-                                .used = false};
-            funcTable[ctx->funcName->getText()].args.push_back(&varTable[varName]);
-        }
+        std::string varName = scope + "_" + ctx->ID(i)->getText();
+        funcTable[ctx->funcName->getText()].offset -= typeSize(stringToType(ctx->type(i-1)->getText()));
+        varTable[varName] = {.type = stringToType(ctx->type(i-1)->getText()),
+                            .name = varName, 
+                            .offset = funcTable[ctx->funcName->getText()].offset, 
+                            .declared = true, 
+                            .used = false};
+        funcTable[ctx->funcName->getText()].args.push_back(&varTable[varName]);
     }
     visit(ctx->block());
     return 0;
@@ -82,14 +94,12 @@ antlrcpp::Any SymbolTableGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext
 
         std::string varName = scope + "_" + ctx->decl_element(i)->ID()->getText();
 
-        if (ctx->type()->getText() == "int") {
-            funcTable[funcName].offset -= 4;
-            varTable[varName] = {.type = fromStringToType(ctx->type()->getText()),
-                .name = varName, 
-                .offset = funcTable[funcName].offset, 
-                .declared = true, 
-                .used = false};
-        }
+        funcTable[funcName].offset -= typeSize(stringToType(ctx->type()->getText()));
+        varTable[varName] = {.type = stringToType(ctx->type()->getText()),
+            .name = varName, 
+            .offset = funcTable[funcName].offset, 
+            .declared = true, 
+            .used = false};
         
         if (ctx->decl_element(i)->expr() != nullptr) {
             visit(ctx->decl_element(i)->expr());

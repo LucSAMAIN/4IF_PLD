@@ -1,5 +1,4 @@
 #include "IRInstr.h"
-#include "IR.h"
 
 
 // implémentation de Prologue
@@ -62,7 +61,7 @@ void Epilogue::gen_wat(std::ostream& o) {
 }
 
 // Implémentation de LdConst
-LdConstInt::LdConstInt(BasicBlock* p_bb, const std::string& dest_reg, int val) 
+LdConstInt::LdConstInt(BasicBlock* p_bb, const VirtualRegister& dest_reg, int val) 
     : IRInstr(p_bb), dest(dest_reg), value(val) {}
 
 
@@ -74,9 +73,7 @@ void LdConstInt::gen_x86(std::ostream& o) {
     o << "    movl $" << value << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
 }
 
-
-
-LdConstDouble::LdConstDouble(BasicBlock* p_bb, const std::string& dest_reg, double val) 
+LdConstDouble::LdConstDouble(BasicBlock* p_bb, const VirtualRegister& dest_reg, double val) 
     : IRInstr(p_bb), dest(dest_reg), value(val) {}
 
 
@@ -96,7 +93,7 @@ void LdConst::gen_wat(std::ostream& o) {
 }
 
 // Implémentation de Copy
-Copy::Copy(BasicBlock* p_bb, const std::string& dest_reg, const std::string& src_reg) 
+Copy::Copy(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& src_reg) 
     : IRInstr(p_bb), dest(dest_reg), src(src_reg) {}
 
 
@@ -114,7 +111,7 @@ void Copy::gen_wat(std::ostream& o) {
 }
 
 // Implémentation de Add
-Add::Add(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+Add::Add(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
     : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 
@@ -132,7 +129,7 @@ void Add::gen_wat(std::ostream& o) {
 }
 
 // Implémentation de Sub
-Sub::Sub(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+Sub::Sub(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
     : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 
@@ -152,7 +149,7 @@ void Sub::gen_wat(std::ostream& o) {
 }
 
 // UnaryMinus
-UnaryMinus::UnaryMinus(BasicBlock* p_bb, const std::string& dest_reg) 
+UnaryMinus::UnaryMinus(BasicBlock* p_bb, const VirtualRegister& dest_reg) 
     : IRInstr(p_bb), dest(dest_reg) {}
 
 
@@ -170,7 +167,7 @@ void UnaryMinus::gen_wat(std::ostream& o) {
 }
 
 
-Not::Not(BasicBlock* p_bb, const std::string& dest_reg) 
+Not::Not(BasicBlock* p_bb, const VirtualRegister& dest_reg) 
     : IRInstr(p_bb), dest(dest_reg) {}
 
 
@@ -180,17 +177,13 @@ std::string Not::get_operation_name() const {
 
 void Not::gen_x86(std::ostream& o) {
     o << "    cmpl $0, " << bb->cfg->IR_reg_to_x86(dest) << "\n";
-    o << "    sete " << bb->cfg->IR_reg_to_x86(dest+"8") << "\n";
-    o << "    movzbl " << bb->cfg->IR_reg_to_x86(dest+"8") << ", " << bb->cfg->IR_reg_to_x86(dest+"32") << "\n";
-}
-
-void Not::gen_wat(std::ostream& o) {
-    o << "    ;; Logical not\n";
-    o << "    (local.set " << bb->cfg->IR_reg_to_wat(dest) << " (i32.eqz (local.get " << bb->cfg->IR_reg_to_wat(dest) << ")))\n";
+    VirtualRegister byte_dest(dest.regFunc, RegisterSize::SIZE_8, dest.regType);
+    o << "    sete " << bb->cfg->IR_reg_to_x86(byte_dest) << "\n";
+    o << "    movzbl " << bb->cfg->IR_reg_to_x86(byte_dest) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
 }
 
 // Implémentation de Mul
-Mul::Mul(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+Mul::Mul(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
     : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 
@@ -208,7 +201,7 @@ void Mul::gen_wat(std::ostream& o) {
 }
 
 // Implémentation de Div
-Div::Div(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+Div::Div(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
     : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 
@@ -230,7 +223,7 @@ void Div::gen_wat(std::ostream& o) {
 }
 
 // Implémentation de Mod
-Mod::Mod(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+Mod::Mod(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
     : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 
@@ -252,7 +245,7 @@ void Mod::gen_wat(std::ostream& o) {
 }
 
 // Implémentation de Rmem
-Rmem::Rmem(BasicBlock* p_bb, const std::string& dest_reg, const std::string& address) 
+Rmem::Rmem(BasicBlock* p_bb, const VirtualRegister& dest_reg, const std::string& address) 
     : IRInstr(p_bb), dest(dest_reg), addr(address) {}
 
 
@@ -271,7 +264,7 @@ void Rmem::gen_wat(std::ostream& o) {
 }
 
 // Implémentation de Wmem
-Wmem::Wmem(BasicBlock* p_bb, const std::string& address, const std::string& src_reg) 
+Wmem::Wmem(BasicBlock* p_bb, const std::string& address, const VirtualRegister& src_reg) 
     : IRInstr(p_bb), addr(address), src(src_reg) {}
 
 
@@ -334,7 +327,7 @@ void Call::gen_wat(std::ostream& o) {
 
 
 // Implémentation de CmpEq
-CmpEq::CmpEq(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+CmpEq::CmpEq(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
     : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 std::string CmpEq::get_operation_name() const {
@@ -343,17 +336,13 @@ std::string CmpEq::get_operation_name() const {
 
 void CmpEq::gen_x86(std::ostream& o) {
     o << "    cmp " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
-    o << "    sete " << bb->cfg->IR_reg_to_x86(dest+"8") << "\n";
-    o << "    movzbl " << bb->cfg->IR_reg_to_x86(dest+"8") << ", " << bb->cfg->IR_reg_to_x86(dest+"32") << "\n";
-}
-
-void CmpEq::gen_wat(std::ostream& o) {
-    o << "    ;; Compare equal\n";
-    o << "    (local.set " << bb->cfg->IR_reg_to_wat(dest) << " (i32.eq (local.get " << bb->cfg->IR_reg_to_wat(dest) << ") (local.get " << bb->cfg->IR_reg_to_wat(op2) << ")))\n";
+    VirtualRegister byte_dest(dest.regFunc, RegisterSize::SIZE_8, dest.regType);
+    o << "    sete " << bb->cfg->IR_reg_to_x86(byte_dest) << "\n";
+    o << "    movzbl " << bb->cfg->IR_reg_to_x86(byte_dest) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
 }
 
 // Implémentation de CmpLt
-CmpNeq::CmpNeq(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+CmpNeq::CmpNeq(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
     : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 std::string CmpNeq::get_operation_name() const {
@@ -362,17 +351,13 @@ std::string CmpNeq::get_operation_name() const {
 
 void CmpNeq::gen_x86(std::ostream& o) {
     o << "    cmp " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
-    o << "    setne " << bb->cfg->IR_reg_to_x86(dest+"8") << "\n";
-    o << "    movzbl " << bb->cfg->IR_reg_to_x86(dest+"8") << ", " << bb->cfg->IR_reg_to_x86(dest+"32") << "\n";
-}
-
-void CmpNeq::gen_wat(std::ostream& o) {
-    o << "    ;; Compare not equal\n";
-    o << "    (local.set " << bb->cfg->IR_reg_to_wat(dest) << " (i32.ne (local.get " << bb->cfg->IR_reg_to_wat(dest) << ") (local.get " << bb->cfg->IR_reg_to_wat(op2) << ")))\n";
+    VirtualRegister byte_dest(dest.regFunc, RegisterSize::SIZE_8, dest.regType);
+    o << "    setne " << bb->cfg->IR_reg_to_x86(byte_dest) << "\n";
+    o << "    movzbl " << bb->cfg->IR_reg_to_x86(byte_dest) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
 }
 
 // Implémentation de CmpLe
-CmpLe::CmpLe(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2)
+CmpLe::CmpLe(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2)
     : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 std::string CmpLe::get_operation_name() const {
@@ -381,16 +366,12 @@ std::string CmpLe::get_operation_name() const {
 
 void CmpLe::gen_x86(std::ostream& o) {
     o << "    cmp " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
-    o << "    setle " << bb->cfg->IR_reg_to_x86(dest+"8") << "\n";
-    o << "    movzbl " << bb->cfg->IR_reg_to_x86(dest+"8") << ", " << bb->cfg->IR_reg_to_x86(dest+"32") << "\n";
+    VirtualRegister byte_dest(dest.regFunc, RegisterSize::SIZE_8, dest.regType);
+    o << "    setle " << bb->cfg->IR_reg_to_x86(byte_dest) << "\n";
+    o << "    movzbl " << bb->cfg->IR_reg_to_x86(byte_dest) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
 }
 
-void CmpLe::gen_wat(std::ostream& o) {
-    o << "    ;; Compare less or equal\n";
-    o << "    (local.set " << bb->cfg->IR_reg_to_wat(dest) << " (i32.le_s (local.get " << bb->cfg->IR_reg_to_wat(dest) << ") (local.get " << bb->cfg->IR_reg_to_wat(op2) << ")))\n";
-}
-
-CmpLt::CmpLt(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+CmpLt::CmpLt(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
     : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 std::string CmpLt::get_operation_name() const {
@@ -399,16 +380,12 @@ std::string CmpLt::get_operation_name() const {
 
 void CmpLt::gen_x86(std::ostream& o) {
     o << "    cmp " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
-    o << "    setl " << bb->cfg->IR_reg_to_x86(dest+"8") << "\n";
-    o << "    movzbl " << bb->cfg->IR_reg_to_x86(dest+"8") << ", " << bb->cfg->IR_reg_to_x86(dest+"32") << "\n";
+    VirtualRegister byte_dest(dest.regFunc, RegisterSize::SIZE_8, dest.regType);
+    o << "    setl " << bb->cfg->IR_reg_to_x86(byte_dest) << "\n";
+    o << "    movzbl " << bb->cfg->IR_reg_to_x86(byte_dest) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
 }
 
-void CmpLt::gen_wat(std::ostream& o) {
-    o << "    ;; Compare less than\n";
-    o << "    (local.set " << bb->cfg->IR_reg_to_wat(dest) << " (i32.lt_s (local.get " << bb->cfg->IR_reg_to_wat(dest) << ") (local.get " << bb->cfg->IR_reg_to_wat(op2) << ")))\n";
-}
-
-CmpGe::CmpGe(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+CmpGe::CmpGe(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
     : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 std::string CmpGe::get_operation_name() const {
@@ -417,16 +394,12 @@ std::string CmpGe::get_operation_name() const {
 
 void CmpGe::gen_x86(std::ostream& o) {
     o << "    cmp " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
-    o << "    setge " << bb->cfg->IR_reg_to_x86(dest+"8") << "\n";
-    o << "    movzbl " << bb->cfg->IR_reg_to_x86(dest+"8") << ", " << bb->cfg->IR_reg_to_x86(dest+"32") << "\n";
+    VirtualRegister byte_dest(dest.regFunc, RegisterSize::SIZE_8, dest.regType);
+    o << "    setge " << bb->cfg->IR_reg_to_x86(byte_dest) << "\n";
+    o << "    movzbl " << bb->cfg->IR_reg_to_x86(byte_dest) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
 }
 
-void CmpGe::gen_wat(std::ostream& o) {
-    o << "    ;; Compare greater or equal\n";
-    o << "    (local.set " << bb->cfg->IR_reg_to_wat(dest) << " (i32.ge_s (local.get " << bb->cfg->IR_reg_to_wat(dest) << ") (local.get " << bb->cfg->IR_reg_to_wat(op2) << ")))\n";
-}
-
-CmpGt::CmpGt(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+CmpGt::CmpGt(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
     : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 std::string CmpGt::get_operation_name() const {
@@ -435,16 +408,12 @@ std::string CmpGt::get_operation_name() const {
 
 void CmpGt::gen_x86(std::ostream& o) {
     o << "    cmp " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
-    o << "    setg " << bb->cfg->IR_reg_to_x86(dest+"8") << "\n";
-    o << "    movzbl " << bb->cfg->IR_reg_to_x86(dest+"8") << ", " << bb->cfg->IR_reg_to_x86(dest+"32") << "\n";
+    VirtualRegister byte_dest(dest.regFunc, RegisterSize::SIZE_8, dest.regType);
+    o << "    setg " << bb->cfg->IR_reg_to_x86(byte_dest) << "\n";
+    o << "    movzbl " << bb->cfg->IR_reg_to_x86(byte_dest) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
 }
 
-void CmpGt::gen_wat(std::ostream& o) {
-    o << "    ;; Compare greater than\n";
-    o << "    (local.set " << bb->cfg->IR_reg_to_wat(dest) << " (i32.gt_s (local.get " << bb->cfg->IR_reg_to_wat(dest) << ") (local.get " << bb->cfg->IR_reg_to_wat(op2) << ")))\n";
-}
-
-And::And(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+And::And(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
     : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 
@@ -456,12 +425,7 @@ void And::gen_x86(std::ostream& o) {
     o << "    andl " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
 }
 
-void And::gen_wat(std::ostream& o) {
-    o << "    ;; Logical and\n";
-    o << "    (local.set " << bb->cfg->IR_reg_to_wat(dest) << " (i32.and (local.get " << bb->cfg->IR_reg_to_wat(dest) << ") (local.get " << bb->cfg->IR_reg_to_wat(op2) << ")))\n";
-}
-
-Or::Or(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+Or::Or(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
     : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 
@@ -473,12 +437,7 @@ void Or::gen_x86(std::ostream& o) {
     o << "    orl " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
 }
 
-void Or::gen_wat(std::ostream& o) {
-    o << "    ;; Logical or\n";
-    o << "    (local.set " << bb->cfg->IR_reg_to_wat(dest) << " (i32.or (local.get " << bb->cfg->IR_reg_to_wat(dest) << ") (local.get " << bb->cfg->IR_reg_to_wat(op2) << ")))\n";
-}
-
-Xor::Xor(BasicBlock* p_bb, const std::string& dest_reg, const std::string& operand2) 
+Xor::Xor(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
     : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 
 
@@ -507,23 +466,7 @@ void Jump::gen_x86(std::ostream& o) {
     o << "    jmp " << dest_label << "\n";
 }
 
-void Jump::gen_wat(std::ostream& o) {
-    o << "    ;; Jump\n";
-    if (dest_label == bb->cfg->functionName + "_epilogue") {
-        // Nom du bloc d'épilogue spécifique à la fonction
-        std::string epilogueBlockName = "$" + bb->cfg->functionName + "_body_block";
-        o << "      (br " << epilogueBlockName << ")\n";
-    } else if (dest_label.find(bb->cfg->functionName + "_") == 0) {
-        // Le saut est vers un autre bloc de la même fonction
-        // En WebAssembly, l'exécution est linéaire par défaut
-        o << "      ;; Jump to " << dest_label << " (handled by linear execution)\n";
-    } else {
-        // Saut vers une autre fonction ou un bloc inconnu
-        o << "      ;; Jump to unknown destination " << dest_label << " (not implemented)\n";
-    }
-}
-
-JumpFalse::JumpFalse(BasicBlock* p_bb, const std::string& p_dest_false, const std::string& p_dest_true, const std::string& p_op) 
+JumpFalse::JumpFalse(BasicBlock* p_bb, const std::string& p_dest_false, const std::string& p_dest_true, const VirtualRegister& p_op) 
     : IRInstr(p_bb), dest_false(p_dest_false), dest_true(p_dest_true), op(p_op) {}
 
 
@@ -537,103 +480,7 @@ void JumpFalse::gen_x86(std::ostream& o) {
     o << "    jmp " << dest_true << "\n";
 }
 
-void JumpFalse::gen_wat(std::ostream& o) {
-    o << "    ;; Conditional jump\n";
-    
-    // Détecter si c'est un bloc de test de while
-    bool isWhileTest = bb->label.find("_test_while") != std::string::npos;
-    
-    // Traitement spécial pour les while
-    if (isWhileTest) {
-        // Pour les while, la structure est différente:
-        // - dest_true est le corps du while
-        // - dest_false est le bloc après le while
-        
-        // Pas besoin de génération spéciale, car le while est traité dans la 
-        // méthode CFG::gen_wat avec les structures loop/block
-        o << "    ;; Condition de while - saut vers " << dest_false << " si faux, " << dest_true << " si vrai\n";
-        return;
-    }
-    
-    // Dans le cas d'un saut conditionnel simple (sans bloc true/false séparé)
-    if (dest_false == bb->cfg->functionName + "_epilogue") {
-        // Saut vers l'épilogue si la condition est fausse
-        std::string epilogueBlockName = "$" + bb->cfg->functionName + "_body_block";
-        o << "      (br_if " << epilogueBlockName << " (i32.eqz (local.get " << bb->cfg->IR_reg_to_wat(op) << ")))\n";
-    } else if (dest_true == bb->cfg->functionName + "_epilogue") {
-        // Saut vers l'épilogue si la condition est vraie
-        std::string epilogueBlockName = "$" + bb->cfg->functionName + "_body_block";
-        o << "      (br_if " << epilogueBlockName << " (local.get " << bb->cfg->IR_reg_to_wat(op) << "))\n";
-    } else {
-        // Pour les structures if-else complètes, générer les blocs de code
-        o << "      (if (i32.eqz (local.get " << bb->cfg->IR_reg_to_wat(op) << "))\n";
-        o << "        (then\n";
-        
-        // Bloc else part (dest_false)
-        o << "          ;; Else part (" << dest_false << ")\n";
-        BasicBlock* false_block = nullptr;
-        for (BasicBlock* block : bb->cfg->bbs) {
-            if (block->label == dest_false) {
-                false_block = block;
-                break;
-            }
-        }
-        
-        if (false_block) {
-            for (IRInstr* instr : false_block->instructions) {
-                // Ne pas générer les sauts vers endif (ils seront implicites)
-                if (instr->get_operation_name() != "jump") {
-                    std::stringstream ss;
-                    instr->gen_wat(ss);
-                    std::string instr_str = ss.str();
-                    // Indentation
-                    size_t pos = 0;
-                    while ((pos = instr_str.find('\n', pos)) != std::string::npos) {
-                        instr_str.insert(pos + 1, "          ");
-                        pos += 11;
-                    }
-                    o << instr_str;
-                }
-            }
-        }
-        
-        o << "        )\n";
-        o << "        (else\n";
-        
-        // Bloc then part (dest_true)
-        o << "          ;; Then part (" << dest_true << ")\n";
-        BasicBlock* true_block = nullptr;
-        for (BasicBlock* block : bb->cfg->bbs) {
-            if (block->label == dest_true) {
-                true_block = block;
-                break;
-            }
-        }
-        
-        if (true_block) {
-            for (IRInstr* instr : true_block->instructions) {
-                // Ne pas générer les sauts vers endif (ils seront implicites)
-                if (instr->get_operation_name() != "jump") {
-                    std::stringstream ss;
-                    instr->gen_wat(ss);
-                    std::string instr_str = ss.str();
-                    // Indentation
-                    size_t pos = 0;
-                    while ((pos = instr_str.find('\n', pos)) != std::string::npos) {
-                        instr_str.insert(pos + 1, "          ");
-                        pos += 11;
-                    }
-                    o << instr_str;
-                }
-            }
-        }
-        
-        o << "        )\n";
-        o << "      )\n";
-    }
-}
-
-Push::Push(BasicBlock* p_bb, const std::string& p_op) 
+Push::Push(BasicBlock* p_bb, const VirtualRegister& p_op) 
     : IRInstr(p_bb), op(p_op) {}
 
 
@@ -645,13 +492,7 @@ void Push::gen_x86(std::ostream& o) {
     o << "    push " << bb->cfg->IR_reg_to_x86(op) << "\n";
 }
 
-void Push::gen_wat(std::ostream& o) {
-    o << "    ;; Push\n";
-    o << "    (i32.store (global.get $sp) (local.get " << bb->cfg->IR_reg_to_wat(op) << "))\n";
-    o << "    (global.set $sp (i32.add (global.get $sp) (i32.const 4)))\n";
-}
-
-Pop::Pop(BasicBlock* p_bb, const std::string& p_dest) 
+Pop::Pop(BasicBlock* p_bb, const VirtualRegister& p_dest)
     : IRInstr(p_bb), dest(p_dest) {}
 
 

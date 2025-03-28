@@ -7,9 +7,50 @@
 
 #include "generated/ifccParser.h"
 #include "SymbolTableGenVisitor.h"
-#include "IRInstr.h"
 
+class IRInstr;
 class CFG;
+
+enum class RegisterFunction {
+	REG,
+	REG_LEFT,
+	REG_RIGHT,
+	ARG0,
+	ARG1,
+	ARG2,
+	ARG3,
+	ARG4,
+	ARG5,
+	ARG6
+};
+enum class RegisterSize {
+	SIZE_64 = 64,
+	SIZE_32 = 32,
+	SIZE_16 = 16,
+	SIZE_8 = 8
+};
+enum class RegisterType {
+	GPR,
+	XMM
+};
+typedef struct VirtualRegister {
+	RegisterFunction regFunc;
+	RegisterSize regSize;
+	RegisterType regType;
+
+	VirtualRegister(RegisterFunction func, RegisterSize size, RegisterType type)
+		: regFunc(func), regSize(size), regType(type) {}
+	VirtualRegister(const VirtualRegister& other)
+		: regFunc(other.regFunc), regSize(other.regSize), regType(other.regType) {}
+	VirtualRegister& operator=(const VirtualRegister& other) {
+		if (this != &other) {
+			regFunc = other.regFunc;
+			regSize = other.regSize;
+			regType = other.regType;
+		}
+		return *this;
+	}
+} VirtualRegister;
 
 
 /**  The class for a basic block */
@@ -81,8 +122,10 @@ public:
 	// x86 code generation: could be encapsulated in a processor class in a retargetable compiler
 	void gen_x86(std::ostream& o); /**< x86 assembly code generation for the whole CFG */
 	void gen_wat(std::ostream& o); /**< wat code generation for the whole CFG */
-	std::string IR_reg_to_x86(const std::string &reg); /**< helper method: inputs a IR reg or input variable, returns e.g. "-24(%rbp)" for the proper value of 24 */
+	std::string IR_reg_to_x86(const std::string &reg);
 	std::string IR_addr_to_x86 (const std::string &Iraddr);
+
+	std::string IR_reg_to_x86(const VirtualRegister& reg);
 	std::string IR_reg_to_wat(const std::string &reg); /**< helper method: inputs a IR reg, returns WebAssembly local variable name */
 	std::string IR_addr_to_wat(const std::string &Iraddr);
 

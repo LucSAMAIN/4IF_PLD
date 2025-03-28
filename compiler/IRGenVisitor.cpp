@@ -3,7 +3,6 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <utility> // pour std::pair
 
 typedef struct ExprReturn {
     bool isConst;
@@ -12,6 +11,33 @@ typedef struct ExprReturn {
         int32_t ivalue;
         double dvalue;
     };
+
+    ExprReturn() : isConst(false), type(Type::INT64_T), ivalue(0) {}
+    ExprReturn(bool isConst, Type type, int32_t val) : isConst(isConst), type(type), ivalue(val) {}
+    ExprReturn(bool isConst, Type type, double val) : isConst(isConst), type(type), dvalue(val) {}
+    ExprReturn(const ExprReturn& other) : isConst(other.isConst), type(other.type) {
+        if (isConst) {
+            if (type == Type::FLOAT64_T) {
+                dvalue = other.dvalue;
+            } else {
+                ivalue = other.ivalue;
+            }
+        }
+    }
+    ExprReturn& operator=(const ExprReturn& other) {
+        if (this != &other) {
+            isConst = other.isConst;
+            type = other.type;
+            if (isConst) {
+                if (type == Type::FLOAT64_T) {
+                    dvalue = other.dvalue;
+                } else {
+                    ivalue = other.ivalue;
+                }
+            }
+        }
+        return *this;
+    }
 } ExprReturn;
 
 IRGenVisitor::IRGenVisitor(SymbolTableGenVisitor& p_stv) 
@@ -77,11 +103,13 @@ antlrcpp::Any IRGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx)
             // std::cout << "# address " << address << "\n";
 
             // Évaluation de l'expression qu'on place dans le registre universel !reg
-            ExprReturn res(visit(ctx->decl_element(i)->expr()));
-            if (res.isConst) {
-                IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!reg", res.value);  // block, dst, src
+            ExprReturn* res(visit(ctx->decl_element(i)->expr()));
+            if (res->isConst) {
+                IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, "!reg", res->ivalue);  // block, dst, src
                 cfgs.back()->current_bb->add_IRInstr(instruction_const);
             }
+            delete res;
+
             IRInstr *instruction = new Wmem(cfgs.back()->current_bb, address, "!reg"); // block, dst, src
             cfgs.back()->current_bb->add_IRInstr(instruction);
         }
@@ -102,15 +130,17 @@ antlrcpp::Any IRGenVisitor::visitAssign_stmt(ifccParser::Assign_stmtContext *ctx
         }
     }
     std::string nomVar = tried_scope + "_" + ctx->ID()->getText();
-    std::pair<bool, int> res(visit(ctx->expr()));
+    ExprReturn* res(visit(ctx->expr()));
 
     std::string address = "RBP" + std::to_string(stv.varTable[nomVar].offset);
 
     // Évaluation de l'expression qu'on place dans le registre universel !reg
-    if (res.first) {
-        IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!reg", res.second);  // block, dst, src
+    if (res->isConst) {
+        IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, "!reg", res->ivalue);  // block, dst, src
         cfgs.back()->current_bb->add_IRInstr(instruction_const);
     }
+    delete res;
+    
     IRInstr *instruction = new Wmem(cfgs.back()->current_bb, address, "!reg"); // block, dst, src
     cfgs.back()->current_bb->add_IRInstr(instruction);
     
@@ -120,24 +150,26 @@ antlrcpp::Any IRGenVisitor::visitAssign_stmt(ifccParser::Assign_stmtContext *ctx
 antlrcpp::Any IRGenVisitor::visitReturn_stmt(ifccParser::Return_stmtContext *ctx)
 {
     // Évaluation de l'expression qu'on place dans le registre universel !reg
-    std::pair<bool, int> res(visit(ctx->expr()));
-    if (res.first) {
-        IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!reg", res.second);  // block, dst, src
+    ExprReturn* res(visit(ctx->expr()));
+    if (res->isConst) {
+        IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, "!reg", res->ivalue);  // block, dst, src
         cfgs.back()->current_bb->add_IRInstr(instruction_const);
     }
+    delete res;
     
     cfgs.back()->current_bb->exit_true = cfgs.back()->end_block; // default exit
     cfgs.back()->current_bb->exit_false = nullptr;
     
-    return 0; // pour savoir qu'on a un return
+    return 0;
 }
 
 antlrcpp::Any IRGenVisitor::visitIf_stmt(ifccParser::If_stmtContext *ctx) {
-    std::pair<bool, int> res(visit(ctx->expr()));
-    if (res.first) {
-        IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!reg", res.second);  // block, dst, src
+    ExprReturn* res(visit(ctx->expr()));
+    if (res->isConst) {
+        IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, "!reg", res->ivalue);  // block, dst, src
         cfgs.back()->current_bb->add_IRInstr(instruction_const);
     }
+    delete res;
 
     if (ctx->block().size() == 1) { // pas de else
         BasicBlock* bb_true = new BasicBlock(cfgs.back(), cfgs.back()->new_BB_name() + "_if_true");
@@ -189,11 +221,12 @@ antlrcpp::Any IRGenVisitor::visitWhile_stmt(ifccParser::While_stmtContext *ctx) 
     cfgs.back()->add_bb(bb_test_while);
     cfgs.back()->current_bb = bb_test_while;
 
-    std::pair<bool, int> res(visit(ctx->expr()));
-    if (res.first) {
-        IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!reg", res.second);  // block, dst, src
+    ExprReturn* res(visit(ctx->expr()));
+    if (res->isConst) {
+        IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, "!reg", res->ivalue);  // block, dst, src
         cfgs.back()->current_bb->add_IRInstr(instruction_const);
     }
+    delete res;
 
     BasicBlock* bb_true = new BasicBlock(cfgs.back(), cfgs.back()->new_BB_name() + "_while_true");
     BasicBlock* bb_endwhile = new BasicBlock(cfgs.back(), cfgs.back()->new_BB_name() + "_endwhile");
@@ -216,7 +249,7 @@ antlrcpp::Any IRGenVisitor::visitWhile_stmt(ifccParser::While_stmtContext *ctx) 
 
 antlrcpp::Any IRGenVisitor::visitIntExpr(ifccParser::IntExprContext *ctx)
 {
-    return std::pair<bool, int>(true, std::stoi(ctx->CONSTINT()->getText()));
+    return new ExprReturn(true, Type::INT32_T, std::stoi(ctx->CONSTINT()->getText()));
 }
 
 antlrcpp::Any IRGenVisitor::visitCharExpr(ifccParser::CharExprContext *ctx)
@@ -255,7 +288,7 @@ antlrcpp::Any IRGenVisitor::visitCharExpr(ifccParser::CharExprContext *ctx)
             }
         }
     }
-    return std::pair<bool, int>(true, interpretedChar);
+    return new ExprReturn(true, Type::INT32_T, (int)interpretedChar);
 }
 
 antlrcpp::Any IRGenVisitor::visitIdUse(ifccParser::IdUseContext *ctx)
@@ -277,7 +310,7 @@ antlrcpp::Any IRGenVisitor::visitIdUse(ifccParser::IdUseContext *ctx)
     IRInstr *instruction = new Rmem(cfgs.back()->current_bb, "!reg", address);
     cfgs.back()->current_bb->add_IRInstr(instruction);
 
-    return std::pair<bool, int>(false, 0);
+    return new ExprReturn(false, stv.varTable[nomVar].type, 0);
 }
 
 antlrcpp::Any IRGenVisitor::visitAssignExpr(ifccParser::AssignExprContext *ctx) {
@@ -293,13 +326,13 @@ antlrcpp::Any IRGenVisitor::visitAssignExpr(ifccParser::AssignExprContext *ctx) 
     }
 
     std::string nomVar = tried_scope + "_" + ctx->ID()->getText();
-    std::pair<bool, int> res(visit(ctx->expr()));
+    ExprReturn* res(visit(ctx->expr()));
 
     std::string address = "RBP" + std::to_string(stv.varTable[nomVar].offset);
     
     // Évaluation de l'expression qu'on place dans le registre universel !reg
-    if (res.first) {
-        IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!reg", res.second);  // block, dst, src
+    if (res->isConst) {
+        IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, "!reg", res->ivalue);  // block, dst, src
         cfgs.back()->current_bb->add_IRInstr(instruction_const);
     }
     IRInstr *instruction = new Wmem(cfgs.back()->current_bb, address, "!reg"); // block, dst, src
@@ -311,49 +344,63 @@ antlrcpp::Any IRGenVisitor::visitAssignExpr(ifccParser::AssignExprContext *ctx) 
 
 antlrcpp::Any IRGenVisitor::visitNotExpr(ifccParser::NotExprContext *ctx) {
     // Évaluation de l'expression qu'on place dans le registre universel !reg
-    std::pair<bool, int> res(visit(ctx->primary()));
-    if (res.first) {
-        return std::pair<bool, int>(true, !res.second);
+    ExprReturn* res(visit(ctx->primary()));
+    if (res->isConst) {
+        res->ivalue = !res->ivalue;
+        return res;
     }
 
     IRInstr *instruction_not = new Not(cfgs.back()->current_bb, "!reg");
     cfgs.back()->current_bb->add_IRInstr(instruction_not);
     
-    return std::pair<bool, int>(false, 0);
+    res->isConst = false;
+    res->type = Type::INT32_T;
+    res->ivalue = 0;
+    return res;
 }
 
 antlrcpp::Any IRGenVisitor::visitUnaryMinusExpr(ifccParser::UnaryMinusExprContext *ctx) {
     // Évaluation de l'expression qu'on place dans le registre universel !reg
-    std::pair<bool, int> res(visit(ctx->primary()));
-    if (res.first) {
-        return std::pair<bool, int>(true, -res.second);
+    ExprReturn* res(visit(ctx->primary()));
+    if (res->isConst) {
+        res->ivalue = -res->ivalue;
+        return res;
     }
 
     IRInstr *instruction_unaryminus = new UnaryMinus(cfgs.back()->current_bb, "!reg");
     cfgs.back()->current_bb->add_IRInstr(instruction_unaryminus);
     
-    return std::pair<bool, int>(false, 0);
+    res->isConst = false;
+    res->type = Type::INT32_T;
+    res->ivalue = 0;
+    return res;
 }
 
 antlrcpp::Any IRGenVisitor::visitMulDivExpr(ifccParser::MulDivExprContext *ctx) {
     // Évaluation de l'expression gauche qu'on place dans le registre universel !reg
-    std::pair<bool, int> res_left(visit(ctx->left));
-    if (res_left.first) {
-        std::pair<bool, int> res_right(visit(ctx->right));
-        if (res_right.first) {
+    ExprReturn* res_left(visit(ctx->left));
+    if (res_left->isConst) {
+        ExprReturn* res_right(visit(ctx->right));
+        if (res_right->isConst) {
             if (ctx->mOp()->STAR()) {
-                return std::pair<bool, int>(true, res_left.second * res_right.second);
+                res_left->ivalue *= res_right->ivalue;
+                delete res_right;
+                return res_left;
             }
             else if (ctx->mOp()->SLASH()) {
-                return std::pair<bool, int>(true, res_left.second / res_right.second);
+                res_left->ivalue /= res_right->ivalue;
+                delete res_right;
+                return res_left;
             }
             else if (ctx->mOp()->MOD()) {
-                return std::pair<bool, int>(true, res_left.second % res_right.second);
+                res_left->ivalue %= res_right->ivalue;
+                delete res_right;
+                return res_left;
             }
         }
         // Appliquer l'opération selon l'opérateur
         if (ctx->mOp()->STAR()) {
-            IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!regLeft", res_left.second);  // block, dst, src
+            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, "!regLeft", res_left->ivalue);  // block, dst, src
             cfgs.back()->current_bb->add_IRInstr(instruction_const);
 
             IRInstr *instruction_mul = new Mul(cfgs.back()->current_bb, "!reg", "!regLeft");
@@ -363,7 +410,7 @@ antlrcpp::Any IRGenVisitor::visitMulDivExpr(ifccParser::MulDivExprContext *ctx) 
             IRInstr *instruction_copy_right = new Copy(cfgs.back()->current_bb, "!regRight", "!reg");
             cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
 
-            IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!reg", res_left.second);  // block, dst, src
+            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, "!reg", res_left->ivalue);  // block, dst, src
             cfgs.back()->current_bb->add_IRInstr(instruction_const);
 
             IRInstr *instruction_div = new Div(cfgs.back()->current_bb, "!reg", "!regRight");
@@ -373,7 +420,7 @@ antlrcpp::Any IRGenVisitor::visitMulDivExpr(ifccParser::MulDivExprContext *ctx) 
             IRInstr *instruction_copy_right = new Copy(cfgs.back()->current_bb, "!regRight", "!reg");
             cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
 
-            IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!reg", res_left.second);  // block, dst, src
+            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, "!reg", res_left->ivalue);  // block, dst, src
             cfgs.back()->current_bb->add_IRInstr(instruction_const);
 
             IRInstr *instruction_mod = new Mod(cfgs.back()->current_bb, "!reg", "!regRight");
@@ -389,11 +436,12 @@ antlrcpp::Any IRGenVisitor::visitMulDivExpr(ifccParser::MulDivExprContext *ctx) 
         cfgs.back()->current_bb->add_IRInstr(instruction_left);
 
         // Évaluation de l'expression right qu'on place dans le registre universel !reg
-        std::pair<bool, int> res_right(visit(ctx->right));
-        if (res_right.first) {
-            IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!reg", res_right.second);  // block, dst, src
+        ExprReturn* res_right(visit(ctx->right));
+        if (res_right->isConst) {
+            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, "!reg", res_right->ivalue);  // block, dst, src
             cfgs.back()->current_bb->add_IRInstr(instruction_const);
         }
+        delete res_right;
         
         // Appliquer l'opération selon l'opérateur
         if (ctx->mOp()->STAR()) {
@@ -423,26 +471,33 @@ antlrcpp::Any IRGenVisitor::visitMulDivExpr(ifccParser::MulDivExprContext *ctx) 
             IRInstr *instruction_mod = new Mod(cfgs.back()->current_bb, "!reg", "!regRight");
             cfgs.back()->current_bb->add_IRInstr(instruction_mod);
         }
-    }    
-    return std::pair<bool, int>(false, 0);
+    }
+    res_left->isConst = false;
+    res_left->type = Type::INT32_T;
+    res_left->ivalue = 0;
+    return res_left;
 }
 
 antlrcpp::Any IRGenVisitor::visitAddSubExpr(ifccParser::AddSubExprContext *ctx) {
     // Évaluation de l'expression gauche qu'on place dans le registre universel !reg
-    std::pair<bool, int> res_left(visit(ctx->left));
-    if (res_left.first) {
-        std::pair<bool, int> res_right(visit(ctx->right));
-        if (res_right.first) {
+    ExprReturn* res_left(visit(ctx->left));
+    if (res_left->isConst) {
+        ExprReturn* res_right(visit(ctx->right));
+        if (res_right->isConst) {
             if (ctx->aOp()->PLUS()) {
-                return std::pair<bool, int>(true, res_left.second + res_right.second);
+                res_left->ivalue += res_right->ivalue;
+                delete res_right;
+                return res_left;
             }
             else if (ctx->aOp()->MINUS()) {
-                return std::pair<bool, int>(true, res_left.second - res_right.second);
+                res_left->ivalue -= res_right->ivalue;
+                delete res_right;
+                return res_left;
             }
         }
         // Appliquer l'opération selon l'opérateur
         if (ctx->aOp()->PLUS()) {
-            IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!regLeft", res_left.second);  // block, dst, src
+            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, "!regLeft", res_left->ivalue);  // block, dst, src
             cfgs.back()->current_bb->add_IRInstr(instruction_const);
 
             IRInstr *instruction_add = new Add(cfgs.back()->current_bb, "!reg", "!regLeft");
@@ -452,7 +507,7 @@ antlrcpp::Any IRGenVisitor::visitAddSubExpr(ifccParser::AddSubExprContext *ctx) 
             IRInstr *instruction_copy_right = new Copy(cfgs.back()->current_bb, "!regRight", "!reg");
             cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
 
-            IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!reg", res_left.second);  // block, dst, src
+            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, "!reg", res_left->ivalue);  // block, dst, src
             cfgs.back()->current_bb->add_IRInstr(instruction_const);
 
             IRInstr *instruction_sub = new Sub(cfgs.back()->current_bb, "!reg", "!regRight");
@@ -468,11 +523,12 @@ antlrcpp::Any IRGenVisitor::visitAddSubExpr(ifccParser::AddSubExprContext *ctx) 
         cfgs.back()->current_bb->add_IRInstr(instruction_left);
 
         // Évaluation de l'expression right qu'on place dans le registre universel !reg
-        std::pair<bool, int> res_right(visit(ctx->right));
-        if (res_right.first) {
-            IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!reg", res_right.second);  // block, dst, src
+        ExprReturn* res_right(visit(ctx->right));
+        if (res_right->isConst) {
+            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, "!reg", res_right->ivalue);  // block, dst, src
             cfgs.back()->current_bb->add_IRInstr(instruction_const);
-        }  
+        }
+        delete res_right;
 
         // Appliquer l'opération selon l'opérateur
         if (ctx->aOp()->PLUS()) {
@@ -493,32 +549,43 @@ antlrcpp::Any IRGenVisitor::visitAddSubExpr(ifccParser::AddSubExprContext *ctx) 
             cfgs.back()->current_bb->add_IRInstr(instruction_sub);
         }
     }    
-    return std::pair<bool, int>(false, 0);
+    res_left->isConst = false;
+    res_left->type = Type::INT32_T;
+    res_left->ivalue = 0;
+    return res_left;
 }
 
 antlrcpp::Any IRGenVisitor::visitCompExpr(ifccParser::CompExprContext *ctx) {
-    std::pair<bool, int> res_left(visit(ctx->left));
-    if (res_left.first) {
-        std::pair<bool, int> res_right(visit(ctx->right));
-        if (res_right.first) {
+    ExprReturn* res_left(visit(ctx->left));
+    if (res_left->isConst) {
+        ExprReturn* res_right(visit(ctx->right));
+        if (res_right->isConst) {
             if (ctx->compOp()->LT()) {
-                return std::pair<bool, int>(true, res_left.second < res_right.second);
+                res_left->ivalue = res_left->ivalue < res_right->ivalue;
+                delete res_right;
+                return res_left;
             }
             else if (ctx->compOp()->LE()) {
-                return std::pair<bool, int>(true, res_left.second <= res_right.second);
+                res_left->ivalue = res_left->ivalue <= res_right->ivalue;
+                delete res_right;
+                return res_left;
             }
             else if (ctx->compOp()->GE()) {
-                return std::pair<bool, int>(true, res_left.second >= res_right.second);
+                res_left->ivalue = res_left->ivalue >= res_right->ivalue;
+                delete res_right;
+                return res_left;
             }
             else if (ctx->compOp()->GT()) {
-                return std::pair<bool, int>(true, res_left.second > res_right.second);
+                res_left->ivalue = res_left->ivalue > res_right->ivalue;
+                delete res_right;
+                return res_left;
             }
         }
         // Appliquer l'opération selon l'opérateur
         IRInstr *instruction_copy_right = new Copy(cfgs.back()->current_bb, "!regRight", "!reg");
         cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
 
-        IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!reg", res_left.second);  // block, dst, src
+        IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, "!reg", res_left->ivalue);  // block, dst, src
         cfgs.back()->current_bb->add_IRInstr(instruction_const);
         if (ctx->compOp()->LT()) {
             IRInstr *instruction_lt = new CmpLt(cfgs.back()->current_bb, "!reg", "!regRight");
@@ -545,15 +612,16 @@ antlrcpp::Any IRGenVisitor::visitCompExpr(ifccParser::CompExprContext *ctx) {
         IRInstr *instruction_left = new Wmem(cfgs.back()->current_bb, address_left, "!reg");
         cfgs.back()->current_bb->add_IRInstr(instruction_left);
 
-        std::pair<bool, int> res_right(visit(ctx->right));
-        if (res_right.first) {
-            IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!regRight", res_right.second);  // block, dst, src
+        ExprReturn* res_right(visit(ctx->right));
+        if (res_right->isConst) {
+            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, "!regRight", res_right->ivalue);  // block, dst, src
             cfgs.back()->current_bb->add_IRInstr(instruction_const);
         }  
         else {
             IRInstr *instruction_copy_right = new Copy(cfgs.back()->current_bb, "!regRight", "!reg");
             cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
         }
+        delete res_right;
 
         IRInstr *instruction_read_left = new Rmem(cfgs.back()->current_bb, "!reg", address_left);
         cfgs.back()->current_bb->add_IRInstr(instruction_read_left);
@@ -575,26 +643,33 @@ antlrcpp::Any IRGenVisitor::visitCompExpr(ifccParser::CompExprContext *ctx) {
         }
     }
     
-    return std::pair<bool, int>(false, 0);
+    res_left->isConst = false;
+    res_left->type = Type::INT32_T;
+    res_left->ivalue = 0;
+    return res_left;
 }
 
 antlrcpp::Any IRGenVisitor::visitEqExpr(ifccParser::EqExprContext *ctx) {
-    std::pair<bool, int> res_left(visit(ctx->left));
-    if (res_left.first) {
-        std::pair<bool, int> res_right(visit(ctx->right));
-        if (res_right.first) {
+    ExprReturn* res_left(visit(ctx->left));
+    if (res_left->isConst) {
+        ExprReturn* res_right(visit(ctx->right));
+        if (res_right->isConst) {
             if (ctx->eqOp()->EQ()) {
-                return std::pair<bool, int>(true, res_left.second == res_right.second);
+                res_left->ivalue = res_left->ivalue == res_right->ivalue;
+                delete res_right;
+                return res_left;
             }
             else if (ctx->eqOp()->NEQ()) {
-                return std::pair<bool, int>(true, res_left.second != res_right.second);
+                res_left->ivalue = res_left->ivalue != res_right->ivalue;
+                delete res_right;
+                return res_left;
             }
         }
         // Appliquer l'opération selon l'opérateur
         IRInstr *instruction_copy_right = new Copy(cfgs.back()->current_bb, "!regRight", "!reg");
         cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
 
-        IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!reg", res_left.second);  // block, dst, src
+        IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, "!reg", res_left->ivalue);  // block, dst, src
         cfgs.back()->current_bb->add_IRInstr(instruction_const);
         if (ctx->eqOp()->EQ()) {
             IRInstr *instruction_eq = new CmpEq(cfgs.back()->current_bb, "!reg", "!regRight");
@@ -613,15 +688,16 @@ antlrcpp::Any IRGenVisitor::visitEqExpr(ifccParser::EqExprContext *ctx) {
         IRInstr *instruction_left = new Wmem(cfgs.back()->current_bb, address_left, "!reg");
         cfgs.back()->current_bb->add_IRInstr(instruction_left);
 
-        std::pair<bool, int> res_right(visit(ctx->right));
-        if (res_right.first) {
-            IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!regRight", res_right.second);  // block, dst, src
+        ExprReturn* res_right(visit(ctx->right));
+        if (res_right->isConst) {
+            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, "!regRight", res_right->ivalue);  // block, dst, src
             cfgs.back()->current_bb->add_IRInstr(instruction_const);
         } 
         else {
             IRInstr *instruction_copy_right = new Copy(cfgs.back()->current_bb, "!regRight", "!reg");
             cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
         }
+        delete res_right;
 
         IRInstr *instruction_read_left = new Rmem(cfgs.back()->current_bb, "!reg", address_left);
         cfgs.back()->current_bb->add_IRInstr(instruction_read_left);
@@ -635,17 +711,22 @@ antlrcpp::Any IRGenVisitor::visitEqExpr(ifccParser::EqExprContext *ctx) {
         }
     }
     
-    return std::pair<bool, int>(false, 0);
+    res_left->isConst = false;
+    res_left->type = Type::INT32_T;
+    res_left->ivalue = 0;
+    return res_left;
 }
 
 antlrcpp::Any IRGenVisitor::visitAndExpr(ifccParser::AndExprContext *ctx) {
-    std::pair<bool, int> res_left(visit(ctx->left));
-    if (res_left.first) {
-        std::pair<bool, int> res_right(visit(ctx->right));
-        if (res_right.first) {
-            return std::pair<bool, int>(true, res_left.second & res_right.second);
+    ExprReturn* res_left(visit(ctx->left));
+    if (res_left->isConst) {
+        ExprReturn* res_right(visit(ctx->right));
+        if (res_right->isConst) {
+            res_left->ivalue &= res_right->ivalue;
+            delete res_right;
+            return res_left;
         }
-        IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!regLeft", res_left.second);  // block, dst, src
+        IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, "!regLeft", res_left->ivalue);  // block, dst, src
         cfgs.back()->current_bb->add_IRInstr(instruction_const);
 
         IRInstr *instruction_and = new And(cfgs.back()->current_bb, "!reg", "!regLeft");
@@ -659,11 +740,13 @@ antlrcpp::Any IRGenVisitor::visitAndExpr(ifccParser::AndExprContext *ctx) {
         IRInstr *instruction_left = new Wmem(cfgs.back()->current_bb, address_left, "!reg");
         cfgs.back()->current_bb->add_IRInstr(instruction_left);
 
-        std::pair<bool, int> res_right(visit(ctx->right));
-        if (res_right.first) {
-            IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!reg", res_right.second);  // block, dst, src
+        ExprReturn* res_right(visit(ctx->right));
+        if (res_right->isConst) {
+            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, "!reg", res_right->ivalue);  // block, dst, src
             cfgs.back()->current_bb->add_IRInstr(instruction_const);
-        } 
+        }
+        delete res_right;
+
         IRInstr *instruction_read_left = new Rmem(cfgs.back()->current_bb, "!regLeft", address_left);
         cfgs.back()->current_bb->add_IRInstr(instruction_read_left);
         
@@ -671,17 +754,22 @@ antlrcpp::Any IRGenVisitor::visitAndExpr(ifccParser::AndExprContext *ctx) {
         cfgs.back()->current_bb->add_IRInstr(instruction_and);
     }
     
-    return std::pair<bool, int>(false, 0);
+    res_left->isConst = false;
+    res_left->type = Type::INT32_T;
+    res_left->ivalue = 0;
+    return res_left;
 }
 
 antlrcpp::Any IRGenVisitor::visitXorExpr(ifccParser::XorExprContext *ctx) {
-    std::pair<bool, int> res_left(visit(ctx->left));
-    if (res_left.first) {
-        std::pair<bool, int> res_right(visit(ctx->right));
-        if (res_right.first) {
-            return std::pair<bool, int>(true, res_left.second ^ res_right.second);
+    ExprReturn* res_left(visit(ctx->left));
+    if (res_left->isConst) {
+        ExprReturn* res_right(visit(ctx->right));
+        if (res_right->isConst) {
+            res_left->ivalue ^= res_right->ivalue;
+            delete res_right;
+            return res_left;
         }
-        IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!regLeft", res_left.second);  // block, dst, src
+        IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, "!regLeft", res_left->ivalue);  // block, dst, src
         cfgs.back()->current_bb->add_IRInstr(instruction_const);
 
         IRInstr *instruction_and = new Xor(cfgs.back()->current_bb, "!reg", "!regLeft");
@@ -695,11 +783,12 @@ antlrcpp::Any IRGenVisitor::visitXorExpr(ifccParser::XorExprContext *ctx) {
         IRInstr *instruction_left = new Wmem(cfgs.back()->current_bb, address_left, "!reg");
         cfgs.back()->current_bb->add_IRInstr(instruction_left);
 
-        std::pair<bool, int> res_right(visit(ctx->right));
-        if (res_right.first) {
-            IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!reg", res_right.second);  // block, dst, src
+        ExprReturn* res_right(visit(ctx->right));
+        if (res_right->isConst) {
+            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, "!reg", res_right->ivalue);  // block, dst, src
             cfgs.back()->current_bb->add_IRInstr(instruction_const);
-        }   
+        }
+        delete res_right;
 
         IRInstr *instruction_read_left = new Rmem(cfgs.back()->current_bb, "!regLeft", address_left);
         cfgs.back()->current_bb->add_IRInstr(instruction_read_left);
@@ -708,17 +797,22 @@ antlrcpp::Any IRGenVisitor::visitXorExpr(ifccParser::XorExprContext *ctx) {
         cfgs.back()->current_bb->add_IRInstr(instruction_and);
     }
     
-    return std::pair<bool, int>(false, 0);
+    res_left->isConst = false;
+    res_left->type = Type::INT32_T;
+    res_left->ivalue = 0;
+    return res_left;
 }
 
 antlrcpp::Any IRGenVisitor::visitOrExpr(ifccParser::OrExprContext *ctx) {
-    std::pair<bool, int> res_left(visit(ctx->left));
-    if (res_left.first) {
-        std::pair<bool, int> res_right(visit(ctx->right));
-        if (res_right.first) {
-            return std::pair<bool, int>(true, res_left.second | res_right.second);
+    ExprReturn* res_left(visit(ctx->left));
+    if (res_left->isConst) {
+        ExprReturn* res_right(visit(ctx->right));
+        if (res_right->isConst) {
+            res_left->ivalue |= res_right->ivalue;
+            delete res_right;
+            return res_left;
         }
-        IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!regLeft", res_left.second);  // block, dst, src
+        IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, "!regLeft", res_left->ivalue);  // block, dst, src
         cfgs.back()->current_bb->add_IRInstr(instruction_const);
 
         IRInstr *instruction_and = new Or(cfgs.back()->current_bb, "!reg", "!regLeft");
@@ -732,11 +826,12 @@ antlrcpp::Any IRGenVisitor::visitOrExpr(ifccParser::OrExprContext *ctx) {
         IRInstr *instruction_left = new Wmem(cfgs.back()->current_bb, address_left, "!reg");
         cfgs.back()->current_bb->add_IRInstr(instruction_left);
 
-        std::pair<bool, int> res_right(visit(ctx->right));
-        if (res_right.first) {
-            IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!reg", res_right.second);  // block, dst, src
+        ExprReturn* res_right(visit(ctx->right));
+        if (res_right->isConst) {
+            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, "!reg", res_right->ivalue);  // block, dst, src
             cfgs.back()->current_bb->add_IRInstr(instruction_const);
-        }  
+        }
+        delete res_right;
 
         IRInstr *instruction_read_left = new Rmem(cfgs.back()->current_bb, "!regLeft", address_left);
         cfgs.back()->current_bb->add_IRInstr(instruction_read_left);
@@ -745,11 +840,14 @@ antlrcpp::Any IRGenVisitor::visitOrExpr(ifccParser::OrExprContext *ctx) {
         cfgs.back()->current_bb->add_IRInstr(instruction_and);
     }
     
-    return std::pair<bool, int>(false, 0);
+    res_left->isConst = false;
+    res_left->type = Type::INT32_T;
+    res_left->ivalue = 0;
+    return res_left;
 }
 
 antlrcpp::Any IRGenVisitor::visitParExpr(ifccParser::ParExprContext *ctx) {
-    std::pair<bool, int> res(visit(ctx->expr()));
+    ExprReturn* res(visit(ctx->expr()));
     return res;
 }
 
@@ -761,11 +859,13 @@ antlrcpp::Any IRGenVisitor::visitFuncCall(ifccParser::FuncCallContext *ctx) {
     for (int i = 0; i < ctx->expr().size(); i++) {
         std::string temp(cfgs.back()->create_new_tempvar(stv.funcTable[nomFonction].args[i]->type));
         args_temp_addr.push_back("RBP" + std::to_string(stv.varTable[temp].offset));
-        std::pair<bool, int> res(visit(ctx->expr(i)));
-        if (res.first) {
-            IRInstr *instruction_const = new LdConst(cfgs.back()->current_bb, "!reg", res.second);
+        ExprReturn* res(visit(ctx->expr(i)));
+        if (res->isConst) {
+            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, "!reg", res->ivalue);
             cfgs.back()->current_bb->add_IRInstr(instruction_const);
         }
+        delete res;
+
         IRInstr *instruction_temp = new Wmem(cfgs.back()->current_bb, args_temp_addr.back(), "!reg");
         cfgs.back()->current_bb->add_IRInstr(instruction_temp);
         // plus de 6 args ? faire une  et pop ?
@@ -775,5 +875,5 @@ antlrcpp::Any IRGenVisitor::visitFuncCall(ifccParser::FuncCallContext *ctx) {
     IRInstr *instruction_call = new Call(cfgs.back()->current_bb, nomFonction, args_temp_addr);
     cfgs.back()->current_bb->add_IRInstr(instruction_call);
 
-    return std::pair<bool, int>(false, 0);
+    return new ExprReturn(false, stv.funcTable[nomFonction].type, 0);
 }

@@ -146,6 +146,7 @@ std::string CFG::IR_reg_to_x86(const VirtualRegister& vr) {
     auto it = regMap.find({vr.regFunc, vr.regType, vr.regSize});
     if (it == regMap.end()) {
         std::cerr << "Unknown combinaison of virtual register name, type and size\n";
+        std::cerr << "RegFunc: " << static_cast<int>(vr.regFunc) << ", RegType: " << static_cast<int>(vr.regType) << ", RegSize: " << static_cast<int>(vr.regSize) << "\n";
         return "";
     }
 

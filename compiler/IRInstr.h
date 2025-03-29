@@ -116,9 +116,10 @@ class Not : public IRInstr
 {
 private:
     VirtualRegister dest;
+    VirtualRegister op;
 
 public:
-    Not(BasicBlock* bb, const VirtualRegister& dest_reg);
+    Not(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& src_reg);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
     void gen_wat(std::ostream& o) override;
@@ -404,6 +405,65 @@ private:
 
 public:
     DWmem(BasicBlock* bb, const std::string& address, const VirtualRegister& src_reg);
+    std::string get_operation_name() const override;
+    void gen_x86(std::ostream& o) override;
+};
+
+class DCopy : public IRInstr
+{
+private:
+    VirtualRegister dest;
+    VirtualRegister src;
+
+public:
+    DCopy(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& src_reg);
+    std::string get_operation_name() const override;
+    void gen_x86(std::ostream& o) override;
+};
+
+class IntToDouble : public IRInstr
+{
+private:
+    VirtualRegister dest;
+    VirtualRegister src;
+
+public:
+    IntToDouble(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& src_reg);
+    std::string get_operation_name() const override;
+    void gen_x86(std::ostream& o) override;
+};
+
+class DoubleToInt : public IRInstr
+{
+private:
+    VirtualRegister dest;
+    VirtualRegister src;
+
+public:
+    DoubleToInt(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& src_reg);
+    std::string get_operation_name() const override;
+    void gen_x86(std::ostream& o) override;
+};
+
+class DUnaryMinus : public IRInstr
+{
+private:
+    VirtualRegister dest;
+
+public:
+    DUnaryMinus(BasicBlock* bb, const VirtualRegister& dest_reg);
+    std::string get_operation_name() const override;
+    void gen_x86(std::ostream& o) override;
+};
+
+class DNot : public IRInstr
+{
+private:
+    VirtualRegister dest;
+    VirtualRegister op;
+
+public:
+    DNot(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& operand);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
 };

@@ -52,8 +52,7 @@ antlrcpp::Any TypeCheckVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx
 
             Type type_expr = visit(ctx->decl_element(i)->expr());
             if (type_expr != stv.varTable[nomVar].type) {
-                std::cerr << "error: type mismatch in declaration of variable " << nomVar << ", expected " << typeToString(stv.varTable[nomVar].type) << " found " << typeToString(type_expr) << "\n";
-                type_error++;
+                std::cerr << "warning: type mismatch in declaration of variable " << nomVar << ", expected " << typeToString(stv.varTable[nomVar].type) << " found " << typeToString(type_expr) << "\n";
             }
         }
     }
@@ -74,8 +73,7 @@ antlrcpp::Any TypeCheckVisitor::visitAssign_stmt(ifccParser::Assign_stmtContext 
     std::string nomVar = tried_scope + "_" + ctx->ID()->getText();
     Type type_expr = visit(ctx->expr());
     if (type_expr != stv.varTable[nomVar].type) {
-        std::cerr << "error: type mismatch in assignment of variable " << nomVar << ", expected " << typeToString(stv.varTable[nomVar].type) << " found " << typeToString(type_expr) << "\n";
-        type_error++;
+        std::cerr << "warning: type mismatch in assignment of variable " << nomVar << ", expected " << typeToString(stv.varTable[nomVar].type) << " found " << typeToString(type_expr) << "\n";
     }
     
     return 0;
@@ -89,8 +87,7 @@ antlrcpp::Any TypeCheckVisitor::visitReturn_stmt(ifccParser::Return_stmtContext 
     std::getline(ss, func_name, '_');
 
     if (type_expr != stv.funcTable[func_name].type) {
-        std::cerr << "error: type mismatch in return statement of function " << func_name << ", expected " << typeToString(stv.funcTable[func_name].type) << " found " << typeToString(type_expr) << "\n";
-        type_error++;
+        std::cerr << "warning: type mismatch in return statement of function " << func_name << ", expected " << typeToString(stv.funcTable[func_name].type) << " found " << typeToString(type_expr) << "\n";
     }
     
     return 0;
@@ -160,10 +157,10 @@ antlrcpp::Any TypeCheckVisitor::visitAssignExpr(ifccParser::AssignExprContext *c
     }
     std::string nomVar = tried_scope + "_" + ctx->ID()->getText();
     Type type_expr = visit(ctx->expr());
-    if (type_expr != stv.varTable[nomVar].type) {
-        std::cerr << "error: type mismatch in assignment of variable " << nomVar << ", expected " << typeToString(stv.varTable[nomVar].type) << " found " << typeToString(type_expr) << "\n";
-        type_error++;
-    }
+    // if (type_expr != stv.varTable[nomVar].type) {
+    //     std::cerr << "error: type mismatch in assignment of variable " << nomVar << ", expected " << typeToString(stv.varTable[nomVar].type) << " found " << typeToString(type_expr) << "\n";
+    //     type_error++;
+    // }
     
     return type_expr;
 }
@@ -171,10 +168,10 @@ antlrcpp::Any TypeCheckVisitor::visitAssignExpr(ifccParser::AssignExprContext *c
 
 antlrcpp::Any TypeCheckVisitor::visitNotExpr(ifccParser::NotExprContext *ctx) {
     Type type_expr = visit(ctx->primary());
-    if (type_expr != Type::INT32_T) {
-        std::cerr << "error: type mismatch in not expression, expected " << typeToString(Type::INT32_T) << " found " << typeToString(type_expr) << "\n";
-        type_error++;
-    }
+    // if (type_expr != Type::INT32_T) {
+    //     std::cerr << "error: type mismatch in not expression, expected " << typeToString(Type::INT32_T) << " found " << typeToString(type_expr) << "\n";
+    //     type_error++;
+    // }
     
     return type_expr;
 }

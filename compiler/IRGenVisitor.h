@@ -21,6 +21,7 @@ public:
     virtual antlrcpp::Any visitWhile_stmt(ifccParser::While_stmtContext *ctx) override;
     virtual antlrcpp::Any visitIntExpr(ifccParser::IntExprContext *ctx) override;
     virtual antlrcpp::Any visitCharExpr(ifccParser::CharExprContext *ctx) override;
+    virtual antlrcpp::Any visitDoubleExpr(ifccParser::DoubleExprContext *ctx) override;
     virtual antlrcpp::Any visitIdUse(ifccParser::IdUseContext *ctx) override;
     virtual antlrcpp::Any visitAssignExpr(ifccParser::AssignExprContext *ctx) override;
     virtual antlrcpp::Any visitNotExpr(ifccParser::NotExprContext *ctx) override;

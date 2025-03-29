@@ -325,91 +325,35 @@ void Call::gen_wat(std::ostream& o) {
     o << "))\n";
 }
 
+CompareInt::CompareInt(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& p_left, const VirtualRegister& p_right, const std::string& comp) 
+    : IRInstr(p_bb), dest(dest_reg), left(p_left), right(p_right), comp(comp) {}
 
-// Implémentation de CmpEq
-CmpEq::CmpEq(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
-    : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
-
-std::string CmpEq::get_operation_name() const {
-    return "cmp_eq";
+std::string CompareInt::get_operation_name() const {
+    return "compare_int";
 }
+void CompareInt::gen_x86(std::ostream& o) {
+    std::string leftName = bb->cfg->IR_reg_to_x86(left);
+    std::string rightName = bb->cfg->IR_reg_to_x86(right);
+    std::string destName = bb->cfg->IR_reg_to_x86(dest);
 
-void CmpEq::gen_x86(std::ostream& o) {
-    o << "    cmp " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+    o << "    cmp " << rightName << ", " << leftName << "\n";
+
     VirtualRegister byte_dest(dest.regFunc, RegisterSize::SIZE_8, dest.regType);
-    o << "    sete " << bb->cfg->IR_reg_to_x86(byte_dest) << "\n";
-    o << "    movzbl " << bb->cfg->IR_reg_to_x86(byte_dest) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
-}
-
-// Implémentation de CmpLt
-CmpNeq::CmpNeq(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
-    : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
-
-std::string CmpNeq::get_operation_name() const {
-    return "cmp_neq";
-}
-
-void CmpNeq::gen_x86(std::ostream& o) {
-    o << "    cmp " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
-    VirtualRegister byte_dest(dest.regFunc, RegisterSize::SIZE_8, dest.regType);
-    o << "    setne " << bb->cfg->IR_reg_to_x86(byte_dest) << "\n";
-    o << "    movzbl " << bb->cfg->IR_reg_to_x86(byte_dest) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
-}
-
-// Implémentation de CmpLe
-CmpLe::CmpLe(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2)
-    : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
-
-std::string CmpLe::get_operation_name() const {
-    return "cmp_le";
-}
-
-void CmpLe::gen_x86(std::ostream& o) {
-    o << "    cmp " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
-    VirtualRegister byte_dest(dest.regFunc, RegisterSize::SIZE_8, dest.regType);
-    o << "    setle " << bb->cfg->IR_reg_to_x86(byte_dest) << "\n";
-    o << "    movzbl " << bb->cfg->IR_reg_to_x86(byte_dest) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
-}
-
-CmpLt::CmpLt(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
-    : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
-
-std::string CmpLt::get_operation_name() const {
-    return "cmp_lt";
-}
-
-void CmpLt::gen_x86(std::ostream& o) {
-    o << "    cmp " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
-    VirtualRegister byte_dest(dest.regFunc, RegisterSize::SIZE_8, dest.regType);
-    o << "    setl " << bb->cfg->IR_reg_to_x86(byte_dest) << "\n";
-    o << "    movzbl " << bb->cfg->IR_reg_to_x86(byte_dest) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
-}
-
-CmpGe::CmpGe(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
-    : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
-
-std::string CmpGe::get_operation_name() const {
-    return "cmp_ge";
-}
-
-void CmpGe::gen_x86(std::ostream& o) {
-    o << "    cmp " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
-    VirtualRegister byte_dest(dest.regFunc, RegisterSize::SIZE_8, dest.regType);
-    o << "    setge " << bb->cfg->IR_reg_to_x86(byte_dest) << "\n";
-    o << "    movzbl " << bb->cfg->IR_reg_to_x86(byte_dest) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
-}
-
-CmpGt::CmpGt(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
-    : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
-
-std::string CmpGt::get_operation_name() const {
-    return "cmp_gt";
-}
-
-void CmpGt::gen_x86(std::ostream& o) {
-    o << "    cmp " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
-    VirtualRegister byte_dest(dest.regFunc, RegisterSize::SIZE_8, dest.regType);
-    o << "    setg " << bb->cfg->IR_reg_to_x86(byte_dest) << "\n";
+    std::string byte_dest_name = bb->cfg->IR_reg_to_x86(byte_dest);
+    // Map operator to set instruction
+    if (comp == ">") {
+        o << "    setg " << byte_dest_name << "\n";   // Above: CF=0, ZF=0
+    } else if (comp == "<") {
+        o << "    setl " << byte_dest_name << "\n";   // Below: CF=1
+    } else if (comp == "==") {
+        o << "    sete " << byte_dest_name << "\n";   // Equal: ZF=1
+    } else if (comp == "!=") {
+        o << "    setne " << byte_dest_name << "\n";  // Not equal: ZF=0
+    } else if (comp == ">=") {
+        o << "    setge " << byte_dest_name << "\n";  // Above or equal: CF=0
+    } else if (comp == "<=") {
+        o << "    setle " << byte_dest_name << "\n";  // Below or equal: CF=1 or ZF=1
+    }
     o << "    movzbl " << bb->cfg->IR_reg_to_x86(byte_dest) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
 }
 
@@ -502,6 +446,119 @@ std::string Pop::get_operation_name() const {
 
 void Pop::gen_x86(std::ostream& o) {
     o << "    pop " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+}
+
+
+// DOUBLE
+
+LdConstDouble::LdConstDouble(BasicBlock* p_bb, const VirtualRegister& dest_reg, double val) 
+    : IRInstr(p_bb), dest(dest_reg), value(val) {}
+
+
+std::string LdConstDouble::get_operation_name() const {
+    return "ldconstdouble";
+}
+
+void LdConstDouble::gen_x86(std::ostream& o) {
+    uint64_t bits = *reinterpret_cast<uint64_t*>(&value);
+    o << "    movq $0x" << std::hex << bits << std::dec << ", %rax\n";
+    o << "    movq %rax, " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+}
+
+DAdd::DAdd(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
+    : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
+
+std::string DAdd::get_operation_name() const {
+    return "dadd";
+}
+
+void DAdd::gen_x86(std::ostream& o) {
+    o << "    addsd " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+}
+
+DSub::DSub(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
+    : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
+
+std::string DSub::get_operation_name() const {
+    return "dsub";
+}
+
+void DSub::gen_x86(std::ostream& o) {
+    o << "    subsd " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+}
+
+DMul::DMul(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
+    : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
+
+std::string DMul::get_operation_name() const {
+    return "dmul";
+}
+
+void DMul::gen_x86(std::ostream& o) {
+    o << "    mulsd " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+}
+
+DDiv::DDiv(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
+    : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
+
+std::string DDiv::get_operation_name() const {
+    return "ddiv";
+}
+
+void DDiv::gen_x86(std::ostream& o) {
+    o << "    divsd " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+}
+
+CompareDouble::CompareDouble(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& p_left, const VirtualRegister& p_right, const std::string& comp) 
+    : IRInstr(p_bb), dest(dest_reg), left(p_left), right(p_right), comp(comp) {}
+
+std::string CompareDouble::get_operation_name() const {
+    return "compare_double";
+}
+
+void CompareDouble::gen_x86(std::ostream& o) {
+    std::string leftName = bb->cfg->IR_reg_to_x86(left);
+    std::string rightName = bb->cfg->IR_reg_to_x86(right);
+    std::string destName = bb->cfg->IR_reg_to_x86(dest);
+
+    o << "    ucomisd " << rightName << ", " << leftName << "\n";
+
+    VirtualRegister byte_dest(dest.regFunc, RegisterSize::SIZE_8, dest.regType);
+    std::string byte_dest_name = bb->cfg->IR_reg_to_x86(byte_dest);
+    // Map operator to set instruction
+    if (comp == ">") {
+        o << "    seta " << byte_dest_name << "\n";   // Above: CF=0, ZF=0
+    } else if (comp == "<") {
+        o << "    setb " << byte_dest_name << "\n";   // Below: CF=1
+    } else if (comp == "==") {
+        o << "    sete " << byte_dest_name << "\n";   // Equal: ZF=1
+    } else if (comp == "!=") {
+        o << "    setne " << byte_dest_name << "\n";  // Not equal: ZF=0
+    } else if (comp == ">=") {
+        o << "    setae " << byte_dest_name << "\n";  // Above or equal: CF=0
+    } else if (comp == "<=") {
+        o << "    setbe " << byte_dest_name << "\n";  // Below or equal: CF=1 or ZF=1
+    }
+    o << "    movzbl " << bb->cfg->IR_reg_to_x86(byte_dest) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+}
+
+
+DWmem::DWmem(BasicBlock* p_bb, const std::string& address, const VirtualRegister& src_reg) 
+    : IRInstr(p_bb), addr(address), src(src_reg) {}
+std::string DWmem::get_operation_name() const {
+    return "dwmem";
+}
+void DWmem::gen_x86(std::ostream& o) {
+    o << "    movsd " << bb->cfg->IR_reg_to_x86(src) << ", " << bb->cfg->IR_addr_to_x86(addr) << "\n";
+}
+
+DRmem::DRmem(BasicBlock* p_bb, const VirtualRegister& dest_reg, const std::string& address) 
+    : IRInstr(p_bb), dest(dest_reg), addr(address) {}
+std::string DRmem::get_operation_name() const {
+    return "drmem";
+}
+void DRmem::gen_x86(std::ostream& o) {
+    o << "    movsd " << bb->cfg->IR_addr_to_x86(addr) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
 }
 
 void Pop::gen_wat(std::ostream& o) {

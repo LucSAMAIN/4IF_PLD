@@ -58,21 +58,6 @@ public:
     void gen_x86(std::ostream& o) override;
 };
 
-class LdConstDouble : public IRInstr
-{
-private:
-    // Registre destination
-    VirtualRegister dest;
-    // Valeur constante à charger
-    double value;
-
-public:
-    LdConstDouble(BasicBlock* bb, const VirtualRegister& dest_reg, double val);
-    std::string get_operation_name() const override;
-    void gen_x86(std::ostream& o) override;
-    void gen_wat(std::ostream& o) override;
-};
-
 // Sous-classe pour l'opération de copie
 class Copy : public IRInstr
 {
@@ -222,80 +207,15 @@ public:
 };
 
 // Sous-classe pour la comparaison d'égalité
-class CmpEq : public IRInstr
+class CompareInt : public IRInstr
 {
 private:
+    VirtualRegister left;
+    VirtualRegister right;
     VirtualRegister dest;
-    VirtualRegister op2;
-
+    std::string comp;
 public:
-    CmpEq(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2);
-    std::string get_operation_name() const override;
-    void gen_x86(std::ostream& o) override;
-    void gen_wat(std::ostream& o) override;
-};
-
-class CmpNeq : public IRInstr
-{
-private:
-    VirtualRegister dest;
-    VirtualRegister op2;
-
-public:
-    CmpNeq(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2);
-    std::string get_operation_name() const override;
-    void gen_x86(std::ostream& o) override;
-    void gen_wat(std::ostream& o) override;
-};
-
-// Sous-classe pour la comparaison "plus petit ou égal à"
-class CmpLe : public IRInstr
-{
-private:
-    VirtualRegister dest;
-    VirtualRegister op2;
-
-public:
-    CmpLe(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2);
-    std::string get_operation_name() const override;
-    void gen_x86(std::ostream& o) override;
-    void gen_wat(std::ostream& o) override;
-};
-
-class CmpLt : public IRInstr
-{
-private:
-    VirtualRegister dest;
-    VirtualRegister op2;
-
-public:
-    CmpLt(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2);
-    std::string get_operation_name() const override;
-    void gen_x86(std::ostream& o) override;
-    void gen_wat(std::ostream& o) override;
-};
-
-class CmpGe : public IRInstr
-{
-private:
-    VirtualRegister dest;
-    VirtualRegister op2;
-
-public:
-    CmpGe(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2);
-    std::string get_operation_name() const override;
-    void gen_x86(std::ostream& o) override;
-    void gen_wat(std::ostream& o) override;
-};
-
-class CmpGt : public IRInstr
-{
-private:
-    VirtualRegister dest;
-    VirtualRegister op2;
-
-public:
-    CmpGt(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2);
+    CompareInt(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& p_left, const VirtualRegister& p_right, const std::string& comp);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
     void gen_wat(std::ostream& o) override;
@@ -393,6 +313,99 @@ public:
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
     void gen_wat(std::ostream& o) override;
+};
+
+// double operations
+class LdConstDouble : public IRInstr
+{
+private:
+    // Registre destination
+    VirtualRegister dest;
+    // Valeur constante à charger
+    double value;
+
+public:
+    LdConstDouble(BasicBlock* bb, const VirtualRegister& dest_reg, double val);
+    std::string get_operation_name() const override;
+    void gen_x86(std::ostream& o) override;
+};
+
+class DAdd : public IRInstr
+{
+private:
+    VirtualRegister dest;
+    VirtualRegister op2;
+public:
+    DAdd(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2);
+    std::string get_operation_name() const override;
+    void gen_x86(std::ostream& o) override;
+};
+class DSub : public IRInstr
+{
+private:
+    VirtualRegister dest;
+    VirtualRegister op2;
+public:
+    DSub(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2);
+    std::string get_operation_name() const override;
+    void gen_x86(std::ostream& o) override;
+};
+class DMul : public IRInstr
+{
+private:
+    VirtualRegister dest;
+    VirtualRegister op2;
+public:
+    DMul(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2);
+    std::string get_operation_name() const override;
+    void gen_x86(std::ostream& o) override;
+};
+class DDiv : public IRInstr
+{
+private:
+    VirtualRegister dest;
+    VirtualRegister op2;
+public:
+    DDiv(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2);
+    std::string get_operation_name() const override;
+    void gen_x86(std::ostream& o) override;
+};
+
+class CompareDouble : public IRInstr
+{
+private:
+    VirtualRegister left;
+    VirtualRegister right;
+    VirtualRegister dest;
+    std::string comp;
+public:
+    CompareDouble(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& p_left, const VirtualRegister& p_right, const std::string& comp);
+    std::string get_operation_name() const override;
+    void gen_x86(std::ostream& o) override;
+};
+
+class DRmem : public IRInstr
+{
+private:
+    VirtualRegister dest;
+    std::string addr;
+
+public:
+    DRmem(BasicBlock* bb, const VirtualRegister& dest_reg, const std::string& address);
+    std::string get_operation_name() const override;
+    void gen_x86(std::ostream& o) override;
+};
+
+class DWmem : public IRInstr
+{
+private:
+    std::string addr;
+    VirtualRegister src;
+
+public:
+    DWmem(BasicBlock* bb, const std::string& address, const VirtualRegister& src_reg);
+    std::string get_operation_name() const override;
+    void gen_x86(std::ostream& o) override;
 };
 
 #endif // IRINSTR_H

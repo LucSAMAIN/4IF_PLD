@@ -105,13 +105,24 @@ antlrcpp::Any IRGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx)
             // Évaluation de l'expression qu'on place dans le registre universel !reg
             ExprReturn* res(visit(ctx->decl_element(i)->expr()));
             if (res->isConst) {
-                IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res->ivalue);  // block, dst, src
+                IRInstr *instruction_const = nullptr;
+                if (res->type == Type::INT32_T) {
+                    instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res->ivalue);
+                } else if (res->type == Type::FLOAT64_T) {
+                    instruction_const = new LdConstDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), res->dvalue);
+                }
                 cfgs.back()->current_bb->add_IRInstr(instruction_const);
             }
             delete res;
 
-            IRInstr *instruction = new Wmem(cfgs.back()->current_bb, address, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR)); // block, dst, src
-            cfgs.back()->current_bb->add_IRInstr(instruction);
+            if (stv.varTable[nomVar].type == Type::INT32_T) {
+                IRInstr *instruction = new Wmem(cfgs.back()->current_bb, address, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction);
+            }
+            else if (stv.varTable[nomVar].type == Type::FLOAT64_T) {
+                IRInstr *instruction = new DWmem(cfgs.back()->current_bb, address, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+                cfgs.back()->current_bb->add_IRInstr(instruction);
+            }
         }
     }
     return 0;
@@ -134,15 +145,25 @@ antlrcpp::Any IRGenVisitor::visitAssign_stmt(ifccParser::Assign_stmtContext *ctx
 
     std::string address = "RBP" + std::to_string(stv.varTable[nomVar].offset);
 
-    // Évaluation de l'expression qu'on place dans le registre universel !reg
     if (res->isConst) {
-        IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res->ivalue);  // block, dst, src
-        cfgs.back()->current_bb->add_IRInstr(instruction_const);
+        if (res->type == Type::INT32_T) {
+            IRInstr* instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res->ivalue);
+            cfgs.back()->current_bb->add_IRInstr(instruction_const);
+        } else if (res->type == Type::FLOAT64_T) {
+            IRInstr* instruction_const = new LdConstDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), res->dvalue);
+            cfgs.back()->current_bb->add_IRInstr(instruction_const);
+        }
     }
     delete res;
     
-    IRInstr *instruction = new Wmem(cfgs.back()->current_bb, address, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR)); // block, dst, src
-    cfgs.back()->current_bb->add_IRInstr(instruction);
+    if (stv.varTable[nomVar].type == Type::INT32_T) {
+        IRInstr *instruction = new Wmem(cfgs.back()->current_bb, address, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+        cfgs.back()->current_bb->add_IRInstr(instruction);
+    }
+    else if (stv.varTable[nomVar].type == Type::FLOAT64_T) {
+        IRInstr *instruction = new DWmem(cfgs.back()->current_bb, address, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+        cfgs.back()->current_bb->add_IRInstr(instruction);
+    }
     
     return 0;
 }
@@ -152,8 +173,13 @@ antlrcpp::Any IRGenVisitor::visitReturn_stmt(ifccParser::Return_stmtContext *ctx
     // Évaluation de l'expression qu'on place dans le registre universel !reg
     ExprReturn* res(visit(ctx->expr()));
     if (res->isConst) {
-        IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res->ivalue);  // block, dst, src
-        cfgs.back()->current_bb->add_IRInstr(instruction_const);
+        if (res->type == Type::INT32_T) {
+            IRInstr* instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res->ivalue);
+            cfgs.back()->current_bb->add_IRInstr(instruction_const);
+        } else if (res->type == Type::FLOAT64_T) {
+            IRInstr* instruction_const = new LdConstDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), res->dvalue);
+            cfgs.back()->current_bb->add_IRInstr(instruction_const);
+        }
     }
     delete res;
     
@@ -166,8 +192,13 @@ antlrcpp::Any IRGenVisitor::visitReturn_stmt(ifccParser::Return_stmtContext *ctx
 antlrcpp::Any IRGenVisitor::visitIf_stmt(ifccParser::If_stmtContext *ctx) {
     ExprReturn* res(visit(ctx->expr()));
     if (res->isConst) {
-        IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res->ivalue);  // block, dst, src
-        cfgs.back()->current_bb->add_IRInstr(instruction_const);
+        if (res->type == Type::INT32_T) {
+            IRInstr* instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res->ivalue);
+            cfgs.back()->current_bb->add_IRInstr(instruction_const);
+        } else if (res->type == Type::FLOAT64_T) {
+            IRInstr* instruction_const = new LdConstDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), res->dvalue);
+            cfgs.back()->current_bb->add_IRInstr(instruction_const);
+        }
     }
     delete res;
 
@@ -223,7 +254,7 @@ antlrcpp::Any IRGenVisitor::visitWhile_stmt(ifccParser::While_stmtContext *ctx) 
 
     ExprReturn* res(visit(ctx->expr()));
     if (res->isConst) {
-        IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res->ivalue);  // block, dst, src
+        IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res->ivalue);
         cfgs.back()->current_bb->add_IRInstr(instruction_const);
     }
     delete res;
@@ -245,6 +276,11 @@ antlrcpp::Any IRGenVisitor::visitWhile_stmt(ifccParser::While_stmtContext *ctx) 
     cfgs.back()->current_bb = bb_endwhile;
 
     return 0;
+}
+
+antlrcpp::Any IRGenVisitor::visitDoubleExpr(ifccParser::DoubleExprContext *ctx)
+{
+    return new ExprReturn(true, Type::FLOAT64_T, std::stod(ctx->CONSTDOUBLE()->getText()));
 }
 
 antlrcpp::Any IRGenVisitor::visitIntExpr(ifccParser::IntExprContext *ctx)
@@ -332,10 +368,10 @@ antlrcpp::Any IRGenVisitor::visitAssignExpr(ifccParser::AssignExprContext *ctx) 
     
     // Évaluation de l'expression qu'on place dans le registre universel !reg
     if (res->isConst) {
-        IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res->ivalue);  // block, dst, src
+        IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res->ivalue);
         cfgs.back()->current_bb->add_IRInstr(instruction_const);
     }
-    IRInstr *instruction = new Wmem(cfgs.back()->current_bb, address, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR)); // block, dst, src
+    IRInstr *instruction = new Wmem(cfgs.back()->current_bb, address, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
     cfgs.back()->current_bb->add_IRInstr(instruction);
     
     return res;
@@ -400,7 +436,7 @@ antlrcpp::Any IRGenVisitor::visitMulDivExpr(ifccParser::MulDivExprContext *ctx) 
         }
         // Appliquer l'opération selon l'opérateur
         if (ctx->mOp()->STAR()) {
-            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR), res_left->ivalue);  // block, dst, src
+            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR), res_left->ivalue);
             cfgs.back()->current_bb->add_IRInstr(instruction_const);
 
             IRInstr *instruction_mul = new Mul(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR));
@@ -410,7 +446,7 @@ antlrcpp::Any IRGenVisitor::visitMulDivExpr(ifccParser::MulDivExprContext *ctx) 
             IRInstr *instruction_copy_right = new Copy(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
             cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
 
-            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res_left->ivalue);  // block, dst, src
+            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res_left->ivalue);
             cfgs.back()->current_bb->add_IRInstr(instruction_const);
 
             IRInstr *instruction_div = new Div(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR));
@@ -420,7 +456,7 @@ antlrcpp::Any IRGenVisitor::visitMulDivExpr(ifccParser::MulDivExprContext *ctx) 
             IRInstr *instruction_copy_right = new Copy(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
             cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
 
-            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res_left->ivalue);  // block, dst, src
+            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res_left->ivalue);
             cfgs.back()->current_bb->add_IRInstr(instruction_const);
 
             IRInstr *instruction_mod = new Mod(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR));
@@ -438,7 +474,7 @@ antlrcpp::Any IRGenVisitor::visitMulDivExpr(ifccParser::MulDivExprContext *ctx) 
         // Évaluation de l'expression right qu'on place dans le registre universel !reg
         ExprReturn* res_right(visit(ctx->right));
         if (res_right->isConst) {
-            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res_right->ivalue);  // block, dst, src
+            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res_right->ivalue);
             cfgs.back()->current_bb->add_IRInstr(instruction_const);
         }
         delete res_right;
@@ -497,7 +533,7 @@ antlrcpp::Any IRGenVisitor::visitAddSubExpr(ifccParser::AddSubExprContext *ctx) 
         }
         // Appliquer l'opération selon l'opérateur
         if (ctx->aOp()->PLUS()) {
-            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR), res_left->ivalue);  // block, dst, src
+            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR), res_left->ivalue);
             cfgs.back()->current_bb->add_IRInstr(instruction_const);
 
             IRInstr *instruction_add = new Add(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR));
@@ -507,7 +543,7 @@ antlrcpp::Any IRGenVisitor::visitAddSubExpr(ifccParser::AddSubExprContext *ctx) 
             IRInstr *instruction_copy_right = new Copy(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
             cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
 
-            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res_left->ivalue);  // block, dst, src
+            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res_left->ivalue);
             cfgs.back()->current_bb->add_IRInstr(instruction_const);
 
             IRInstr *instruction_sub = new Sub(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR));
@@ -525,7 +561,7 @@ antlrcpp::Any IRGenVisitor::visitAddSubExpr(ifccParser::AddSubExprContext *ctx) 
         // Évaluation de l'expression right qu'on place dans le registre universel !reg
         ExprReturn* res_right(visit(ctx->right));
         if (res_right->isConst) {
-            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res_right->ivalue);  // block, dst, src
+            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res_right->ivalue);
             cfgs.back()->current_bb->add_IRInstr(instruction_const);
         }
         delete res_right;
@@ -585,24 +621,11 @@ antlrcpp::Any IRGenVisitor::visitCompExpr(ifccParser::CompExprContext *ctx) {
         IRInstr *instruction_copy_right = new Copy(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
         cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
 
-        IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res_left->ivalue);  // block, dst, src
+        IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res_left->ivalue);
         cfgs.back()->current_bb->add_IRInstr(instruction_const);
-        if (ctx->compOp()->LT()) {
-            IRInstr *instruction_lt = new CmpLt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR));
-            cfgs.back()->current_bb->add_IRInstr(instruction_lt);
-        }
-        else if (ctx->compOp()->LE()) {
-            IRInstr *instruction_le = new CmpLe(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR));
-            cfgs.back()->current_bb->add_IRInstr(instruction_le);
-        }
-        else if (ctx->compOp()->GE()) {
-            IRInstr *instruction_ge = new CmpGe(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR));
-            cfgs.back()->current_bb->add_IRInstr(instruction_ge);
-        }
-        else if (ctx->compOp()->GT()) {
-            IRInstr *instruction_gt = new CmpGt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR));
-            cfgs.back()->current_bb->add_IRInstr(instruction_gt);
-        }
+
+        IRInstr *instruction_comp = new CompareInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR), ctx->compOp()->getText());
+        cfgs.back()->current_bb->add_IRInstr(instruction_comp);
     }
 
     else {
@@ -614,7 +637,7 @@ antlrcpp::Any IRGenVisitor::visitCompExpr(ifccParser::CompExprContext *ctx) {
 
         ExprReturn* res_right(visit(ctx->right));
         if (res_right->isConst) {
-            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR), res_right->ivalue);  // block, dst, src
+            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR), res_right->ivalue);
             cfgs.back()->current_bb->add_IRInstr(instruction_const);
         }  
         else {
@@ -625,22 +648,9 @@ antlrcpp::Any IRGenVisitor::visitCompExpr(ifccParser::CompExprContext *ctx) {
 
         IRInstr *instruction_read_left = new Rmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), address_left);
         cfgs.back()->current_bb->add_IRInstr(instruction_read_left);
-        if (ctx->compOp()->LT()) {
-            IRInstr *instruction_lt = new CmpLt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR));
-            cfgs.back()->current_bb->add_IRInstr(instruction_lt);
-        }
-        else if (ctx->compOp()->LE()) {
-            IRInstr *instruction_le = new CmpLe(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR));
-            cfgs.back()->current_bb->add_IRInstr(instruction_le);
-        }
-        else if (ctx->compOp()->GE()) {
-            IRInstr *instruction_ge = new CmpGe(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR));
-            cfgs.back()->current_bb->add_IRInstr(instruction_ge);
-        }
-        else if (ctx->compOp()->GT()) {
-            IRInstr *instruction_gt = new CmpGt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR));
-            cfgs.back()->current_bb->add_IRInstr(instruction_gt);
-        }
+
+        IRInstr *instruction_comp = new CompareInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR), ctx->compOp()->getText());
+        cfgs.back()->current_bb->add_IRInstr(instruction_comp);
     }
     
     res_left->isConst = false;
@@ -669,16 +679,11 @@ antlrcpp::Any IRGenVisitor::visitEqExpr(ifccParser::EqExprContext *ctx) {
         IRInstr *instruction_copy_right = new Copy(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
         cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
 
-        IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res_left->ivalue);  // block, dst, src
+        IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res_left->ivalue);
         cfgs.back()->current_bb->add_IRInstr(instruction_const);
-        if (ctx->eqOp()->EQ()) {
-            IRInstr *instruction_eq = new CmpEq(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR));
-            cfgs.back()->current_bb->add_IRInstr(instruction_eq);
-        }
-        else if (ctx->eqOp()->NEQ()) {
-            IRInstr *instruction_neq = new CmpNeq(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR));
-            cfgs.back()->current_bb->add_IRInstr(instruction_neq);
-        }
+
+        IRInstr *instruction_comp = new CompareInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR), ctx->eqOp()->getText());
+        cfgs.back()->current_bb->add_IRInstr(instruction_comp);
     }
 
     else {
@@ -690,7 +695,7 @@ antlrcpp::Any IRGenVisitor::visitEqExpr(ifccParser::EqExprContext *ctx) {
 
         ExprReturn* res_right(visit(ctx->right));
         if (res_right->isConst) {
-            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR), res_right->ivalue);  // block, dst, src
+            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR), res_right->ivalue);
             cfgs.back()->current_bb->add_IRInstr(instruction_const);
         } 
         else {
@@ -701,14 +706,9 @@ antlrcpp::Any IRGenVisitor::visitEqExpr(ifccParser::EqExprContext *ctx) {
 
         IRInstr *instruction_read_left = new Rmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), address_left);
         cfgs.back()->current_bb->add_IRInstr(instruction_read_left);
-        if (ctx->eqOp()->EQ()) {
-            IRInstr *instruction_eq = new CmpEq(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR));
-            cfgs.back()->current_bb->add_IRInstr(instruction_eq);
-        }
-        else if (ctx->eqOp()->NEQ()) {
-            IRInstr *instruction_neq = new CmpNeq(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR));
-            cfgs.back()->current_bb->add_IRInstr(instruction_neq);
-        }
+        
+        IRInstr *instruction_comp = new CompareInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR), ctx->eqOp()->getText());
+        cfgs.back()->current_bb->add_IRInstr(instruction_comp);
     }
     
     res_left->isConst = false;
@@ -726,7 +726,7 @@ antlrcpp::Any IRGenVisitor::visitAndExpr(ifccParser::AndExprContext *ctx) {
             delete res_right;
             return res_left;
         }
-        IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR), res_left->ivalue);  // block, dst, src
+        IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR), res_left->ivalue);
         cfgs.back()->current_bb->add_IRInstr(instruction_const);
 
         IRInstr *instruction_and = new And(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR));
@@ -742,7 +742,7 @@ antlrcpp::Any IRGenVisitor::visitAndExpr(ifccParser::AndExprContext *ctx) {
 
         ExprReturn* res_right(visit(ctx->right));
         if (res_right->isConst) {
-            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res_right->ivalue);  // block, dst, src
+            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res_right->ivalue);
             cfgs.back()->current_bb->add_IRInstr(instruction_const);
         }
         delete res_right;
@@ -769,7 +769,7 @@ antlrcpp::Any IRGenVisitor::visitXorExpr(ifccParser::XorExprContext *ctx) {
             delete res_right;
             return res_left;
         }
-        IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR), res_left->ivalue);  // block, dst, src
+        IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR), res_left->ivalue);
         cfgs.back()->current_bb->add_IRInstr(instruction_const);
 
         IRInstr *instruction_and = new Xor(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR));
@@ -785,7 +785,7 @@ antlrcpp::Any IRGenVisitor::visitXorExpr(ifccParser::XorExprContext *ctx) {
 
         ExprReturn* res_right(visit(ctx->right));
         if (res_right->isConst) {
-            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res_right->ivalue);  // block, dst, src
+            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res_right->ivalue);
             cfgs.back()->current_bb->add_IRInstr(instruction_const);
         }
         delete res_right;
@@ -812,7 +812,7 @@ antlrcpp::Any IRGenVisitor::visitOrExpr(ifccParser::OrExprContext *ctx) {
             delete res_right;
             return res_left;
         }
-        IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR), res_left->ivalue);  // block, dst, src
+        IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR), res_left->ivalue);
         cfgs.back()->current_bb->add_IRInstr(instruction_const);
 
         IRInstr *instruction_and = new Or(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR));
@@ -828,7 +828,7 @@ antlrcpp::Any IRGenVisitor::visitOrExpr(ifccParser::OrExprContext *ctx) {
 
         ExprReturn* res_right(visit(ctx->right));
         if (res_right->isConst) {
-            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res_right->ivalue);  // block, dst, src
+            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res_right->ivalue);
             cfgs.back()->current_bb->add_IRInstr(instruction_const);
         }
         delete res_right;

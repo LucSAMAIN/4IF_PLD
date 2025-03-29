@@ -16,7 +16,7 @@ void print_int(int x)
 
 int main()
 {
-    print_int(-273);
+    print_int(-30);
     putchar('\n');
     return 0;
 }

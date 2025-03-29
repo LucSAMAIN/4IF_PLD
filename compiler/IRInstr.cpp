@@ -10,7 +10,7 @@ std::string Prologue::get_operation_name() const {
     return "prologue";
 }
 void Prologue::gen_x86(std::ostream& o) {
-    o << "    pushq %rbp" << "\n";
+    o << "    pushq %rbp # prologue\n";
     o << "    movq %rsp, %rbp" << "\n";
     
     // Allouer de l'espace pour les variables locales
@@ -45,7 +45,7 @@ std::string Epilogue::get_operation_name() const {
     return "epilogue";
 }
 void Epilogue::gen_x86(std::ostream& o) {
-    o << "    movq %rbp, %rsp\n";
+    o << "    movq %rbp, %rsp # epilogue\n";
     o << "    popq %rbp\n";
     o << "    ret\n";
 }
@@ -63,7 +63,7 @@ std::string LdConstInt::get_operation_name() const {
     return "ldconstint";
 }
 void LdConstInt::gen_x86(std::ostream& o) {
-    o << "    movl $" << value << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+    o << "    movl $" << value << ", " << bb->cfg->IR_reg_to_x86(dest) << " # ldconstint\n";
 }
 
 LdConstDouble::LdConstDouble(BasicBlock* p_bb, const VirtualRegister& dest_reg, double val) 
@@ -92,7 +92,7 @@ std::string Copy::get_operation_name() const {
     return "copy";
 }
 void Copy::gen_x86(std::ostream& o) {
-    o << "    movl " << bb->cfg->IR_reg_to_x86(src) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+    o << "    movl " << bb->cfg->IR_reg_to_x86(src) << ", " << bb->cfg->IR_reg_to_x86(dest) << " # copy\n";
 }
 
 void Copy::gen_wat(std::ostream& o) {
@@ -107,7 +107,7 @@ std::string Add::get_operation_name() const {
     return "add";
 }
 void Add::gen_x86(std::ostream& o) {
-    o << "    addl " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+    o << "    addl " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << " # add\n";
 }
 
 void Add::gen_wat(std::ostream& o) {
@@ -124,7 +124,7 @@ std::string Sub::get_operation_name() const {
 // sub %ebx, %eax ==> %eax = %eax - %ebx, donc on doit inverser op2 et op1
 //  b-a s'écrit subl a, b
 void Sub::gen_x86(std::ostream& o) {
-    o << "    subl " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+    o << "    subl " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << " # sub\n";
 }
 
 void Sub::gen_wat(std::ostream& o) {
@@ -139,7 +139,7 @@ std::string UnaryMinus::get_operation_name() const {
     return "unaryMinus";
 }
 void UnaryMinus::gen_x86(std::ostream& o) {
-    o << "    neg " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+    o << "    neg " << bb->cfg->IR_reg_to_x86(dest) << " # unary minus\n";
 }
 
 void UnaryMinus::gen_wat(std::ostream& o) {
@@ -159,7 +159,7 @@ std::string Not::get_operation_name() const {
     return "not";
 }
 void Not::gen_x86(std::ostream& o) {
-    o << "    cmpl $0, " << bb->cfg->IR_reg_to_x86(op) << "\n";
+    o << "    cmpl $0, " << bb->cfg->IR_reg_to_x86(op) << " # not\n";
     VirtualRegister byte_dest(dest.regFunc, RegisterSize::SIZE_8, dest.regType);
     o << "    sete " << bb->cfg->IR_reg_to_x86(byte_dest) << "\n";
     o << "    movzbl " << bb->cfg->IR_reg_to_x86(byte_dest) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
@@ -172,7 +172,7 @@ std::string Mul::get_operation_name() const {
     return "mul";
 }
 void Mul::gen_x86(std::ostream& o) {
-    o << "    imull " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+    o << "    imull " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << " # mul\n";
 }
 
 void Mul::gen_wat(std::ostream& o) {
@@ -187,7 +187,7 @@ std::string Div::get_operation_name() const {
     return "div";
 }
 void Div::gen_x86(std::ostream& o) {
-    o << "    cqo\n";
+    o << "    cqo # div\n";
     o << "    idivl " << bb->cfg->IR_reg_to_x86(op2) << "\n";
     if (bb->cfg->IR_reg_to_x86(dest) != "%eax") {
         o << "    movl " << "%eax" << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
@@ -206,7 +206,7 @@ std::string Mod::get_operation_name() const {
     return "mod";
 }
 void Mod::gen_x86(std::ostream& o) {
-    o << "    cqo\n";
+    o << "    cqo # mod\n";
     o << "    idivl " << bb->cfg->IR_reg_to_x86(op2) << "\n";
     if (bb->cfg->IR_reg_to_x86(dest) != "%edx") {
         o << "    movl " << "%edx, " << bb->cfg->IR_reg_to_x86(dest) << "\n";
@@ -226,7 +226,7 @@ std::string Rmem::get_operation_name() const {
 }
 void Rmem::gen_x86(std::ostream& o) {
     // o << " # Rmem addr " << addr << "\n";
-    o << "    movl " << bb->cfg->IR_addr_to_x86(addr) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+    o << "    movl " << bb->cfg->IR_addr_to_x86(addr) << ", " << bb->cfg->IR_reg_to_x86(dest) << " # rmem\n";
 }
 
 void Rmem::gen_wat(std::ostream& o) {
@@ -241,7 +241,7 @@ std::string Wmem::get_operation_name() const {
     return "wmem";
 }
 void Wmem::gen_x86(std::ostream& o) {
-    o << "    movl " << bb->cfg->IR_reg_to_x86(src) << ", " << bb->cfg->IR_addr_to_x86(addr) << "\n";
+    o << "    movl " << bb->cfg->IR_reg_to_x86(src) << ", " << bb->cfg->IR_addr_to_x86(addr) << " # wmem\n";
 }
 
 void Wmem::gen_wat(std::ostream& o) {
@@ -255,24 +255,15 @@ std::string Call::get_operation_name() const {
     return "call";
 }
 void Call::gen_x86(std::ostream& o) {
-    // on sauvegarde les registres de la fonction appelante
-    // on pourrait améliorer en sachant combien de registres la fonction utilise
-    // pour ne pas en sauvegarder des inutiles
-    for (int i = 0; i < 6; i++) {
-        o << "    push " << bb->cfg->IR_reg_to_x86("!arg"+std::to_string(i)+"64") << "\n";
-    }
-
     // on place les variables dans les registres
+    static const RegisterFunction index_to_reg[6] = { RegisterFunction::ARG0, RegisterFunction::ARG1, RegisterFunction::ARG2, RegisterFunction::ARG3, RegisterFunction::ARG4, RegisterFunction::ARG5 };
+
+    o << "    # call " << func_name << "\n";
     for (int i = 0; i < args.size(); i++) {
-        o << "    movl " << bb->cfg->IR_addr_to_x86(args[i]) << ", " << bb->cfg->IR_reg_to_x86("!arg"+std::to_string(i)+"32") << "\n";
+        o << "    movl " << bb->cfg->IR_addr_to_x86(args[i]) << ", " << bb->cfg->IR_reg_to_x86(VirtualRegister(index_to_reg[i], RegisterSize::SIZE_32, RegisterType::GPR)) << "\n";
     }
 
     o << "    call " << func_name << "\n";
-
-    // on remet les registres comme ils étaient
-    for (int i = 5; i >= 0; i--) {
-        o << "    pop " << bb->cfg->IR_reg_to_x86("!arg"+std::to_string(i)+"64") << "\n";
-    }
 }
 
 void Call::gen_wat(std::ostream& o) {
@@ -302,7 +293,7 @@ void CompareInt::gen_x86(std::ostream& o) {
     std::string rightName = bb->cfg->IR_reg_to_x86(right);
     std::string destName = bb->cfg->IR_reg_to_x86(dest);
 
-    o << "    cmp " << rightName << ", " << leftName << "\n";
+    o << "    cmp " << rightName << ", " << leftName << " # compare int\n";
 
     VirtualRegister byte_dest(dest.regFunc, RegisterSize::SIZE_8, dest.regType);
     std::string byte_dest_name = bb->cfg->IR_reg_to_x86(byte_dest);
@@ -329,7 +320,7 @@ std::string And::get_operation_name() const {
     return "and";
 }
 void And::gen_x86(std::ostream& o) {
-    o << "    andl " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+    o << "    andl " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << " # and\n";
 }
 
 Or::Or(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
@@ -338,7 +329,7 @@ std::string Or::get_operation_name() const {
     return "or";
 }
 void Or::gen_x86(std::ostream& o) {
-    o << "    orl " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+    o << "    orl " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << " # or\n";
 }
 
 Xor::Xor(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
@@ -347,7 +338,7 @@ std::string Xor::get_operation_name() const {
     return "xor";
 }
 void Xor::gen_x86(std::ostream& o) {
-    o << "    xorl " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+    o << "    xorl " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << " # xor\n";
 }
 
 void Xor::gen_wat(std::ostream& o) {
@@ -361,7 +352,7 @@ std::string Jump::get_operation_name() const {
     return "jump";
 }
 void Jump::gen_x86(std::ostream& o) {
-    o << "    jmp " << dest_label << "\n";
+    o << "    jmp " << dest_label << " # jump\n";
 }
 
 JumpFalse::JumpFalse(BasicBlock* p_bb, const std::string& p_dest_false, const std::string& p_dest_true, const VirtualRegister& p_op) 
@@ -370,7 +361,7 @@ std::string JumpFalse::get_operation_name() const {
     return "jumpfalse";
 }
 void JumpFalse::gen_x86(std::ostream& o) {
-    o << "    cmpl $0, " << bb->cfg->IR_reg_to_x86(op) << "\n";
+    o << "    cmpl $0, " << bb->cfg->IR_reg_to_x86(op) << " # jump false\n";
     o << "    je " << dest_false << "\n";
     o << "    jmp " << dest_true << "\n";
 }
@@ -381,7 +372,7 @@ std::string Push::get_operation_name() const {
     return "push";
 }
 void Push::gen_x86(std::ostream& o) {
-    o << "    push " << bb->cfg->IR_reg_to_x86(op) << "\n";
+    o << "    push " << bb->cfg->IR_reg_to_x86(op) << " # push\n";
 }
 
 Pop::Pop(BasicBlock* p_bb, const VirtualRegister& p_dest)
@@ -390,7 +381,7 @@ std::string Pop::get_operation_name() const {
     return "pop";
 }
 void Pop::gen_x86(std::ostream& o) {
-    o << "    pop " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+    o << "    pop " << bb->cfg->IR_reg_to_x86(dest) << " # pop\n";
 }
 
 void Pop::gen_wat(std::ostream& o) {
@@ -409,7 +400,7 @@ std::string LdConstDouble::get_operation_name() const {
 }
 void LdConstDouble::gen_x86(std::ostream& o) {
     uint64_t bits = *reinterpret_cast<uint64_t*>(&value);
-    o << "    movq $0x" << std::hex << bits << std::dec << ", %rax\n";
+    o << "    movq $0x" << std::hex << bits << std::dec << ", %rax # ldconstdouble " << value << "\n";
     o << "    movq %rax, " << bb->cfg->IR_reg_to_x86(dest) << "\n";
 }
 
@@ -419,7 +410,7 @@ std::string DAdd::get_operation_name() const {
     return "dadd";
 }
 void DAdd::gen_x86(std::ostream& o) {
-    o << "    addsd " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+    o << "    addsd " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << " # dadd\n";
 }
 
 DSub::DSub(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
@@ -428,7 +419,7 @@ std::string DSub::get_operation_name() const {
     return "dsub";
 }
 void DSub::gen_x86(std::ostream& o) {
-    o << "    subsd " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+    o << "    subsd " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << " # dsub\n";
 }
 
 DMul::DMul(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
@@ -437,7 +428,7 @@ std::string DMul::get_operation_name() const {
     return "dmul";
 }
 void DMul::gen_x86(std::ostream& o) {
-    o << "    mulsd " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+    o << "    mulsd " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << " # dmul\n";
 }
 
 DDiv::DDiv(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
@@ -446,7 +437,7 @@ std::string DDiv::get_operation_name() const {
     return "ddiv";
 }
 void DDiv::gen_x86(std::ostream& o) {
-    o << "    divsd " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+    o << "    divsd " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << " # ddiv\n";
 }
 
 CompareDouble::CompareDouble(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& p_left, const VirtualRegister& p_right, const std::string& comp) 
@@ -459,7 +450,7 @@ void CompareDouble::gen_x86(std::ostream& o) {
     std::string rightName = bb->cfg->IR_reg_to_x86(right);
     std::string destName = bb->cfg->IR_reg_to_x86(dest);
 
-    o << "    ucomisd " << rightName << ", " << leftName << "\n";
+    o << "    ucomisd " << rightName << ", " << leftName << " # compare double\n";
 
     VirtualRegister byte_dest(dest.regFunc, RegisterSize::SIZE_8, dest.regType);
     std::string byte_dest_name = bb->cfg->IR_reg_to_x86(byte_dest);
@@ -487,7 +478,7 @@ std::string DWmem::get_operation_name() const {
     return "dwmem";
 }
 void DWmem::gen_x86(std::ostream& o) {
-    o << "    movsd " << bb->cfg->IR_reg_to_x86(src) << ", " << bb->cfg->IR_addr_to_x86(addr) << "\n";
+    o << "    movsd " << bb->cfg->IR_reg_to_x86(src) << ", " << bb->cfg->IR_addr_to_x86(addr) << " # dwmem\n";
 }
 
 DRmem::DRmem(BasicBlock* p_bb, const VirtualRegister& dest_reg, const std::string& address) 
@@ -496,7 +487,7 @@ std::string DRmem::get_operation_name() const {
     return "drmem";
 }
 void DRmem::gen_x86(std::ostream& o) {
-    o << "    movsd " << bb->cfg->IR_addr_to_x86(addr) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+    o << "    movsd " << bb->cfg->IR_addr_to_x86(addr) << ", " << bb->cfg->IR_reg_to_x86(dest) << " # drmem\n";
 }
 
 DCopy::DCopy(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& src_reg) 
@@ -505,7 +496,7 @@ std::string DCopy::get_operation_name() const {
     return "copy";
 }
 void DCopy::gen_x86(std::ostream& o) {
-    o << "    movsd " << bb->cfg->IR_reg_to_x86(src) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+    o << "    movsd " << bb->cfg->IR_reg_to_x86(src) << ", " << bb->cfg->IR_reg_to_x86(dest) << " # dcopy\n";
 }
 
 IntToDouble::IntToDouble(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& src_reg) 
@@ -514,7 +505,7 @@ std::string IntToDouble::get_operation_name() const {
     return "int_to_double";
 }
 void IntToDouble::gen_x86(std::ostream& o) {
-    o << "    cvtsi2sd " << bb->cfg->IR_reg_to_x86(src) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+    o << "    cvtsi2sd " << bb->cfg->IR_reg_to_x86(src) << ", " << bb->cfg->IR_reg_to_x86(dest) << " # int2double\n";
 }
 
 DoubleToInt::DoubleToInt(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& src_reg) 
@@ -524,7 +515,7 @@ std::string DoubleToInt::get_operation_name() const {
 }
 void DoubleToInt::gen_x86(std::ostream& o) {
     // cvtt pour truncation
-    o << "    cvttsd2si " << bb->cfg->IR_reg_to_x86(src) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+    o << "    cvttsd2si " << bb->cfg->IR_reg_to_x86(src) << ", " << bb->cfg->IR_reg_to_x86(dest) << " # double2int\n";
 }
 
 DUnaryMinus::DUnaryMinus(BasicBlock* p_bb, const VirtualRegister& dest_reg) 
@@ -537,7 +528,7 @@ void DUnaryMinus::gen_x86(std::ostream& o) {
     if (dest.regFunc == RegisterFunction::REG_RIGHT) {
         mask.regFunc = RegisterFunction::REG_LEFT;
     }
-    o << "    movq $0x8000000000000000, %rax\n"; // on crée un masque et on fait un xor avec
+    o << "    movq $0x8000000000000000, %rax # dunaryminus\n"; // on crée un masque et on fait un xor avec
     o << "    movq %rax, " << bb->cfg->IR_reg_to_x86(mask) << "\n";
     o << "    xorpd " << bb->cfg->IR_reg_to_x86(mask) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
 }
@@ -556,7 +547,7 @@ void DNot::gen_x86(std::ostream& o) {
             zero.regFunc = RegisterFunction::REG;
         }
     }
-    o << "    xorpd " << bb->cfg->IR_reg_to_x86(zero) << ", " << bb->cfg->IR_reg_to_x86(zero) << "\n";
+    o << "    xorpd " << bb->cfg->IR_reg_to_x86(zero) << ", " << bb->cfg->IR_reg_to_x86(zero) << " # dnot\n";
     o << "    ucomisd " << bb->cfg->IR_reg_to_x86(zero) << ", " << bb->cfg->IR_reg_to_x86(op) << "\n";
     VirtualRegister byte_dest(dest.regFunc, RegisterSize::SIZE_8, dest.regType);
     std::string byte_dest_name = bb->cfg->IR_reg_to_x86(byte_dest);

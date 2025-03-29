@@ -33,6 +33,13 @@ void BasicBlock::add_IRInstr(IRInstr *instruction) {
     
 }
 
+void BasicBlock::pop_IRInstr() {
+    if (!instructions.empty()) {
+        delete instructions.back();
+        instructions.pop_back();
+    }
+}
+
 
 
 

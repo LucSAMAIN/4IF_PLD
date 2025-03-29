@@ -113,7 +113,6 @@ antlrcpp::Any IRGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx)
                 }
                 cfgs.back()->current_bb->add_IRInstr(instruction_const);
             }
-            delete res;
 
             if (stv.varTable[nomVar].type == Type::INT32_T) {
                 if (res->type == Type::FLOAT64_T) {
@@ -131,6 +130,7 @@ antlrcpp::Any IRGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx)
                 IRInstr *instruction = new DWmem(cfgs.back()->current_bb, address, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
                 cfgs.back()->current_bb->add_IRInstr(instruction);
             }
+            delete res;
         }
     }
     return 0;
@@ -162,7 +162,6 @@ antlrcpp::Any IRGenVisitor::visitAssign_stmt(ifccParser::Assign_stmtContext *ctx
             cfgs.back()->current_bb->add_IRInstr(instruction_const);
         }
     }
-    delete res;
     
     if (stv.varTable[nomVar].type == Type::INT32_T) {
         if (res->type == Type::FLOAT64_T) {
@@ -180,6 +179,7 @@ antlrcpp::Any IRGenVisitor::visitAssign_stmt(ifccParser::Assign_stmtContext *ctx
         IRInstr *instruction = new DWmem(cfgs.back()->current_bb, address, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
         cfgs.back()->current_bb->add_IRInstr(instruction);
     }
+    delete res;
     
     return 0;
 }
@@ -463,7 +463,7 @@ antlrcpp::Any IRGenVisitor::visitNotExpr(ifccParser::NotExprContext *ctx) {
     else if (res->type == Type::FLOAT64_T) {
         IRInstr *instruction_not = new DNot(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
         cfgs.back()->current_bb->add_IRInstr(instruction_not);
-        
+
         res->type = Type::INT32_T;
     }
 
@@ -676,148 +676,122 @@ antlrcpp::Any IRGenVisitor::visitAddSubExpr(ifccParser::AddSubExprContext *ctx) 
 antlrcpp::Any IRGenVisitor::visitCompExpr(ifccParser::CompExprContext *ctx) {
     ExprReturn* res_left(visit(ctx->left));
     if (res_left->isConst) {
-        ExprReturn* res_right(visit(ctx->right));
-        if (res_right->isConst) {
-            if (ctx->compOp()->LT()) {
-                res_left->ivalue = res_left->ivalue < res_right->ivalue;
-                delete res_right;
-                return res_left;
-            }
-            else if (ctx->compOp()->LE()) {
-                res_left->ivalue = res_left->ivalue <= res_right->ivalue;
-                delete res_right;
-                return res_left;
-            }
-            else if (ctx->compOp()->GE()) {
-                res_left->ivalue = res_left->ivalue >= res_right->ivalue;
-                delete res_right;
-                return res_left;
-            }
-            else if (ctx->compOp()->GT()) {
-                res_left->ivalue = res_left->ivalue > res_right->ivalue;
-                delete res_right;
-                return res_left;
-            }
+        if (res_left->type == Type::INT32_T) {
+            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res_left->ivalue);
+            cfgs.back()->current_bb->add_IRInstr(instruction_const);
         }
-
-        if (res_left->type == res_right->type) {
-            if (res_left->type == Type::INT32_T) {
-                IRInstr *instruction_copy_right = new Copy(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
-                cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
-
-                IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res_left->ivalue);
-                cfgs.back()->current_bb->add_IRInstr(instruction_const);
-
-                IRInstr *instruction_comp = new CompareInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR), ctx->compOp()->getText());
-                cfgs.back()->current_bb->add_IRInstr(instruction_comp);
-            }
-            else {
-                IRInstr *instruction_copy_right = new DCopy(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
-                cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
-
-                IRInstr *instruction_const = new LdConstDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), res_left->ivalue);
-                cfgs.back()->current_bb->add_IRInstr(instruction_const);
-
-                IRInstr *instruction_comp = new CompareInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM), ctx->compOp()->getText());
-                cfgs.back()->current_bb->add_IRInstr(instruction_comp);
-            }
-        }
-        else { // different types
-            if (res_left->type == Type::INT32_T) {
-                IRInstr *instruction_copy_right = new DCopy(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
-                cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
-
-                IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res_left->ivalue);
-                cfgs.back()->current_bb->add_IRInstr(instruction_const);
-                IRInstr *instruction_int_to_double = new IntToDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
-                cfgs.back()->current_bb->add_IRInstr(instruction_int_to_double);
-
-                IRInstr *instruction_comp = new CompareInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM), ctx->compOp()->getText());
-                cfgs.back()->current_bb->add_IRInstr(instruction_comp);
-            }
-            else {
-                IRInstr *instruction_copy_right = new Copy(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
-                cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
-                IRInstr *instruction_int_to_double = new IntToDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR));
-                cfgs.back()->current_bb->add_IRInstr(instruction_int_to_double);
-
-                IRInstr *instruction_const = new LdConstDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), res_left->ivalue);
-                cfgs.back()->current_bb->add_IRInstr(instruction_const);
-
-                IRInstr *instruction_comp = new CompareInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM), ctx->compOp()->getText());
-                cfgs.back()->current_bb->add_IRInstr(instruction_comp);
-            }
+        else if (res_left->type == Type::FLOAT64_T) {
+            IRInstr *instruction_const = new LdConstDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), res_left->dvalue);
+            cfgs.back()->current_bb->add_IRInstr(instruction_const);
         }
     }
+    std::string temp_left = cfgs.back()->create_new_tempvar(res_left->type);
+    std::string address_left = "RBP" + std::to_string(stv.varTable[temp_left].offset);
+    if (res_left->type == Type::INT32_T) {
+        IRInstr *instruction_write_mem = new Wmem(cfgs.back()->current_bb, address_left, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+        cfgs.back()->current_bb->add_IRInstr(instruction_write_mem);
+    }
+    else if (res_left->type == Type::FLOAT64_T) {
+        IRInstr *instruction_write_mem = new DWmem(cfgs.back()->current_bb, address_left, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+        cfgs.back()->current_bb->add_IRInstr(instruction_write_mem);
+    }
 
-    else {
-        std::string temp_left = cfgs.back()->create_new_tempvar(res_left->type);
-        std::string address_left = "RBP" + std::to_string(stv.varTable[temp_left].offset);
-        // Copier le résultat de l'expression dans la variable temporaire
-        if (res_left->type == Type::INT32_T) {
-            IRInstr *instruction_left = new Wmem(cfgs.back()->current_bb, address_left, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
-            cfgs.back()->current_bb->add_IRInstr(instruction_left);
-        }
-        else {
-            IRInstr *instruction_left = new DWmem(cfgs.back()->current_bb, address_left, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
-            cfgs.back()->current_bb->add_IRInstr(instruction_left);
-        }
+    ExprReturn* res_right(visit(ctx->right));
+    Type output_type = res_left->type == Type::FLOAT64_T || res_right->type == Type::FLOAT64_T ? Type::FLOAT64_T : Type::INT32_T;
+    if (res_right->isConst) {
+        if (res_left->isConst) { // is const expr
+            cfgs.back()->current_bb->pop_IRInstr();
+            cfgs.back()->current_bb->pop_IRInstr();
+            if (output_type == Type::INT32_T) {
+                if (ctx->compOp()->LT()) {
+                    res_left->ivalue = res_left->ivalue < res_right->ivalue;
+                }
+                else if (ctx->compOp()->LE()) {
+                    res_left->ivalue = res_left->ivalue <= res_right->ivalue;
+                }
+                else if (ctx->compOp()->GE()) {
+                    res_left->ivalue = res_left->ivalue >= res_right->ivalue;
+                }
+                else if (ctx->compOp()->GT()) {
+                    res_left->ivalue = res_left->ivalue > res_right->ivalue;
+                }
+            }
+            else if (output_type == Type::FLOAT64_T) {
+                if (res_left->type == Type::INT32_T) {
+                    res_left->dvalue = res_left->ivalue;
+                }
+                if (res_right->type == Type::INT32_T) {
+                    res_right->dvalue = res_right->ivalue;
+                }
 
-        ExprReturn* res_right(visit(ctx->right));
-        if (res_right->isConst) {
+                if (ctx->compOp()->LT()) {
+                    res_left->dvalue = res_left->dvalue < res_right->dvalue;
+                }
+                else if (ctx->compOp()->LE()) {
+                    res_left->dvalue = res_left->dvalue <= res_right->dvalue;
+                }
+                else if (ctx->compOp()->GE()) {
+                    res_left->dvalue = res_left->dvalue >= res_right->dvalue;
+                }
+                else if (ctx->compOp()->GT()) {
+                    res_left->dvalue = res_left->dvalue > res_right->dvalue;
+                }
+            }
+            delete res_right;
+            res_left->type = output_type;
+            return res_left;
+        }
+        else { // left is not const expr so we just put the const right
             if (res_right->type == Type::INT32_T) {
                 IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR), res_right->ivalue);
                 cfgs.back()->current_bb->add_IRInstr(instruction_const);
-
-                if (res_left->type == Type::FLOAT64_T) {
-                    IRInstr *instruction_int_to_double = new IntToDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR));
-                    cfgs.back()->current_bb->add_IRInstr(instruction_int_to_double);
-                }
             }
-            else {
+            else if (res_right->type == Type::FLOAT64_T) {
                 IRInstr *instruction_const = new LdConstDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM), res_right->dvalue);
                 cfgs.back()->current_bb->add_IRInstr(instruction_const);
             }
-        }  
-        else {
-            if (res_right->type == Type::INT32_T) {
-                IRInstr *instruction_copy_right = new Copy(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
-                cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
+        }
+    }
+    else { // right is not const, we have its value in reg, we copy in reg right
+        if (res_right->type == Type::INT32_T) {
+            IRInstr *instruction_copy_right = new Copy(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+            cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
+        }
+        else if (res_right->type == Type::FLOAT64_T) {
+            IRInstr *instruction_copy_right = new DCopy(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+            cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
+        }
+    }
+    // we put back left in reg
+    if (res_left->type == Type::INT32_T) {
+        IRInstr *instruction_read_left = new Rmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), address_left);
+        cfgs.back()->current_bb->add_IRInstr(instruction_read_left);
+    }
+    else if (res_left->type == Type::FLOAT64_T) {
+        IRInstr *instruction_read_left = new DRmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), address_left);
+        cfgs.back()->current_bb->add_IRInstr(instruction_read_left);
+    }
 
-                if (res_left->type == Type::FLOAT64_T) { // on pourrait enlever la copie d'avant pour enlever une operation
-                    IRInstr *instruction_int_to_double = new IntToDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR));
-                    cfgs.back()->current_bb->add_IRInstr(instruction_int_to_double);
-                }
-            }
-            else {
-                IRInstr *instruction_copy_right = new DCopy(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
-                cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
-            }
-        }
+    // if we have to, we promote the int to double
+    if (res_left->type == Type::INT32_T && output_type== Type::FLOAT64_T) {
+        IRInstr *instruction_int_to_double = new IntToDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+        cfgs.back()->current_bb->add_IRInstr(instruction_int_to_double);
+    }
+    else if (res_right->type == Type::INT32_T && output_type == Type::FLOAT64_T) {
+        IRInstr *instruction_int_to_double = new IntToDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR));
+        cfgs.back()->current_bb->add_IRInstr(instruction_int_to_double);
+    }
 
-        if (res_left->type == Type::INT32_T) {
-            IRInstr *instruction_read_left = new Rmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR), address_left);
-            cfgs.back()->current_bb->add_IRInstr(instruction_read_left);
-        }
-        else {
-            IRInstr *instruction_read_left = new DRmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_64, RegisterType::XMM), address_left);
-            cfgs.back()->current_bb->add_IRInstr(instruction_read_left);
-        }
-
-        if (res_left->type == Type::INT32_T) {
-            IRInstr *instruction_comp = new CompareInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR), ctx->compOp()->getText());
-            cfgs.back()->current_bb->add_IRInstr(instruction_comp);
-        }
-        else {
-            IRInstr *instruction_comp = new CompareInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM), ctx->compOp()->getText());
-            cfgs.back()->current_bb->add_IRInstr(instruction_comp);
-        }
+    // Appliquer l'opération selon l'opérateur
+    if (output_type == Type::INT32_T) {
         IRInstr *instruction_comp = new CompareInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR), ctx->compOp()->getText());
         cfgs.back()->current_bb->add_IRInstr(instruction_comp);
-
-        delete res_right;
     }
-    
+    else if (output_type == Type::FLOAT64_T) {
+        IRInstr *instruction_comp = new CompareDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM), ctx->compOp()->getText());
+        cfgs.back()->current_bb->add_IRInstr(instruction_comp);
+    }
+
     res_left->isConst = false;
     res_left->type = Type::INT32_T;
     res_left->ivalue = 0;
@@ -827,55 +801,110 @@ antlrcpp::Any IRGenVisitor::visitCompExpr(ifccParser::CompExprContext *ctx) {
 antlrcpp::Any IRGenVisitor::visitEqExpr(ifccParser::EqExprContext *ctx) {
     ExprReturn* res_left(visit(ctx->left));
     if (res_left->isConst) {
-        ExprReturn* res_right(visit(ctx->right));
-        if (res_right->isConst) {
-            if (ctx->eqOp()->EQ()) {
-                res_left->ivalue = res_left->ivalue == res_right->ivalue;
-                delete res_right;
-                return res_left;
-            }
-            else if (ctx->eqOp()->NEQ()) {
-                res_left->ivalue = res_left->ivalue != res_right->ivalue;
-                delete res_right;
-                return res_left;
-            }
+        if (res_left->type == Type::INT32_T) {
+            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res_left->ivalue);
+            cfgs.back()->current_bb->add_IRInstr(instruction_const);
         }
-        // Appliquer l'opération selon l'opérateur
-        IRInstr *instruction_copy_right = new Copy(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
-        cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
-
-        IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res_left->ivalue);
-        cfgs.back()->current_bb->add_IRInstr(instruction_const);
-
-        IRInstr *instruction_comp = new CompareInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR), ctx->eqOp()->getText());
-        cfgs.back()->current_bb->add_IRInstr(instruction_comp);
+        else if (res_left->type == Type::FLOAT64_T) {
+            IRInstr *instruction_const = new LdConstDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), res_left->dvalue);
+            cfgs.back()->current_bb->add_IRInstr(instruction_const);
+        }
+    }
+    std::string temp_left = cfgs.back()->create_new_tempvar(res_left->type);
+    std::string address_left = "RBP" + std::to_string(stv.varTable[temp_left].offset);
+    if (res_left->type == Type::INT32_T) {
+        IRInstr *instruction_write_mem = new Wmem(cfgs.back()->current_bb, address_left, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+        cfgs.back()->current_bb->add_IRInstr(instruction_write_mem);
+    }
+    else if (res_left->type == Type::FLOAT64_T) {
+        IRInstr *instruction_write_mem = new DWmem(cfgs.back()->current_bb, address_left, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+        cfgs.back()->current_bb->add_IRInstr(instruction_write_mem);
     }
 
-    else {
-        std::string temp_left = cfgs.back()->create_new_tempvar(Type::INT32_T);
-        std::string address_left = "RBP" + std::to_string(stv.varTable[temp_left].offset);
-        // Copier le résultat de l'expression dans la variable temporaire
-        IRInstr *instruction_left = new Wmem(cfgs.back()->current_bb, address_left, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
-        cfgs.back()->current_bb->add_IRInstr(instruction_left);
+    ExprReturn* res_right(visit(ctx->right));
+    Type output_type = res_left->type == Type::FLOAT64_T || res_right->type == Type::FLOAT64_T ? Type::FLOAT64_T : Type::INT32_T;
+    if (res_right->isConst) {
+        if (res_left->isConst) { // is const expr
+            cfgs.back()->current_bb->pop_IRInstr();
+            cfgs.back()->current_bb->pop_IRInstr();
+            if (output_type == Type::INT32_T) {
+                if (ctx->eqOp()->EQ()) {
+                    res_left->ivalue = res_left->ivalue == res_right->ivalue;
+                }
+                else if (ctx->eqOp()->NEQ()) {
+                    res_left->ivalue = res_left->ivalue != res_right->ivalue;
+                }
+            }
+            else if (output_type == Type::FLOAT64_T) {
+                if (res_left->type == Type::INT32_T) { // promote
+                    res_left->dvalue = res_left->ivalue;
+                }
+                if (res_right->type == Type::INT32_T) { // promote
+                    res_right->dvalue = res_right->ivalue;
+                }
 
-        ExprReturn* res_right(visit(ctx->right));
-        if (res_right->isConst) {
-            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR), res_right->ivalue);
-            cfgs.back()->current_bb->add_IRInstr(instruction_const);
-        } 
-        else {
+                if (ctx->eqOp()->EQ()) {
+                    res_left->dvalue = res_left->dvalue == res_right->dvalue;
+                }
+                else if (ctx->eqOp()->NEQ()) {
+                    res_left->dvalue = res_left->dvalue != res_right->dvalue;
+                }
+            }
+            delete res_right;
+            res_left->type = output_type;
+            return res_left;
+        }
+        else { // left is not const expr so we just put the const right
+            if (res_right->type == Type::INT32_T) {
+                IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR), res_right->ivalue);
+                cfgs.back()->current_bb->add_IRInstr(instruction_const);
+            }
+            else if (res_right->type == Type::FLOAT64_T) {
+                IRInstr *instruction_const = new LdConstDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM), res_right->dvalue);
+                cfgs.back()->current_bb->add_IRInstr(instruction_const);
+            }
+        }
+    }
+    else { // right is not const, we have its value in reg, we copy in reg right
+        if (res_right->type == Type::INT32_T) {
             IRInstr *instruction_copy_right = new Copy(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
             cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
         }
-        delete res_right;
-
+        else if (res_right->type == Type::FLOAT64_T) {
+            IRInstr *instruction_copy_right = new DCopy(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+            cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
+        }
+    }
+    // we put back left in reg
+    if (res_left->type == Type::INT32_T) {
         IRInstr *instruction_read_left = new Rmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), address_left);
         cfgs.back()->current_bb->add_IRInstr(instruction_read_left);
-        
+    }
+    else if (res_left->type == Type::FLOAT64_T) {
+        IRInstr *instruction_read_left = new DRmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), address_left);
+        cfgs.back()->current_bb->add_IRInstr(instruction_read_left);
+    }
+
+    // if we have to, we promote the int to double
+    if (res_left->type == Type::INT32_T && output_type== Type::FLOAT64_T) {
+        IRInstr *instruction_int_to_double = new IntToDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+        cfgs.back()->current_bb->add_IRInstr(instruction_int_to_double);
+    }
+    else if (res_right->type == Type::INT32_T && output_type == Type::FLOAT64_T) {
+        IRInstr *instruction_int_to_double = new IntToDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR));
+        cfgs.back()->current_bb->add_IRInstr(instruction_int_to_double);
+    }
+
+    // Appliquer l'opération selon l'opérateur
+    if (output_type == Type::INT32_T) {
         IRInstr *instruction_comp = new CompareInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR), ctx->eqOp()->getText());
         cfgs.back()->current_bb->add_IRInstr(instruction_comp);
     }
-    
+    else if (output_type == Type::FLOAT64_T) {
+        IRInstr *instruction_comp = new CompareDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM), ctx->eqOp()->getText());
+        cfgs.back()->current_bb->add_IRInstr(instruction_comp);
+    }
+
     res_left->isConst = false;
     res_left->type = Type::INT32_T;
     res_left->ivalue = 0;

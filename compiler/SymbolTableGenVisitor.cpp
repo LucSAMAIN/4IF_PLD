@@ -46,9 +46,9 @@ SymbolTableGenVisitor::SymbolTableGenVisitor() : varTable(), funcTable(), scope(
     varTable["putchar_0"] = {.type = Type::INT32_T, .name = "putchar_0", .offset = 0, .declared = true, .used = false};
     funcTable["putchar"].args.push_back(&varTable["putchar_0"]);
 
-    funcTable["putchar"] = {.type = Type::VOID, .offset = 0, .args = {}, .used = false};
-    varTable["putchar_0"] = {.type = Type::INT32_T, .name = "putchar_0", .offset = 0, .declared = true, .used = false};
-    funcTable["putchar"].args.push_back(&varTable["putchar_0"]);
+    funcTable["getchar"] = {.type = Type::VOID, .offset = 0, .args = {}, .used = false};
+    varTable["getchar_0"] = {.type = Type::INT32_T, .name = "getchar_0", .offset = 0, .declared = true, .used = false};
+    funcTable["getchar"].args.push_back(&varTable["getchar_0"]);
 }
 
 antlrcpp::Any SymbolTableGenVisitor::visitFuncDecl(ifccParser::FuncDeclContext *ctx) {

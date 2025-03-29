@@ -87,6 +87,7 @@ public:
 
 	// Méthode originale pour ajouter une instruction IRInstr (pour compatibilité)
 	void add_IRInstr(IRInstr *instruction);
+	void pop_IRInstr(); 
 
 	// No encapsulation whatsoever here. Feel free to do better.
 	BasicBlock* exit_true;  /**< pointer to the next basic block, true branch. If nullptr, return from procedure */ 

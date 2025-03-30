@@ -3,6 +3,7 @@
 
 #include "IRGenVisitor.h"
 #include "TypeCheckVisitor.h"
+#include "ContinueBreakCheckVisitor.h"
 
 using namespace antlr4;
 
@@ -38,6 +39,14 @@ int main(int argn, const char **argv)
     if (parser.getNumberOfSyntaxErrors() != 0)
     {
         std::cerr << "error: syntax error during parsing\n";
+        exit(1);
+    }
+
+    ContinueBreakCheckVisitor cbv;
+    cbv.visit(tree);
+    if (cbv.getNumberError() != 0)
+    {
+        std::cerr << "error: continue/break error\n";
         exit(1);
     }
 

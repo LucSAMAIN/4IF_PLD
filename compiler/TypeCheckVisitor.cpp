@@ -108,8 +108,7 @@ antlrcpp::Any TypeCheckVisitor::visitReturn_stmt(ifccParser::Return_stmtContext 
 antlrcpp::Any TypeCheckVisitor::visitIf_stmt(ifccParser::If_stmtContext *ctx) {
     Type type_expr = visit(ctx->expr());
     if (type_expr != Type::INT32_T) {
-        std::cerr << "error: type mismatch in if statement, expected " << typeToString(Type::INT32_T) << " found " << typeToString(type_expr) << "\n";
-        type_error++;
+        std::cerr << "warning: type mismatch in if statement, expected " << typeToString(Type::INT32_T) << " found " << typeToString(type_expr) << "\n";
     }
 
     return 0;
@@ -118,8 +117,7 @@ antlrcpp::Any TypeCheckVisitor::visitIf_stmt(ifccParser::If_stmtContext *ctx) {
 antlrcpp::Any TypeCheckVisitor::visitWhile_stmt(ifccParser::While_stmtContext *ctx) {
     Type type_expr = visit(ctx->expr());
     if (type_expr != Type::INT32_T) {
-        std::cerr << "error: type mismatch in if statement, expected " << typeToString(Type::INT32_T) << " found " << typeToString(type_expr) << "\n";
-        type_error++;
+        std::cerr << "warning: type mismatch in if statement, expected " << typeToString(Type::INT32_T) << " found " << typeToString(type_expr) << "\n";
     }
 
     return 0;
@@ -215,6 +213,12 @@ antlrcpp::Any TypeCheckVisitor::visitMulDivExpr(ifccParser::MulDivExprContext *c
     }
     if (type_left != type_right) {
         std::cerr << "warning: type mismatch in comparison expression, found " << typeToString(type_left) << " and " << typeToString(type_right) << "\n";
+    }
+    if (ctx->mOp()->MOD() != nullptr) {
+        if (type_left != Type::INT32_T || type_right != Type::INT32_T) {
+            std::cerr << "error: type mismatch in modulo expression, expected int, found " << typeToString(type_left) << " and " << typeToString(type_right) << "\n";
+            type_error++;
+        }
     }
 
     return Type::INT32_T;

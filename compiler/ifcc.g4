@@ -93,7 +93,7 @@ DOUBLE : 'double' ;
 
 CONSTINT : '0' | [1-9][0-9]* ;
 CONSTCHAR : '\''.*?'\'' ;
-CONSTDOUBLE : [0-9]+ '.' [0-9]+ ;
+CONSTDOUBLE : [0-9]* '.' [0-9]+ ;
 
 ID : [a-zA-Z][a-zA-Z0-9_]* ;
 MULTILINE_COMMENT : '/*' .*? '*/' -> skip ;

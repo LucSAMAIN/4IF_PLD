@@ -21,6 +21,7 @@ OBJECTS=build/ifccBaseVisitor.o \
 	build/IRGenVisitor.o \
 	build/SymbolTableGenVisitor.o \
 	build/TypeCheckVisitor.o \
+	build/ContinueBreakCheckVisitor.o \
 	build/IRInstr.o \
 	build/IR.o 
 

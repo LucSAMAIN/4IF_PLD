@@ -80,6 +80,12 @@ antlrcpp::Any IRGenVisitor::visitBlock(ifccParser::BlockContext *ctx)
             if (ctx->stmt(i)->return_stmt() != nullptr) {
                 break;
             }
+            if (ctx->stmt(i)->break_stmt() != nullptr) {
+                break;
+            }
+            if (ctx->stmt(i)->continue_stmt() != nullptr) {
+                break;
+            }
         }
     }
     if (cfgs.back()->current_bb->exit_true) {
@@ -317,6 +323,37 @@ antlrcpp::Any IRGenVisitor::visitWhile_stmt(ifccParser::While_stmtContext *ctx) 
     return 0;
 }
 
+antlrcpp::Any IRGenVisitor::visitContinue_stmt(ifccParser::Continue_stmtContext *ctx) {
+    // on cherche le label du test de la boucle
+    BasicBlock* bb_test_while = cfgs.back()->current_bb;
+    while (bb_test_while->label.find("test_while") == std::string::npos) {
+        if (bb_test_while->exit_false) {
+            bb_test_while = bb_test_while->exit_false;
+        }
+        else {
+            bb_test_while = bb_test_while->exit_true;
+        }
+    }
+    cfgs.back()->current_bb->exit_true = bb_test_while; // on le met dans le bon bloc
+    cfgs.back()->current_bb->exit_false = nullptr; // on le met à null pour pas qu'il aille ailleurs
+    return 0;
+}
+antlrcpp::Any IRGenVisitor::visitBreak_stmt(ifccParser::Break_stmtContext *ctx) {
+    // on cherche le label de fin de boucle
+    BasicBlock* bb_test_while = cfgs.back()->current_bb;
+    while (bb_test_while->label.find("endwhile") == std::string::npos) {
+        if (bb_test_while->exit_false) {
+            bb_test_while = bb_test_while->exit_false;
+        }
+        else {
+            bb_test_while = bb_test_while->exit_true;
+        }
+    }
+    cfgs.back()->current_bb->exit_true = bb_test_while; // on le met dans le bon bloc
+    cfgs.back()->current_bb->exit_false = nullptr; // on le met à null pour pas qu'il aille ailleurs
+    return 0;
+}
+
 antlrcpp::Any IRGenVisitor::visitDoubleExpr(ifccParser::DoubleExprContext *ctx)
 {
     return new ExprReturn(true, Type::FLOAT64_T, std::stod(ctx->CONSTDOUBLE()->getText()));
@@ -530,6 +567,9 @@ antlrcpp::Any IRGenVisitor::visitMulDivExpr(ifccParser::MulDivExprContext *ctx) 
                 else if (ctx->mOp()->SLASH()) {
                     res_left->ivalue = res_left->ivalue / res_right->ivalue;
                 }
+                else if (ctx->mOp()->MOD()) {
+                    res_left->ivalue = res_left->ivalue % res_right->ivalue;
+                }
             }
             else if (operation_type == Type::FLOAT64_T) {
                 if (res_left->type == Type::INT32_T) {
@@ -599,6 +639,9 @@ antlrcpp::Any IRGenVisitor::visitMulDivExpr(ifccParser::MulDivExprContext *ctx) 
         }
         else if (ctx->mOp()->SLASH()) {
             instruction_comp = new Div(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR));
+        }
+        else if (ctx->mOp()->MOD()) {
+            instruction_comp = new Mod(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR));
         }
         cfgs.back()->current_bb->add_IRInstr(instruction_comp);
     }

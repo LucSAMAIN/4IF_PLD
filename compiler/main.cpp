@@ -64,7 +64,7 @@ int main(int argn, const char **argv)
     for (const auto &entry : stv.varTable)
     {
         std::cout << "# Name: " << entry.first << ", Type: " << typeToString(entry.second.type)
-                  << ", offset: " << entry.second.offset << ", declared: " << entry.second.declared << ", used: " << entry.second.used << "\n";
+                << ", offset: " << entry.second.offset << ", declared: " << entry.second.declared << ", used: " << entry.second.used << "\n";
     }
 
     // Print the content of the function table
@@ -72,7 +72,7 @@ int main(int argn, const char **argv)
     for (const auto &entry : stv.funcTable)
     {
         std::cout << "# Name: " << entry.first << ", Return Type: " << typeToString(entry.second.type)
-                  << ", Parameters: ";
+                << ", Parameters: ";
         for (const auto &param : entry.second.args)
         {
             std::cout << typeToString(param->type) << " " << param->name << ", ";

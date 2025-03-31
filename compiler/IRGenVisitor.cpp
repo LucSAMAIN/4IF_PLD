@@ -101,15 +101,15 @@ antlrcpp::Any IRGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx)
     // On a rien besoin de faire si c'est uniquement une déclaration...
     // Car c'est déjà géré par la symbol table.
     for (int i = 0; i < ctx->decl_element().size(); i++) {
-        if (ctx->decl_element(i)->expr()) // si déclaration + assignement direct
+        if (ctx->decl_element(i)->decl_var()->expr()) // si déclaration + assignement direct
         {
-            std::string nomVar = scope + "_" + ctx->decl_element(i)->ID()->getText();
+            std::string nomVar = scope + "_" + ctx->decl_element(i)->decl_var()->ID()->getText();
             // std::cout << "# nomVar " << i << " : " << nomVar << "\n";
             std::string address = "RBP" + std::to_string(stv.varTable[nomVar].offset);
             // std::cout << "# address " << address << "\n";
 
             // Évaluation de l'expression qu'on place dans le registre universel !reg
-            ExprReturn* res(visit(ctx->decl_element(i)->expr()));
+            ExprReturn* res(visit(ctx->decl_element(i)->decl_var()->expr()));
             if (res->isConst) {
                 IRInstr *instruction_const = nullptr;
                 if (res->type == Type::INT32_T) {
@@ -144,20 +144,10 @@ antlrcpp::Any IRGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx)
 
 antlrcpp::Any IRGenVisitor::visitAssign_stmt(ifccParser::Assign_stmtContext *ctx)
 {
-    // On récupère le nom et l'adresse stack de la variable en question
-    std::string tried_scope = scope;
-    while (tried_scope != "" && stv.varTable.find(tried_scope + '_' + ctx->ID()->getText()) == stv.varTable.end()) {
-        while (tried_scope.size() != 0 && tried_scope.back() != '_') {
-            tried_scope.pop_back();
-        }
-        if (tried_scope.size() != 0) {
-            tried_scope.pop_back();
-        }
-    }
-    std::string nomVar = tried_scope + "_" + ctx->ID()->getText();
-    ExprReturn* res(visit(ctx->expr()));
-
+    std::string nomVar = visit(ctx->lValue()).as<std::string>();
     std::string address = "RBP" + std::to_string(stv.varTable[nomVar].offset);
+    ExprReturn* res(visit(ctx->value));
+
 
     if (res->isConst) {
         if (res->type == Type::INT32_T) {
@@ -432,7 +422,7 @@ antlrcpp::Any IRGenVisitor::visitIdUse(ifccParser::IdUseContext *ctx)
     return new ExprReturn(false, stv.varTable[nomVar].type, 0);
 }
 
-antlrcpp::Any IRGenVisitor::visitAssignExpr(ifccParser::AssignExprContext *ctx) {
+antlrcpp::Any IRGenVisitor::visitLIdUse(ifccParser::LIdUseContext *ctx) {
     // On récupère le nom et l'adresse stack de la variable en question
     std::string tried_scope = scope;
     while (tried_scope != "" && stv.varTable.find(tried_scope + '_' + ctx->ID()->getText()) == stv.varTable.end()) {
@@ -443,11 +433,15 @@ antlrcpp::Any IRGenVisitor::visitAssignExpr(ifccParser::AssignExprContext *ctx) 
             tried_scope.pop_back();
         }
     }
-
     std::string nomVar = tried_scope + "_" + ctx->ID()->getText();
-    ExprReturn* res(visit(ctx->expr()));
 
+    return nomVar;
+}
+
+antlrcpp::Any IRGenVisitor::visitAssignExpr(ifccParser::AssignExprContext *ctx) {
+    std::string nomVar = visit(ctx->lValue()).as<std::string>();
     std::string address = "RBP" + std::to_string(stv.varTable[nomVar].offset);
+    ExprReturn* res(visit(ctx->value));
     
     // Évaluation de l'expression qu'on place dans le registre universel !reg
     if (res->isConst) {
@@ -479,56 +473,55 @@ antlrcpp::Any IRGenVisitor::visitAssignExpr(ifccParser::AssignExprContext *ctx) 
     return new ExprReturn(false, stv.varTable[nomVar].type, 0);
 }
 
+antlrcpp::Any IRGenVisitor::visitUnaryExpr(ifccParser::UnaryExprContext *ctx) {
+    if (ctx->unaryOp()->MINUS()) {
+        ExprReturn* res(visit(ctx->expr()));
+        if (res->isConst) {
+            if (res->type == Type::INT32_T) {
+                res->ivalue = -res->ivalue;
+            }
+            else if (res->type == Type::FLOAT64_T) {
+                res->dvalue = -res->dvalue;
+            }
+            return res;
+        }
 
-antlrcpp::Any IRGenVisitor::visitNotExpr(ifccParser::NotExprContext *ctx) {
-    // Évaluation de l'expression qu'on place dans le registre universel !reg
-    ExprReturn* res(visit(ctx->primary()));
-    if (res->isConst) {
         if (res->type == Type::INT32_T) {
-            res->ivalue = !res->ivalue;
+            IRInstr *instruction_unaryminus = new UnaryMinus(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+            cfgs.back()->current_bb->add_IRInstr(instruction_unaryminus);
         }
         else if (res->type == Type::FLOAT64_T) {
-            res->dvalue = !res->dvalue;
+            IRInstr *instruction_unaryminus = new DUnaryMinus(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+            cfgs.back()->current_bb->add_IRInstr(instruction_unaryminus);
         }
+
         return res;
     }
+    else if (ctx->unaryOp()->NOT()) {
+        ExprReturn* res(visit(ctx->expr()));
+        if (res->isConst) {
+            if (res->type == Type::INT32_T) {
+                res->ivalue = !res->ivalue;
+            }
+            else if (res->type == Type::FLOAT64_T) {
+                res->dvalue = !res->dvalue;
+            }
+            return res;
+        }
 
-    if (res->type == Type::INT32_T) {
-        IRInstr *instruction_not = new Not(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
-        cfgs.back()->current_bb->add_IRInstr(instruction_not);
-    }
-    else if (res->type == Type::FLOAT64_T) {
-        IRInstr *instruction_not = new DNot(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
-        cfgs.back()->current_bb->add_IRInstr(instruction_not);
-
-        res->type = Type::INT32_T;
-    }
-
-    return res;
-}
-
-antlrcpp::Any IRGenVisitor::visitUnaryMinusExpr(ifccParser::UnaryMinusExprContext *ctx) {
-    ExprReturn* res(visit(ctx->primary()));
-    if (res->isConst) {
         if (res->type == Type::INT32_T) {
-            res->ivalue = -res->ivalue;
+            IRInstr *instruction_not = new Not(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+            cfgs.back()->current_bb->add_IRInstr(instruction_not);
         }
         else if (res->type == Type::FLOAT64_T) {
-            res->dvalue = -res->dvalue;
+            IRInstr *instruction_not = new DNot(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+            cfgs.back()->current_bb->add_IRInstr(instruction_not);
+
+            res->type = Type::INT32_T;
         }
+
         return res;
     }
-
-    if (res->type == Type::INT32_T) {
-        IRInstr *instruction_unaryminus = new UnaryMinus(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
-        cfgs.back()->current_bb->add_IRInstr(instruction_unaryminus);
-    }
-    else if (res->type == Type::FLOAT64_T) {
-        IRInstr *instruction_unaryminus = new DUnaryMinus(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
-        cfgs.back()->current_bb->add_IRInstr(instruction_unaryminus);
-    }
-
-    return res;
 }
 
 antlrcpp::Any IRGenVisitor::visitMulDivExpr(ifccParser::MulDivExprContext *ctx) {

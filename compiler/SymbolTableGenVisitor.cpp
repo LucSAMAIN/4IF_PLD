@@ -10,7 +10,9 @@ std::string typeToString(Type t)
         "int32_t",
         "int16_t",
         "int8_t",
-        "float64_t"
+        "float64_t",
+        "ptr_int32_t",
+        "ptr_float64_t"
     };
     return typeToString[(int)t];
 }
@@ -75,46 +77,53 @@ antlrcpp::Any SymbolTableGenVisitor::visitFuncDecl(ifccParser::FuncDeclContext *
 
 antlrcpp::Any SymbolTableGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx) {
     for (int i = 0; i < ctx->decl_element().size(); i++) {
-        if (varTable.find(scope + '_' + ctx->decl_element(i)->ID()->getText()) != varTable.end()) {
-            std::cerr << "error: variable name already declared " << ctx->decl_element(i)->ID()->getText() << "\n";
+        std::string varName = scope + "_";
+        if (ctx->decl_element(i)->decl_var() != nullptr) {
+            varName += ctx->decl_element(i)->decl_var()->ID()->getText();
+        }
+        else if (ctx->decl_element(i)->decl_pointer() != nullptr) {
+            varName += ctx->decl_element(i)->decl_pointer()->ID()->getText();
+        }
+        else if (ctx->decl_element(i)->decl_array() != nullptr) {
+            varName += ctx->decl_element(i)->decl_array()->ID()->getText();
+        }
+
+        if (varTable.find(varName) != varTable.end()) {
+            std::cerr << "error: variable name already declared " << varName << "\n";
             error_count++;
         }
         std::string funcName;
         std::istringstream ss_scope(scope);
         std::getline(ss_scope, funcName, '_');
-        // std::cout << "# funcName " << funcName << " scope " << scope << "\n";
 
-        std::string varName = scope + "_" + ctx->decl_element(i)->ID()->getText();
-
-        funcTable[funcName].offset -= typeSize(stringToType(ctx->type()->getText()));
-        varTable[varName] = {.type = stringToType(ctx->type()->getText()),
-            .name = varName, 
-            .offset = funcTable[funcName].offset, 
-            .declared = true, 
-            .used = false};
-        
-        if (ctx->decl_element(i)->expr() != nullptr) {
-            visit(ctx->decl_element(i)->expr());
+        if (ctx->decl_element(i)->decl_var() != nullptr) {
+            funcTable[funcName].offset -= typeSize(stringToType(ctx->type()->getText()));
+            varTable[varName] = {.type = stringToType(ctx->type()->getText()),
+                .name = varName, 
+                .offset = funcTable[funcName].offset, 
+                .declared = true, 
+                .used = false};
+            
+            if (ctx->decl_element(i)->decl_var()->expr() != nullptr) {
+                visit(ctx->decl_element(i)->decl_var()->expr());
+            }
         }
+        // else if (ctx->decl_element(i)->decl_pointer() != nullptr) {
+        //     funcTable[funcName].offset -= 8; // adress size
+        //     varTable[varName] = {.type = stringToType(ctx->type()->getText()),
+        //         .name = varName, 
+        //         .offset = funcTable[funcName].offset, 
+        //         .declared = true, 
+        //         .used = false};
+            
+        //     if (ctx->decl_element(i)->decl_var()->expr() != nullptr) {
+        //         visit(ctx->decl_element(i)->decl_var()->expr());
+        //     }
+        // }
+        // else if (ctx->decl_element(i)->decl_array() != nullptr) {
+        //     varName += ctx->decl_element(i)->decl_array()->ID()->getText();
+        // }
     }
-    return 0;
-}
-
-antlrcpp::Any SymbolTableGenVisitor::visitAssign_stmt(ifccParser::Assign_stmtContext *ctx) {
-    std::string tried_scope = scope;
-    while (tried_scope != "" && varTable.find(tried_scope + '_' + ctx->ID()->getText()) == varTable.end()) {
-        while (tried_scope.size() != 0 && tried_scope.back() != '_') {
-            tried_scope.pop_back();
-        }
-        if (tried_scope.size() != 0) {
-            tried_scope.pop_back();
-        }
-    }
-    if (tried_scope.size() == 0) {
-        std::cerr << "error: variable not declared " << ctx->ID()->getText() << " in scope " << scope << "\n";
-        error_count++;
-    }
-    visit(ctx->expr());
     return 0;
 }
 
@@ -154,6 +163,23 @@ antlrcpp::Any SymbolTableGenVisitor::visitIdUse(ifccParser::IdUseContext *ctx) {
     return 0;
 }
 
+antlrcpp::Any SymbolTableGenVisitor::visitLIdUse(ifccParser::LIdUseContext *ctx) {
+    std::string tried_scope = scope;
+    while (tried_scope != "" && varTable.find(tried_scope + '_' + ctx->ID()->getText()) == varTable.end()) {
+        while (tried_scope.size() != 0 && tried_scope.back() != '_') {
+            tried_scope.pop_back();
+        }
+        if (tried_scope.size() != 0) {
+            tried_scope.pop_back();
+        }
+    }
+    if (tried_scope.size() == 0) {
+        std::cerr << "error: variable not declared " << ctx->ID()->getText() << " in scope " << scope << "\n";
+        error_count++;
+    }
+    return tried_scope + '_' + ctx->ID()->getText();
+}
+
 antlrcpp::Any SymbolTableGenVisitor::visitBlock(ifccParser::BlockContext *ctx) {
     for (int i = 0; i < ctx->stmt().size(); i++) {
         if (ctx->stmt(i)->block_stmt() != nullptr) {
@@ -171,22 +197,15 @@ antlrcpp::Any SymbolTableGenVisitor::visitBlock(ifccParser::BlockContext *ctx) {
     return 0;
 }
 
+antlrcpp::Any SymbolTableGenVisitor::visitAssign_stmt(ifccParser::Assign_stmtContext *ctx) {
+    visit(ctx->value);
+    return 0;
+}
+
 antlrcpp::Any SymbolTableGenVisitor::visitAssignExpr(ifccParser::AssignExprContext *ctx) {
-    std::string tried_scope = scope;
-    while (tried_scope != "" && varTable.find(tried_scope + '_' + ctx->ID()->getText()) == varTable.end()) {
-        while (tried_scope.size() != 0 && tried_scope.back() != '_') {
-            tried_scope.pop_back();
-        }
-        if (tried_scope.size() != 0) {
-            tried_scope.pop_back();
-        }
-    }
-    if (tried_scope.size() == 0) {
-        std::cerr << "error: variable not declared " << ctx->ID()->getText() << " in scope " << scope << "\n";
-        error_count++;
-    }
-    varTable[tried_scope + '_' + ctx->ID()->getText()].used = true;
-    visit(ctx->expr());
+    std::string varName = visit(ctx->lValue()).as<std::string>();
+    varTable[varName].used = true;
+    visit(ctx->value);
     return 0;
 }
 

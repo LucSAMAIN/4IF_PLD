@@ -14,7 +14,9 @@ enum class Type {
     INT32_T,
     INT16_T,
     INT8_T,
-    FLOAT64_T
+    FLOAT64_T,
+    PTR_INT32_T,
+    PTR_FLOAT64_T,
 };
 
 std::string typeToString(Type t);
@@ -50,6 +52,7 @@ public:
     virtual antlrcpp::Any visitDecl_stmt(ifccParser::Decl_stmtContext *ctx) override;
     virtual antlrcpp::Any visitAssign_stmt(ifccParser::Assign_stmtContext *ctx) override;
     virtual antlrcpp::Any visitIdUse(ifccParser::IdUseContext *ctx) override;
+    virtual antlrcpp::Any visitLIdUse(ifccParser::LIdUseContext *ctx) override;
     virtual antlrcpp::Any visitFuncCall(ifccParser::FuncCallContext *ctx) override;
     virtual antlrcpp::Any visitBlock(ifccParser::BlockContext *ctx) override;
     virtual antlrcpp::Any visitAssignExpr(ifccParser::AssignExprContext *ctx) override;

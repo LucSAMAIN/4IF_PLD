@@ -522,6 +522,8 @@ antlrcpp::Any IRGenVisitor::visitUnaryExpr(ifccParser::UnaryExprContext *ctx) {
 
         return res;
     }
+
+    return nullptr;
 }
 
 antlrcpp::Any IRGenVisitor::visitMulDivExpr(ifccParser::MulDivExprContext *ctx) {
@@ -1162,13 +1164,34 @@ antlrcpp::Any IRGenVisitor::visitFuncCall(ifccParser::FuncCallContext *ctx) {
         args_temp_addr.push_back("RBP" + std::to_string(stv.varTable[temp].offset));
         ExprReturn* res(visit(ctx->expr(i)));
         if (res->isConst) {
-            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res->ivalue);
-            cfgs.back()->current_bb->add_IRInstr(instruction_const);
+            if (res->type == Type::INT32_T) {
+                IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res->ivalue);
+                cfgs.back()->current_bb->add_IRInstr(instruction_const);
+            }
+            else if (res->type == Type::FLOAT64_T) {
+                IRInstr *instruction_const = new LdConstDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), res->dvalue);
+                cfgs.back()->current_bb->add_IRInstr(instruction_const);
+            }
         }
-        delete res;
 
-        IRInstr *instruction_temp = new Wmem(cfgs.back()->current_bb, args_temp_addr.back(), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
-        cfgs.back()->current_bb->add_IRInstr(instruction_temp);
+        if (stv.funcTable[nomFonction].args[i]->type == Type::INT32_T) {
+            if (res->type == Type::FLOAT64_T) {
+                IRInstr *instruction_double_to_int = new DoubleToInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+                cfgs.back()->current_bb->add_IRInstr(instruction_double_to_int);
+            }
+            IRInstr *instruction_write_mem = new Wmem(cfgs.back()->current_bb, args_temp_addr.back(), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+            cfgs.back()->current_bb->add_IRInstr(instruction_write_mem);
+        }
+        else if (stv.funcTable[nomFonction].args[i]->type == Type::FLOAT64_T) {
+            if (res->type == Type::INT32_T) {
+                IRInstr *instruction_int_to_double = new IntToDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction_int_to_double);
+            }
+            IRInstr *instruction_write_mem = new DWmem(cfgs.back()->current_bb, args_temp_addr.back(), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+            cfgs.back()->current_bb->add_IRInstr(instruction_write_mem);
+        }
+
+        delete res;
         // plus de 6 args ? faire une  et pop ?
     }
 

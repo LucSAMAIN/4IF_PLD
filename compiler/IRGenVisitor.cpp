@@ -1149,6 +1149,140 @@ antlrcpp::Any IRGenVisitor::visitOrExpr(ifccParser::OrExprContext *ctx) {
     return res_left;
 }
 
+antlrcpp::Any IRGenVisitor::visitLogAndExpr(ifccParser::LogAndExprContext *ctx) {
+    ExprReturn* res_left(visit(ctx->left));
+    if (res_left->isConst) {
+        if (res_left->type == Type::INT32_T && res_left->ivalue == 0) {
+            return res_left;
+        }
+        else if (res_left->type == Type::FLOAT64_T && res_left->dvalue == 0.0) {
+            res_left->ivalue = 0;
+            res_left->type = Type::INT32_T;
+            return res_left;
+        }
+
+        if (res_left->type == Type::INT32_T) {
+            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res_left->ivalue);
+            cfgs.back()->current_bb->add_IRInstr(instruction_const);
+        }
+        else if (res_left->type == Type::FLOAT64_T) {
+            IRInstr *instruction_const = new LdConstDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), res_left->dvalue);
+            cfgs.back()->current_bb->add_IRInstr(instruction_const);
+        }
+    }
+    if (res_left->type == Type::FLOAT64_T) {
+        IRInstr *instruction_double_to_int = new DoubleToInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+        cfgs.back()->current_bb->add_IRInstr(instruction_double_to_int);
+    }
+
+    BasicBlock* bb_expr_true = new BasicBlock(cfgs.back(), cfgs.back()->new_BB_name() + "_expr_true");
+    cfgs.back()->add_bb(bb_expr_true);
+    BasicBlock* bb_expr_end = new BasicBlock(cfgs.back(), cfgs.back()->new_BB_name() + "_expr_end");
+    cfgs.back()->add_bb(bb_expr_end);
+    bb_expr_end->exit_true = cfgs.back()->current_bb->exit_true;
+    cfgs.back()->current_bb->exit_true = bb_expr_true;
+    cfgs.back()->current_bb->exit_false = bb_expr_end;
+    bb_expr_true->exit_true = bb_expr_end;
+
+    IRInstr *instruction_jump = new JumpFalse(cfgs.back()->current_bb, bb_expr_end->label, bb_expr_true->label, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+    cfgs.back()->current_bb->add_IRInstr(instruction_jump);
+
+    cfgs.back()->current_bb = bb_expr_true;
+
+    ExprReturn* res_right(visit(ctx->right));
+    if (res_right->isConst) {
+        delete res_left;
+        cfgs.back()->current_bb = bb_expr_end;
+        if (res_right->type == Type::INT32_T) {
+            return res_right;
+        }
+        else if (res_right->type == Type::FLOAT64_T) {
+            res_right->ivalue = res_right->dvalue;
+            res_right->type = Type::INT32_T;
+            return res_right;
+        }
+    }
+
+    if (res_right->type == Type::FLOAT64_T) {
+        IRInstr *instruction_double_to_int = new DoubleToInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+        cfgs.back()->current_bb->add_IRInstr(instruction_double_to_int);
+    }
+
+    cfgs.back()->current_bb = bb_expr_end;
+
+    res_right->isConst = false;
+    res_right->type = Type::INT32_T;
+    res_right->ivalue = 0;
+    return res_right;
+}
+
+antlrcpp::Any IRGenVisitor::visitLogOrExpr(ifccParser::LogOrExprContext *ctx) {
+    ExprReturn* res_left(visit(ctx->left));
+    if (res_left->isConst) {
+        if (res_left->type == Type::INT32_T && res_left->ivalue != 0) {
+            return res_left;
+        }
+        else if (res_left->type == Type::FLOAT64_T && res_left->dvalue != 0.0) {
+            res_left->ivalue = res_left->dvalue;
+            res_left->type = Type::INT32_T;
+            return res_left;
+        }
+
+        if (res_left->type == Type::INT32_T) {
+            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res_left->ivalue);
+            cfgs.back()->current_bb->add_IRInstr(instruction_const);
+        }
+        else if (res_left->type == Type::FLOAT64_T) {
+            IRInstr *instruction_const = new LdConstDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), res_left->dvalue);
+            cfgs.back()->current_bb->add_IRInstr(instruction_const);
+        }
+    }
+    if (res_left->type == Type::FLOAT64_T) {
+        IRInstr *instruction_double_to_int = new DoubleToInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+        cfgs.back()->current_bb->add_IRInstr(instruction_double_to_int);
+    }
+
+    BasicBlock* bb_expr_false = new BasicBlock(cfgs.back(), cfgs.back()->new_BB_name() + "_expr_false");
+    cfgs.back()->add_bb(bb_expr_false);
+    BasicBlock* bb_expr_end = new BasicBlock(cfgs.back(), cfgs.back()->new_BB_name() + "_expr_end");
+    cfgs.back()->add_bb(bb_expr_end);
+    bb_expr_end->exit_true = cfgs.back()->current_bb->exit_true;
+    cfgs.back()->current_bb->exit_true = bb_expr_end;
+    cfgs.back()->current_bb->exit_false = bb_expr_false;
+    bb_expr_false->exit_true = bb_expr_end;
+
+    IRInstr *instruction_jump = new JumpFalse(cfgs.back()->current_bb, bb_expr_false->label, bb_expr_end->label, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+    cfgs.back()->current_bb->add_IRInstr(instruction_jump);
+
+    cfgs.back()->current_bb = bb_expr_false;
+
+    ExprReturn* res_right(visit(ctx->right));
+    if (res_right->isConst) {
+        delete res_left;
+        cfgs.back()->current_bb = bb_expr_end;
+        if (res_right->type == Type::INT32_T) {
+            return res_right;
+        }
+        else if (res_right->type == Type::FLOAT64_T) {
+            res_right->ivalue = res_right->dvalue;
+            res_right->type = Type::INT32_T;
+            return res_right;
+        }
+    }
+
+    if (res_right->type == Type::FLOAT64_T) {
+        IRInstr *instruction_double_to_int = new DoubleToInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+        cfgs.back()->current_bb->add_IRInstr(instruction_double_to_int);
+    }
+
+    cfgs.back()->current_bb = bb_expr_end;
+
+    res_right->isConst = false;
+    res_right->type = Type::INT32_T;
+    res_right->ivalue = 0;
+    return res_right;
+}
+
 antlrcpp::Any IRGenVisitor::visitParExpr(ifccParser::ParExprContext *ctx) {
     ExprReturn* res(visit(ctx->expr()));
     return res;

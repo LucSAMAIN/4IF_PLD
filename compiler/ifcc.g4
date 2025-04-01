@@ -57,13 +57,15 @@ expr : LPAR expr RPAR                        # parExpr
      | left=expr aOp right=expr              # addSubExpr
      | left=expr compOp right=expr           # compExpr
      | left=expr eqOp right=expr             # eqExpr
-     | left=expr AND right=expr              # andExpr
+     | left=expr BITAND right=expr           # andExpr
      | left=expr XOR right=expr              # xorExpr
-     | left=expr OR right=expr               # orExpr
+     | left=expr BITOR right=expr            # orExpr
+     | left=expr LOGAND right=expr           # logAndExpr
+     | left=expr LOGOR right=expr            # logOrExpr
      | <assoc=right>lValue ASSIGN value=expr # assignExpr
      ;
 
-unaryOp : NOT | MINUS | AND | STAR ;
+unaryOp : NOT | MINUS | BITAND | STAR ;
 mOp : STAR | SLASH | MOD ;
 aOp : PLUS | MINUS ;
 eqOp : EQ | NEQ ;
@@ -78,8 +80,10 @@ RCUR : '}' ;
 PLUS : '+' ;
 MINUS : '-' ;
 XOR : '^' ;
-AND : '&' ;
-OR : '|' ;
+LOGAND : '&&' ;
+LOGOR : '||' ;
+BITAND : '&' ;
+BITOR : '|' ;
 EQ : '==' ;
 NEQ : '!=' ;
 GT : '>' ;

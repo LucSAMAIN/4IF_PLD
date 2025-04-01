@@ -20,8 +20,18 @@ void Prologue::gen_x86(std::ostream& o) {
     }
 
     // on sauvegarde les registres
-    for (int i = 0; i < std::min<int>(6, bb->cfg->stv.funcTable[bb->cfg->functionName].args.size()); i++) {
-        o << "    movl " << bb->cfg->IR_reg_to_x86("!arg" + std::to_string(i) + "32") << ", " << bb->cfg->IR_addr_to_x86("RBP" + std::to_string(bb->cfg->stv.varTable[bb->cfg->stv.funcTable[bb->cfg->functionName].args[i]->name].offset)) << "\n";
+    static const RegisterFunction index_to_reg[6] = { RegisterFunction::ARG0, RegisterFunction::ARG1, RegisterFunction::ARG2, RegisterFunction::ARG3, RegisterFunction::ARG4, RegisterFunction::ARG5 };
+    int index_int = 0;
+    int index_double = 0;
+    for (VarInfos* p : bb->cfg->stv.funcTable[bb->cfg->functionName].args) {
+        if (p->type == Type::INT32_T) {
+            o << "    movl " << bb->cfg->IR_reg_to_x86(VirtualRegister(index_to_reg[index_int], RegisterSize::SIZE_32, RegisterType::GPR)) << ", " << bb->cfg->IR_addr_to_x86("RBP" + std::to_string(bb->cfg->stv.varTable[bb->cfg->stv.funcTable[bb->cfg->functionName].args[index_int+index_double]->name].offset)) << "\n";
+            index_int++;
+        }
+        else if (p->type == Type::FLOAT64_T) {
+            o << "    movsd " << bb->cfg->IR_reg_to_x86(VirtualRegister(index_to_reg[index_double], RegisterSize::SIZE_64, RegisterType::XMM)) << ", " << bb->cfg->IR_addr_to_x86("RBP" + std::to_string(bb->cfg->stv.varTable[bb->cfg->stv.funcTable[bb->cfg->functionName].args[index_int+index_double]->name].offset)) << "\n";
+            index_double++;
+        }
     }
 
     // o << "    jmp " << bb->cfg->functionName << "_0\n";
@@ -257,10 +267,19 @@ std::string Call::get_operation_name() const {
 void Call::gen_x86(std::ostream& o) {
     // on place les variables dans les registres
     static const RegisterFunction index_to_reg[6] = { RegisterFunction::ARG0, RegisterFunction::ARG1, RegisterFunction::ARG2, RegisterFunction::ARG3, RegisterFunction::ARG4, RegisterFunction::ARG5 };
+    int index_int = 0;
+    int index_double = 0;
 
     o << "    # call " << func_name << "\n";
-    for (int i = 0; i < args.size(); i++) {
-        o << "    movl " << bb->cfg->IR_addr_to_x86(args[i]) << ", " << bb->cfg->IR_reg_to_x86(VirtualRegister(index_to_reg[i], RegisterSize::SIZE_32, RegisterType::GPR)) << "\n";
+    for (VarInfos* p : bb->cfg->stv.funcTable[func_name].args) {
+        if (p->type == Type::INT32_T) {
+            o << "    movl " << bb->cfg->IR_addr_to_x86(args[index_int+index_double]) << ", " << bb->cfg->IR_reg_to_x86(VirtualRegister(index_to_reg[index_int], RegisterSize::SIZE_32, RegisterType::GPR)) << "\n";
+            index_int++;
+        }
+        else if (p->type == Type::FLOAT64_T) {
+            o << "    movsd " << bb->cfg->IR_addr_to_x86(args[index_int+index_double]) << ", " << bb->cfg->IR_reg_to_x86(VirtualRegister(index_to_reg[index_double], RegisterSize::SIZE_64, RegisterType::XMM)) << "\n";
+            index_double++;
+        }
     }
 
     o << "    call " << func_name << "\n";

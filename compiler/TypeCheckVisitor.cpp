@@ -174,6 +174,42 @@ antlrcpp::Any TypeCheckVisitor::visitAssign_stmt(ifccParser::Assign_stmtContext 
     return type_var;
 }
 
+antlrcpp::Any TypeCheckVisitor::visitSuffixDecrement(ifccParser::SuffixDecrementContext *ctx) {
+    Type type_var = visit(ctx->lValue());
+    if (type_var == Type::VOID) {
+        std::cerr << "error: type mismatch in suffix -- of variable expected " << typeToString(type_var) << " found " << typeToString(type_var) << "\n";
+        type_error++;
+    }
+    return type_var;
+}
+
+antlrcpp::Any TypeCheckVisitor::visitSuffixIncrement(ifccParser::SuffixIncrementContext *ctx) {
+    Type type_var = visit(ctx->lValue());
+    if (type_var == Type::VOID) {
+        std::cerr << "error: type mismatch in suffix ++ of variable expected " << typeToString(type_var) << " found " << typeToString(type_var) << "\n";
+        type_error++;
+    }
+    return type_var;
+}
+
+antlrcpp::Any TypeCheckVisitor::visitPrefixDecrement(ifccParser::PrefixDecrementContext *ctx) {
+    Type type_var = visit(ctx->lValue());
+    if (type_var == Type::VOID) {
+        std::cerr << "error: type mismatch in prefix -- of variable expected " << typeToString(type_var) << " found " << typeToString(type_var) << "\n";
+        type_error++;
+    }
+    return type_var;
+}
+
+antlrcpp::Any TypeCheckVisitor::visitPrefixIncrement(ifccParser::PrefixIncrementContext *ctx) {
+    Type type_var = visit(ctx->lValue());
+    if (type_var == Type::VOID) {
+        std::cerr << "error: type mismatch in prefix ++ of variable expected " << typeToString(type_var) << " found " << typeToString(type_var) << "\n";
+        type_error++;
+    }
+    return type_var;
+}
+
 antlrcpp::Any TypeCheckVisitor::visitUnaryExpr(ifccParser::UnaryExprContext *ctx) {
     Type type_expr = visit(ctx->expr());
     if (type_expr == Type::VOID) {

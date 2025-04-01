@@ -203,8 +203,27 @@ antlrcpp::Any SymbolTableGenVisitor::visitBlock(ifccParser::BlockContext *ctx) {
     return 0;
 }
 
-antlrcpp::Any SymbolTableGenVisitor::visitAssign_stmt(ifccParser::Assign_stmtContext *ctx) {
-    visit(ctx->value);
+antlrcpp::Any SymbolTableGenVisitor::visitSuffixDecrement(ifccParser::SuffixDecrementContext *ctx) {
+    std::string varName = visit(ctx->lValue()).as<std::string>();
+    varTable[varName].used = true;
+    return 0;
+}
+
+antlrcpp::Any SymbolTableGenVisitor::visitSuffixIncrement(ifccParser::SuffixIncrementContext *ctx) {
+    std::string varName = visit(ctx->lValue()).as<std::string>();
+    varTable[varName].used = true;
+    return 0;
+}
+
+antlrcpp::Any SymbolTableGenVisitor::visitPrefixDecrement(ifccParser::PrefixDecrementContext *ctx) {
+    std::string varName = visit(ctx->lValue()).as<std::string>();
+    varTable[varName].used = true;
+    return 0;
+}
+
+antlrcpp::Any SymbolTableGenVisitor::visitPrefixIncrement(ifccParser::PrefixIncrementContext *ctx) {
+    std::string varName = visit(ctx->lValue()).as<std::string>();
+    varTable[varName].used = true;
     return 0;
 }
 

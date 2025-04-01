@@ -94,11 +94,11 @@ int main(int argn, const char **argv)
     // Récupération du CFG généré
     std::vector<CFG*> cfgs = cgv.getCFGs();
     
+    // gen_x86
     std::cout << ".text\n";
     std::cout << ".globl main\n";
     for (CFG* cfg : cfgs) {
         cfg->gen_x86(std::cout);
-
         delete cfg;
     }
 

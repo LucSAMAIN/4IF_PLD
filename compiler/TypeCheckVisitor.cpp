@@ -157,7 +157,7 @@ antlrcpp::Any TypeCheckVisitor::visitAssignExpr(ifccParser::AssignExprContext *c
     //     type_error++;
     // }
     
-    return type_expr;
+    return type_var;
 }
 antlrcpp::Any TypeCheckVisitor::visitAssign_stmt(ifccParser::Assign_stmtContext *ctx) {
     Type type_var = visit(ctx->lValue());
@@ -171,7 +171,7 @@ antlrcpp::Any TypeCheckVisitor::visitAssign_stmt(ifccParser::Assign_stmtContext 
     //     type_error++;
     // }
     
-    return type_expr;
+    return type_var;
 }
 
 antlrcpp::Any TypeCheckVisitor::visitUnaryExpr(ifccParser::UnaryExprContext *ctx) {
@@ -187,6 +187,7 @@ antlrcpp::Any TypeCheckVisitor::visitUnaryExpr(ifccParser::UnaryExprContext *ctx
 antlrcpp::Any TypeCheckVisitor::visitMulDivExpr(ifccParser::MulDivExprContext *ctx) {
     Type type_left = visit(ctx->left);
     Type type_right = visit(ctx->right);
+    Type output_type = type_left == Type::FLOAT64_T || type_right == Type::FLOAT64_T ? Type::FLOAT64_T : Type::INT32_T;
     if (type_left == Type::VOID || type_right == Type::VOID) {
         std::cerr << "error: type mismatch in multiplication/division expression, found " << typeToString(type_left) << " and " << typeToString(type_right) << "\n";
         type_error++;
@@ -199,14 +200,16 @@ antlrcpp::Any TypeCheckVisitor::visitMulDivExpr(ifccParser::MulDivExprContext *c
             std::cerr << "error: type mismatch in modulo expression, expected int, found " << typeToString(type_left) << " and " << typeToString(type_right) << "\n";
             type_error++;
         }
+        output_type = Type::INT32_T;
     }
 
-    return Type::INT32_T;
+    return output_type;
 }
 
 antlrcpp::Any TypeCheckVisitor::visitAddSubExpr(ifccParser::AddSubExprContext *ctx) {
     Type type_left = visit(ctx->left);
     Type type_right = visit(ctx->right);
+    Type output_type = type_left == Type::FLOAT64_T || type_right == Type::FLOAT64_T ? Type::FLOAT64_T : Type::INT32_T;
     if (type_left == Type::VOID || type_right == Type::VOID) {
         std::cerr << "error: type mismatch in addition/sub expression, found " << typeToString(type_left) << " and " << typeToString(type_right) << "\n";
         type_error++;
@@ -215,7 +218,7 @@ antlrcpp::Any TypeCheckVisitor::visitAddSubExpr(ifccParser::AddSubExprContext *c
         std::cerr << "warning: type mismatch in add/sub expression, found " << typeToString(type_left) << " and " << typeToString(type_right) << "\n";
     }
 
-    return Type::INT32_T;
+    return output_type;
 }
 
 antlrcpp::Any TypeCheckVisitor::visitCompExpr(ifccParser::CompExprContext *ctx) {
@@ -274,6 +277,34 @@ antlrcpp::Any TypeCheckVisitor::visitXorExpr(ifccParser::XorExprContext *ctx) {
     if (type_left != Type::INT32_T || type_right != Type::INT32_T) {
         std::cerr << "error: type mismatch in bitwise xor expression, expected int, found " << typeToString(type_left) << " and " << typeToString(type_right) << "\n";
         type_error++;
+    }
+
+    return Type::INT32_T;
+}
+
+antlrcpp::Any TypeCheckVisitor::visitLogAndExpr(ifccParser::LogAndExprContext *ctx) {
+    Type type_left = visit(ctx->left);
+    Type type_right = visit(ctx->right);
+    if (type_left == Type::VOID || type_right == Type::VOID) {
+        std::cerr << "error: type mismatch in && expression, found " << typeToString(type_left) << " and " << typeToString(type_right) << "\n";
+        type_error++;
+    }
+    if (type_left != type_right) {
+        std::cerr << "warning: type mismatch in && expression, found " << typeToString(type_left) << " and " << typeToString(type_right) << "\n";
+    }
+
+    return Type::INT32_T;
+}
+
+antlrcpp::Any TypeCheckVisitor::visitLogOrExpr(ifccParser::LogOrExprContext *ctx) {
+    Type type_left = visit(ctx->left);
+    Type type_right = visit(ctx->right);
+    if (type_left == Type::VOID || type_right == Type::VOID) {
+        std::cerr << "error: type mismatch in || expression, found " << typeToString(type_left) << " and " << typeToString(type_right) << "\n";
+        type_error++;
+    }
+    if (type_left != type_right) {
+        std::cerr << "warning: type mismatch in || expression, found " << typeToString(type_left) << " and " << typeToString(type_right) << "\n";
     }
 
     return Type::INT32_T;

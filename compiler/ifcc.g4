@@ -51,7 +51,11 @@ expr : LPAR expr RPAR                          # parExpr
      | CONSTDOUBLE                             # doubleExpr
      | ID                                      # idUse
      | funcCall                                # funcCallExpr
+     | lValue PLUSPLUS                         # suffixIncrement
+     | lValue MINUSMINUS                       # suffixDecrement
      | ID LBRA expr RBRA                       # arrayAccess
+     | PLUSPLUS lValue                         # prefixIncrement
+     | MINUSMINUS lValue                       # prefixDecrement
      | <assoc=right>unaryOp expr               # unaryExpr
      | left=expr mOp right=expr                # mulDivExpr
      | left=expr aOp right=expr                # addSubExpr
@@ -78,6 +82,8 @@ LBRA : '[' ;
 RBRA : ']' ;
 LCUR : '{' ;
 RCUR : '}' ;
+PLUSPLUS : '++' ;
+MINUSMINUS : '--' ;
 PLUS : '+' ;
 MINUS : '-' ;
 XOR : '^' ;

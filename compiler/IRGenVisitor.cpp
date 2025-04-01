@@ -615,6 +615,166 @@ antlrcpp::Any IRGenVisitor::visitLIdUse(ifccParser::LIdUseContext *ctx) {
     return nomVar;
 }
 
+antlrcpp::Any IRGenVisitor::visitSuffixDecrement(ifccParser::SuffixDecrementContext *ctx) {
+    std::string nomVar = visit(ctx->lValue()).as<std::string>();
+    std::string address = "RBP" + std::to_string(stv.varTable[nomVar].offset);
+
+    if (stv.varTable[nomVar].type == Type::INT32_T) {
+        IRInstr *instruction_rmem = new Rmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR), address);
+        cfgs.back()->current_bb->add_IRInstr(instruction_rmem);
+
+        IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), -1);
+        cfgs.back()->current_bb->add_IRInstr(instruction_const);
+
+        IRInstr *instruction_add = new Add(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR));
+        cfgs.back()->current_bb->add_IRInstr(instruction_add);
+
+        IRInstr *instruction_wmem = new Wmem(cfgs.back()->current_bb, address, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+        cfgs.back()->current_bb->add_IRInstr(instruction_wmem);
+
+        IRInstr *instruction_copy = new Copy(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR));
+        cfgs.back()->current_bb->add_IRInstr(instruction_copy);
+    }
+    else if (stv.varTable[nomVar].type == Type::FLOAT64_T) {
+        IRInstr *instruction_rmem = new DRmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_64, RegisterType::XMM), address);
+        cfgs.back()->current_bb->add_IRInstr(instruction_rmem);
+
+        IRInstr *instruction_const = new LdConstDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), -1.0);
+        cfgs.back()->current_bb->add_IRInstr(instruction_const);
+
+        IRInstr *instruction_add = new DAdd(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_64, RegisterType::XMM));
+        cfgs.back()->current_bb->add_IRInstr(instruction_add);
+
+        IRInstr *instruction_wmem = new DWmem(cfgs.back()->current_bb, address, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+        cfgs.back()->current_bb->add_IRInstr(instruction_wmem);
+
+        IRInstr *instruction_copy = new DCopy(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_64, RegisterType::XMM));
+        cfgs.back()->current_bb->add_IRInstr(instruction_copy);
+    }
+
+    return new ExprReturn(false, stv.varTable[nomVar].type, 0);
+}
+
+antlrcpp::Any IRGenVisitor::visitSuffixIncrement(ifccParser::SuffixIncrementContext *ctx) {
+    std::string nomVar = visit(ctx->lValue()).as<std::string>();
+    std::string address = "RBP" + std::to_string(stv.varTable[nomVar].offset);
+
+    if (stv.varTable[nomVar].type == Type::INT32_T) {
+        IRInstr *instruction_rmem = new Rmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR), address);
+        cfgs.back()->current_bb->add_IRInstr(instruction_rmem);
+
+        IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), 1);
+        cfgs.back()->current_bb->add_IRInstr(instruction_const);
+
+        IRInstr *instruction_add = new Add(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR));
+        cfgs.back()->current_bb->add_IRInstr(instruction_add);
+
+        IRInstr *instruction_wmem = new Wmem(cfgs.back()->current_bb, address, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+        cfgs.back()->current_bb->add_IRInstr(instruction_wmem);
+
+        IRInstr *instruction_copy = new Copy(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR));
+        cfgs.back()->current_bb->add_IRInstr(instruction_copy);
+    }
+    else if (stv.varTable[nomVar].type == Type::FLOAT64_T) {
+        IRInstr *instruction_rmem = new DRmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_64, RegisterType::XMM), address);
+        cfgs.back()->current_bb->add_IRInstr(instruction_rmem);
+
+        IRInstr *instruction_const = new LdConstDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), 1.0);
+        cfgs.back()->current_bb->add_IRInstr(instruction_const);
+
+        IRInstr *instruction_add = new DAdd(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_64, RegisterType::XMM));
+        cfgs.back()->current_bb->add_IRInstr(instruction_add);
+
+        IRInstr *instruction_wmem = new DWmem(cfgs.back()->current_bb, address, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+        cfgs.back()->current_bb->add_IRInstr(instruction_wmem);
+
+        IRInstr *instruction_copy = new DCopy(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_64, RegisterType::XMM));
+        cfgs.back()->current_bb->add_IRInstr(instruction_copy);
+    }
+
+    return new ExprReturn(false, stv.varTable[nomVar].type, 0);
+}
+
+antlrcpp::Any IRGenVisitor::visitPrefixDecrement(ifccParser::PrefixDecrementContext *ctx) {
+    std::string nomVar = visit(ctx->lValue()).as<std::string>();
+    std::string address = "RBP" + std::to_string(stv.varTable[nomVar].offset);
+
+    if (stv.varTable[nomVar].type == Type::INT32_T) {
+        IRInstr *instruction_rmem = new Rmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), address);
+        cfgs.back()->current_bb->add_IRInstr(instruction_rmem);
+
+        IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR), -1);
+        cfgs.back()->current_bb->add_IRInstr(instruction_const);
+
+        IRInstr *instruction_add = new Add(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR));
+        cfgs.back()->current_bb->add_IRInstr(instruction_add);
+
+        IRInstr *instruction_wmem = new Wmem(cfgs.back()->current_bb, address, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+        cfgs.back()->current_bb->add_IRInstr(instruction_wmem);
+
+        IRInstr *instruction_rmem2 = new Rmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), address);
+        cfgs.back()->current_bb->add_IRInstr(instruction_rmem2);
+    }
+    else if (stv.varTable[nomVar].type == Type::FLOAT64_T) {
+        IRInstr *instruction_rmem = new DRmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), address);
+        cfgs.back()->current_bb->add_IRInstr(instruction_rmem);
+
+        IRInstr *instruction_const = new LdConstDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM), -1.0);
+        cfgs.back()->current_bb->add_IRInstr(instruction_const);
+
+        IRInstr *instruction_add = new DAdd(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM));
+        cfgs.back()->current_bb->add_IRInstr(instruction_add);
+
+        IRInstr *instruction_wmem = new DWmem(cfgs.back()->current_bb, address, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+        cfgs.back()->current_bb->add_IRInstr(instruction_wmem);
+
+        IRInstr *instruction_rmem2 = new DRmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), address);
+        cfgs.back()->current_bb->add_IRInstr(instruction_rmem2);
+    }
+
+    return new ExprReturn(false, stv.varTable[nomVar].type, 0);
+}
+
+antlrcpp::Any IRGenVisitor::visitPrefixIncrement(ifccParser::PrefixIncrementContext *ctx) {
+    std::string nomVar = visit(ctx->lValue()).as<std::string>();
+    std::string address = "RBP" + std::to_string(stv.varTable[nomVar].offset);
+
+    if (stv.varTable[nomVar].type == Type::INT32_T) {
+        IRInstr *instruction_rmem = new Rmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), address);
+        cfgs.back()->current_bb->add_IRInstr(instruction_rmem);
+
+        IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR), 1);
+        cfgs.back()->current_bb->add_IRInstr(instruction_const);
+
+        IRInstr *instruction_add = new Add(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR));
+        cfgs.back()->current_bb->add_IRInstr(instruction_add);
+
+        IRInstr *instruction_wmem = new Wmem(cfgs.back()->current_bb, address, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+        cfgs.back()->current_bb->add_IRInstr(instruction_wmem);
+
+        IRInstr *instruction_rmem2 = new Rmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), address);
+        cfgs.back()->current_bb->add_IRInstr(instruction_rmem2);
+    }
+    else if (stv.varTable[nomVar].type == Type::FLOAT64_T) {
+        IRInstr *instruction_rmem = new DRmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), address);
+        cfgs.back()->current_bb->add_IRInstr(instruction_rmem);
+
+        IRInstr *instruction_const = new LdConstDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM), 1.0);
+        cfgs.back()->current_bb->add_IRInstr(instruction_const);
+
+        IRInstr *instruction_add = new DAdd(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM));
+        cfgs.back()->current_bb->add_IRInstr(instruction_add);
+
+        IRInstr *instruction_wmem = new DWmem(cfgs.back()->current_bb, address, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+        cfgs.back()->current_bb->add_IRInstr(instruction_wmem);
+
+        IRInstr *instruction_rmem2 = new DRmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), address);
+        cfgs.back()->current_bb->add_IRInstr(instruction_rmem2);
+    }
+
+    return new ExprReturn(false, stv.varTable[nomVar].type, 0);
+}
+
 antlrcpp::Any IRGenVisitor::visitAssignExpr(ifccParser::AssignExprContext *ctx) {
     std::string nomVar = visit(ctx->lValue()).as<std::string>();
     std::string address = "RBP" + std::to_string(stv.varTable[nomVar].offset);

@@ -50,12 +50,15 @@ public:
 
     virtual antlrcpp::Any visitFuncDecl(ifccParser::FuncDeclContext *ctx) override;
     virtual antlrcpp::Any visitDecl_stmt(ifccParser::Decl_stmtContext *ctx) override;
-    virtual antlrcpp::Any visitAssign_stmt(ifccParser::Assign_stmtContext *ctx) override;
     virtual antlrcpp::Any visitIdUse(ifccParser::IdUseContext *ctx) override;
     virtual antlrcpp::Any visitLIdUse(ifccParser::LIdUseContext *ctx) override;
     virtual antlrcpp::Any visitFuncCall(ifccParser::FuncCallContext *ctx) override;
     virtual antlrcpp::Any visitBlock(ifccParser::BlockContext *ctx) override;
     virtual antlrcpp::Any visitAssignExpr(ifccParser::AssignExprContext *ctx) override;
+    virtual antlrcpp::Any visitSuffixDecrement(ifccParser::SuffixDecrementContext *ctx) override;
+    virtual antlrcpp::Any visitSuffixIncrement(ifccParser::SuffixIncrementContext *ctx) override;
+    virtual antlrcpp::Any visitPrefixDecrement(ifccParser::PrefixDecrementContext *ctx) override;
+    virtual antlrcpp::Any visitPrefixIncrement(ifccParser::PrefixIncrementContext *ctx) override;
     std::map<std::string, VarInfos> varTable;
     std::map<std::string, FuncInfos> funcTable;
     std::string scope;

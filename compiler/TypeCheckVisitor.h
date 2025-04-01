@@ -26,6 +26,10 @@ public:
     virtual antlrcpp::Any visitIdUse(ifccParser::IdUseContext *ctx) override;
     virtual antlrcpp::Any visitLIdUse(ifccParser::LIdUseContext *ctx) override;
     virtual antlrcpp::Any visitAssignExpr(ifccParser::AssignExprContext *ctx) override;
+    virtual antlrcpp::Any visitSuffixDecrement(ifccParser::SuffixDecrementContext *ctx) override;
+    virtual antlrcpp::Any visitSuffixIncrement(ifccParser::SuffixIncrementContext *ctx) override;
+    virtual antlrcpp::Any visitPrefixDecrement(ifccParser::PrefixDecrementContext *ctx) override;
+    virtual antlrcpp::Any visitPrefixIncrement(ifccParser::PrefixIncrementContext *ctx) override;
     virtual antlrcpp::Any visitUnaryExpr(ifccParser::UnaryExprContext *ctx) override;
     virtual antlrcpp::Any visitMulDivExpr(ifccParser::MulDivExprContext *ctx) override;
     virtual antlrcpp::Any visitAddSubExpr(ifccParser::AddSubExprContext *ctx) override;

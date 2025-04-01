@@ -30,7 +30,7 @@ decl_array : ID LBRA CONSTINT RBRA ;
 
 funcCall : ID LPAR expr? (COMMA expr)* RPAR ;
 
-assign_stmt : lValue ASSIGN value=expr SEMICOLON ;
+assign_stmt : lValue assignOp value=expr SEMICOLON ;
 expr_stmt : expr SEMICOLON ;
 return_stmt : RETURN expr SEMICOLON ;
 funcCall_stmt : funcCall SEMICOLON ;
@@ -45,24 +45,24 @@ lValue : ID                # lIdUse
        | STAR expr         # lDereference
        ;
 
-expr : LPAR expr RPAR                        # parExpr
-     | CONSTINT                              # intExpr
-     | CONSTCHAR                             # charExpr
-     | CONSTDOUBLE                           # doubleExpr
-     | ID                                    # idUse
-     | funcCall                              # funcCallExpr
-     | ID LBRA expr RBRA                     # arrayAccess
-     | <assoc=right>unaryOp expr             # unaryExpr
-     | left=expr mOp right=expr              # mulDivExpr
-     | left=expr aOp right=expr              # addSubExpr
-     | left=expr compOp right=expr           # compExpr
-     | left=expr eqOp right=expr             # eqExpr
-     | left=expr BITAND right=expr           # andExpr
-     | left=expr XOR right=expr              # xorExpr
-     | left=expr BITOR right=expr            # orExpr
-     | left=expr LOGAND right=expr           # logAndExpr
-     | left=expr LOGOR right=expr            # logOrExpr
-     | <assoc=right>lValue ASSIGN value=expr # assignExpr
+expr : LPAR expr RPAR                          # parExpr
+     | CONSTINT                                # intExpr
+     | CONSTCHAR                               # charExpr
+     | CONSTDOUBLE                             # doubleExpr
+     | ID                                      # idUse
+     | funcCall                                # funcCallExpr
+     | ID LBRA expr RBRA                       # arrayAccess
+     | <assoc=right>unaryOp expr               # unaryExpr
+     | left=expr mOp right=expr                # mulDivExpr
+     | left=expr aOp right=expr                # addSubExpr
+     | left=expr compOp right=expr             # compExpr
+     | left=expr eqOp right=expr               # eqExpr
+     | left=expr BITAND right=expr             # andExpr
+     | left=expr XOR right=expr                # xorExpr
+     | left=expr BITOR right=expr              # orExpr
+     | left=expr LOGAND right=expr             # logAndExpr
+     | left=expr LOGOR right=expr              # logOrExpr
+     | <assoc=right>lValue assignOp value=expr # assignExpr
      ;
 
 unaryOp : NOT | MINUS | BITAND | STAR ;
@@ -70,6 +70,7 @@ mOp : STAR | SLASH | MOD ;
 aOp : PLUS | MINUS ;
 eqOp : EQ | NEQ ;
 compOp : LT | LE | GT | GE ;
+assignOp : ASSIGN | PLUSASSIGN | MINUSASSIGN | MULASSIGN | DIVASSIGN | MODASSIGN ;
 
 LPAR : '(' ;
 RPAR : ')' ;
@@ -94,6 +95,11 @@ NOT : '!' ;
 STAR : '*' ;
 SLASH : '/' ;
 MOD : '%' ;
+PLUSASSIGN : '+=' ;
+MINUSASSIGN : '-=' ;
+MULASSIGN : '*=' ;
+DIVASSIGN : '/=' ;
+MODASSIGN : '%=' ;
 ASSIGN : '=' ;
 SEMICOLON : ';' ;
 COMMA : ',' ;

@@ -160,20 +160,190 @@ antlrcpp::Any IRGenVisitor::visitAssign_stmt(ifccParser::Assign_stmtContext *ctx
     }
     
     if (stv.varTable[nomVar].type == Type::INT32_T) {
-        if (res->type == Type::FLOAT64_T) {
-            IRInstr *instruction = new DoubleToInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
-            cfgs.back()->current_bb->add_IRInstr(instruction);
+        if (ctx->assignOp()->ASSIGN()) {
+            if (res->type == Type::FLOAT64_T) {
+                IRInstr *instruction = new DoubleToInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+                cfgs.back()->current_bb->add_IRInstr(instruction);
+            }
         }
-        IRInstr *instruction = new Wmem(cfgs.back()->current_bb, address, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
-        cfgs.back()->current_bb->add_IRInstr(instruction);
+        else if (ctx->assignOp()->PLUSASSIGN()) {
+            if (res->type == Type::INT32_T) {
+                IRInstr *instruction_rmem = new Rmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR), address);
+                cfgs.back()->current_bb->add_IRInstr(instruction_rmem);
+
+                IRInstr *instruction_add = new Add(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction_add);
+            }
+            else if (res->type == Type::FLOAT64_T) {
+                IRInstr *instruction_rmem = new Rmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR), address);
+                cfgs.back()->current_bb->add_IRInstr(instruction_rmem);
+
+                IRInstr *instruction_itod = new IntToDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction_itod);
+
+                IRInstr *instruction_add = new DAdd(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_64, RegisterType::XMM));
+                cfgs.back()->current_bb->add_IRInstr(instruction_add);
+
+                IRInstr *instruction_dtoi = new DoubleToInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+                cfgs.back()->current_bb->add_IRInstr(instruction_dtoi);
+            }
+        }
+        else if (ctx->assignOp()->MINUSASSIGN()) {
+            if (res->type == Type::INT32_T) {
+                IRInstr *instruction_copy_right = new Copy(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
+
+                IRInstr *instruction_rmem = new Rmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), address);
+                cfgs.back()->current_bb->add_IRInstr(instruction_rmem);
+
+                IRInstr *instruction_sub = new Sub(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction_sub);
+            }
+            else if (res->type == Type::FLOAT64_T) {
+                IRInstr *instruction_copy_right = new DCopy(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+                cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
+
+                IRInstr *instruction_rmem = new Rmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), address);
+                cfgs.back()->current_bb->add_IRInstr(instruction_rmem);
+
+                IRInstr *instruction_itod = new IntToDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction_itod);
+
+                IRInstr *instruction_sub = new DSub(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM));
+                cfgs.back()->current_bb->add_IRInstr(instruction_sub);
+
+                IRInstr *instruction_dtoi = new DoubleToInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+                cfgs.back()->current_bb->add_IRInstr(instruction_dtoi);
+            }
+        }
+        else if (ctx->assignOp()->MULASSIGN()) {
+            if (res->type == Type::INT32_T) {
+                IRInstr *instruction_rmem = new Rmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR), address);
+                cfgs.back()->current_bb->add_IRInstr(instruction_rmem);
+
+                IRInstr *instruction_mul = new Mul(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction_mul);
+            }
+            else if (res->type == Type::FLOAT64_T) {
+                IRInstr *instruction_rmem = new Rmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR), address);
+                cfgs.back()->current_bb->add_IRInstr(instruction_rmem);
+
+                IRInstr *instruction_itod = new IntToDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction_itod);
+
+                IRInstr *instruction_mul = new DMul(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_64, RegisterType::XMM));
+                cfgs.back()->current_bb->add_IRInstr(instruction_mul);
+
+                IRInstr *instruction_dtoi = new DoubleToInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+                cfgs.back()->current_bb->add_IRInstr(instruction_dtoi);
+            }
+        }
+        else if (ctx->assignOp()->DIVASSIGN()) {
+            if (res->type == Type::INT32_T) {
+                IRInstr *instruction_copy_right = new Copy(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
+
+                IRInstr *instruction_rmem = new Rmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), address);
+                cfgs.back()->current_bb->add_IRInstr(instruction_rmem);
+
+                IRInstr *instruction_div = new Div(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction_div);
+            }
+            else if (res->type == Type::FLOAT64_T) {
+                IRInstr *instruction_copy_right = new DCopy(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+                cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
+
+                IRInstr *instruction_rmem = new Rmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), address);
+                cfgs.back()->current_bb->add_IRInstr(instruction_rmem);
+
+                IRInstr *instruction_itod = new IntToDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction_itod);
+
+                IRInstr *instruction_div = new DDiv(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM));
+                cfgs.back()->current_bb->add_IRInstr(instruction_div);
+
+                IRInstr *instruction_dtoi = new DoubleToInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+                cfgs.back()->current_bb->add_IRInstr(instruction_dtoi);
+            }
+        }
+        else if (ctx->assignOp()->MODASSIGN()) {
+            if (res->type == Type::INT32_T) {
+                IRInstr *instruction_copy_right = new Copy(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
+
+                IRInstr *instruction_rmem = new Rmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), address);
+                cfgs.back()->current_bb->add_IRInstr(instruction_rmem);
+
+                IRInstr *instruction_mod = new Mod(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction_mod);
+            }
+        }
+
+        IRInstr *instruction_wmem = new Wmem(cfgs.back()->current_bb, address, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+        cfgs.back()->current_bb->add_IRInstr(instruction_wmem);
     }
     else if (stv.varTable[nomVar].type == Type::FLOAT64_T) {
-        if (res->type == Type::INT32_T) {
-            IRInstr *instruction = new IntToDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
-            cfgs.back()->current_bb->add_IRInstr(instruction);
+        if (ctx->assignOp()->ASSIGN()) {
+            if (res->type == Type::INT32_T) {
+                IRInstr *instruction = new IntToDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction);
+            }
         }
-        IRInstr *instruction = new DWmem(cfgs.back()->current_bb, address, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
-        cfgs.back()->current_bb->add_IRInstr(instruction);
+        else if (ctx->assignOp()->PLUSASSIGN()) {
+            if (res->type == Type::INT32_T) {
+                IRInstr *instruction_itod = new IntToDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction_itod);
+            }
+
+            IRInstr *instruction_rmem = new DRmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_64, RegisterType::XMM), address);
+            cfgs.back()->current_bb->add_IRInstr(instruction_rmem);
+
+            IRInstr *instruction_add = new DAdd(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_64, RegisterType::XMM));
+            cfgs.back()->current_bb->add_IRInstr(instruction_add);
+        }
+        else if (ctx->assignOp()->MINUSASSIGN()) {
+            if (res->type == Type::INT32_T) {
+                IRInstr *instruction_itod = new IntToDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction_itod);
+            }
+            IRInstr *instruction_copy_right = new DCopy(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+            cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
+
+            IRInstr *instruction_rmem = new DRmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), address);
+            cfgs.back()->current_bb->add_IRInstr(instruction_rmem);
+
+            IRInstr *instruction_sub = new DSub(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM));
+            cfgs.back()->current_bb->add_IRInstr(instruction_sub);
+        }
+        else if (ctx->assignOp()->MULASSIGN()) {
+            if (res->type == Type::INT32_T) {
+                IRInstr *instruction_itod = new IntToDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction_itod);
+            }
+
+            IRInstr *instruction_rmem = new DRmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_64, RegisterType::XMM), address);
+            cfgs.back()->current_bb->add_IRInstr(instruction_rmem);
+
+            IRInstr *instruction_mul = new DMul(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_64, RegisterType::XMM));
+            cfgs.back()->current_bb->add_IRInstr(instruction_mul);
+        }
+        else if (ctx->assignOp()->DIVASSIGN()) {
+            if (res->type == Type::INT32_T) {
+                IRInstr *instruction_itod = new IntToDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction_itod);
+            }
+            IRInstr *instruction_copy_right = new DCopy(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+            cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
+
+            IRInstr *instruction_rmem = new DRmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), address);
+            cfgs.back()->current_bb->add_IRInstr(instruction_rmem);
+
+            IRInstr *instruction_div = new DDiv(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM));
+            cfgs.back()->current_bb->add_IRInstr(instruction_div);
+        }
+
+        IRInstr *instruction_wmem = new DWmem(cfgs.back()->current_bb, address, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+        cfgs.back()->current_bb->add_IRInstr(instruction_wmem);
     }
     delete res;
     
@@ -237,7 +407,9 @@ antlrcpp::Any IRGenVisitor::visitIf_stmt(ifccParser::If_stmtContext *ctx) {
         cfgs.back()->add_bb(bb_true);
         cfgs.back()->add_bb(bb_endif);
 
-        IRInstr *instruction_jump = new JumpFalse(cfgs.back()->current_bb, bb_endif->label, bb_true->label, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+        IRInstr *instruction_jump_false = new JumpFalse(cfgs.back()->current_bb, bb_endif->label, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+        cfgs.back()->current_bb->add_IRInstr(instruction_jump_false);
+        IRInstr *instruction_jump = new Jump(cfgs.back()->current_bb, bb_true->label);
         cfgs.back()->current_bb->add_IRInstr(instruction_jump);
 
         cfgs.back()->current_bb = bb_true;
@@ -257,7 +429,9 @@ antlrcpp::Any IRGenVisitor::visitIf_stmt(ifccParser::If_stmtContext *ctx) {
         cfgs.back()->add_bb(bb_false);
         cfgs.back()->add_bb(bb_endif);
 
-        IRInstr *instruction_jump = new JumpFalse(cfgs.back()->current_bb, bb_false->label, bb_true->label, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+        IRInstr *instruction_jump_false = new JumpFalse(cfgs.back()->current_bb, bb_false->label, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+        cfgs.back()->current_bb->add_IRInstr(instruction_jump_false);
+        IRInstr *instruction_jump = new Jump(cfgs.back()->current_bb, bb_true->label);
         cfgs.back()->current_bb->add_IRInstr(instruction_jump);
 
         cfgs.back()->current_bb = bb_true;
@@ -303,8 +477,11 @@ antlrcpp::Any IRGenVisitor::visitWhile_stmt(ifccParser::While_stmtContext *ctx) 
     cfgs.back()->add_bb(bb_true);
     cfgs.back()->add_bb(bb_endwhile);
 
-    IRInstr *instruction_jump = new JumpFalse(cfgs.back()->current_bb, bb_endwhile->label, bb_true->label, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+    IRInstr *instruction_jump_false = new JumpFalse(cfgs.back()->current_bb, bb_endwhile->label, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+    cfgs.back()->current_bb->add_IRInstr(instruction_jump_false);
+    IRInstr *instruction_jump = new Jump(cfgs.back()->current_bb, bb_true->label);
     cfgs.back()->current_bb->add_IRInstr(instruction_jump);
+    
 
     cfgs.back()->current_bb = bb_true;
     visit(ctx->block());
@@ -442,31 +619,203 @@ antlrcpp::Any IRGenVisitor::visitAssignExpr(ifccParser::AssignExprContext *ctx) 
     std::string nomVar = visit(ctx->lValue()).as<std::string>();
     std::string address = "RBP" + std::to_string(stv.varTable[nomVar].offset);
     ExprReturn* res(visit(ctx->value));
-    
-    // Évaluation de l'expression qu'on place dans le registre universel !reg
+
+
     if (res->isConst) {
         if (res->type == Type::INT32_T) {
-            IRInstr *instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res->ivalue);
+            IRInstr* instruction_const = new LdConstInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), res->ivalue);
             cfgs.back()->current_bb->add_IRInstr(instruction_const);
-        }
-        else if (res->type == Type::FLOAT64_T) {
-            IRInstr *instruction_const = new LdConstDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), res->ivalue);
+        } else if (res->type == Type::FLOAT64_T) {
+            IRInstr* instruction_const = new LdConstDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), res->dvalue);
             cfgs.back()->current_bb->add_IRInstr(instruction_const);
         }
     }
-    if (res->type == Type::INT32_T) {
-        IRInstr *instruction_write = new Wmem(cfgs.back()->current_bb, address, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
-        cfgs.back()->current_bb->add_IRInstr(instruction_write);
+    
+    if (stv.varTable[nomVar].type == Type::INT32_T) {
+        if (ctx->assignOp()->ASSIGN()) {
+            if (res->type == Type::FLOAT64_T) {
+                IRInstr *instruction = new DoubleToInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+                cfgs.back()->current_bb->add_IRInstr(instruction);
+            }
+        }
+        else if (ctx->assignOp()->PLUSASSIGN()) {
+            if (res->type == Type::INT32_T) {
+                IRInstr *instruction_rmem = new Rmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR), address);
+                cfgs.back()->current_bb->add_IRInstr(instruction_rmem);
 
-        IRInstr *instruction_read = new Rmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), address);
-        cfgs.back()->current_bb->add_IRInstr(instruction_read);
+                IRInstr *instruction_add = new Add(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction_add);
+            }
+            else if (res->type == Type::FLOAT64_T) {
+                IRInstr *instruction_rmem = new Rmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR), address);
+                cfgs.back()->current_bb->add_IRInstr(instruction_rmem);
+
+                IRInstr *instruction_itod = new IntToDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction_itod);
+
+                IRInstr *instruction_add = new DAdd(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_64, RegisterType::XMM));
+                cfgs.back()->current_bb->add_IRInstr(instruction_add);
+
+                IRInstr *instruction_dtoi = new DoubleToInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+                cfgs.back()->current_bb->add_IRInstr(instruction_dtoi);
+            }
+        }
+        else if (ctx->assignOp()->MINUSASSIGN()) {
+            if (res->type == Type::INT32_T) {
+                IRInstr *instruction_copy_right = new Copy(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
+
+                IRInstr *instruction_rmem = new Rmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), address);
+                cfgs.back()->current_bb->add_IRInstr(instruction_rmem);
+
+                IRInstr *instruction_sub = new Sub(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction_sub);
+            }
+            else if (res->type == Type::FLOAT64_T) {
+                IRInstr *instruction_copy_right = new DCopy(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+                cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
+
+                IRInstr *instruction_rmem = new Rmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), address);
+                cfgs.back()->current_bb->add_IRInstr(instruction_rmem);
+
+                IRInstr *instruction_itod = new IntToDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction_itod);
+
+                IRInstr *instruction_sub = new DSub(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM));
+                cfgs.back()->current_bb->add_IRInstr(instruction_sub);
+
+                IRInstr *instruction_dtoi = new DoubleToInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+                cfgs.back()->current_bb->add_IRInstr(instruction_dtoi);
+            }
+        }
+        else if (ctx->assignOp()->MULASSIGN()) {
+            if (res->type == Type::INT32_T) {
+                IRInstr *instruction_rmem = new Rmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR), address);
+                cfgs.back()->current_bb->add_IRInstr(instruction_rmem);
+
+                IRInstr *instruction_mul = new Mul(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction_mul);
+            }
+            else if (res->type == Type::FLOAT64_T) {
+                IRInstr *instruction_rmem = new Rmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR), address);
+                cfgs.back()->current_bb->add_IRInstr(instruction_rmem);
+
+                IRInstr *instruction_itod = new IntToDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction_itod);
+
+                IRInstr *instruction_mul = new DMul(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_64, RegisterType::XMM));
+                cfgs.back()->current_bb->add_IRInstr(instruction_mul);
+
+                IRInstr *instruction_dtoi = new DoubleToInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+                cfgs.back()->current_bb->add_IRInstr(instruction_dtoi);
+            }
+        }
+        else if (ctx->assignOp()->DIVASSIGN()) {
+            if (res->type == Type::INT32_T) {
+                IRInstr *instruction_copy_right = new Copy(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
+
+                IRInstr *instruction_rmem = new Rmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), address);
+                cfgs.back()->current_bb->add_IRInstr(instruction_rmem);
+
+                IRInstr *instruction_div = new Div(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction_div);
+            }
+            else if (res->type == Type::FLOAT64_T) {
+                IRInstr *instruction_copy_right = new DCopy(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+                cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
+
+                IRInstr *instruction_rmem = new Rmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), address);
+                cfgs.back()->current_bb->add_IRInstr(instruction_rmem);
+
+                IRInstr *instruction_itod = new IntToDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction_itod);
+
+                IRInstr *instruction_div = new DDiv(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM));
+                cfgs.back()->current_bb->add_IRInstr(instruction_div);
+
+                IRInstr *instruction_dtoi = new DoubleToInt(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+                cfgs.back()->current_bb->add_IRInstr(instruction_dtoi);
+            }
+        }
+        else if (ctx->assignOp()->MODASSIGN()) {
+            if (res->type == Type::INT32_T) {
+                IRInstr *instruction_copy_right = new Copy(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
+
+                IRInstr *instruction_rmem = new Rmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), address);
+                cfgs.back()->current_bb->add_IRInstr(instruction_rmem);
+
+                IRInstr *instruction_mod = new Mod(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction_mod);
+            }
+        }
+
+        IRInstr *instruction_wmem = new Wmem(cfgs.back()->current_bb, address, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+        cfgs.back()->current_bb->add_IRInstr(instruction_wmem);
     }
-    else if (res->type == Type::FLOAT64_T) {
-        IRInstr *instruction_write = new DWmem(cfgs.back()->current_bb, address, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
-        cfgs.back()->current_bb->add_IRInstr(instruction_write);
+    else if (stv.varTable[nomVar].type == Type::FLOAT64_T) {
+        if (ctx->assignOp()->ASSIGN()) {
+            if (res->type == Type::INT32_T) {
+                IRInstr *instruction = new IntToDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction);
+            }
+        }
+        else if (ctx->assignOp()->PLUSASSIGN()) {
+            if (res->type == Type::INT32_T) {
+                IRInstr *instruction_itod = new IntToDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction_itod);
+            }
 
-        IRInstr *instruction_read = new DRmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), address);
-        cfgs.back()->current_bb->add_IRInstr(instruction_read);
+            IRInstr *instruction_rmem = new DRmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_64, RegisterType::XMM), address);
+            cfgs.back()->current_bb->add_IRInstr(instruction_rmem);
+
+            IRInstr *instruction_add = new DAdd(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_64, RegisterType::XMM));
+            cfgs.back()->current_bb->add_IRInstr(instruction_add);
+        }
+        else if (ctx->assignOp()->MINUSASSIGN()) {
+            if (res->type == Type::INT32_T) {
+                IRInstr *instruction_itod = new IntToDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction_itod);
+            }
+            IRInstr *instruction_copy_right = new DCopy(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+            cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
+
+            IRInstr *instruction_rmem = new DRmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), address);
+            cfgs.back()->current_bb->add_IRInstr(instruction_rmem);
+
+            IRInstr *instruction_sub = new DSub(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM));
+            cfgs.back()->current_bb->add_IRInstr(instruction_sub);
+        }
+        else if (ctx->assignOp()->MULASSIGN()) {
+            if (res->type == Type::INT32_T) {
+                IRInstr *instruction_itod = new IntToDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction_itod);
+            }
+
+            IRInstr *instruction_rmem = new DRmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_64, RegisterType::XMM), address);
+            cfgs.back()->current_bb->add_IRInstr(instruction_rmem);
+
+            IRInstr *instruction_mul = new DMul(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_LEFT, RegisterSize::SIZE_64, RegisterType::XMM));
+            cfgs.back()->current_bb->add_IRInstr(instruction_mul);
+        }
+        else if (ctx->assignOp()->DIVASSIGN()) {
+            if (res->type == Type::INT32_T) {
+                IRInstr *instruction_itod = new IntToDouble(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+                cfgs.back()->current_bb->add_IRInstr(instruction_itod);
+            }
+            IRInstr *instruction_copy_right = new DCopy(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+            cfgs.back()->current_bb->add_IRInstr(instruction_copy_right);
+
+            IRInstr *instruction_rmem = new DRmem(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), address);
+            cfgs.back()->current_bb->add_IRInstr(instruction_rmem);
+
+            IRInstr *instruction_div = new DDiv(cfgs.back()->current_bb, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM), VirtualRegister(RegisterFunction::REG_RIGHT, RegisterSize::SIZE_64, RegisterType::XMM));
+            cfgs.back()->current_bb->add_IRInstr(instruction_div);
+        }
+
+        IRInstr *instruction_wmem = new DWmem(cfgs.back()->current_bb, address, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_64, RegisterType::XMM));
+        cfgs.back()->current_bb->add_IRInstr(instruction_wmem);
     }
     delete res;
     
@@ -1184,7 +1533,9 @@ antlrcpp::Any IRGenVisitor::visitLogAndExpr(ifccParser::LogAndExprContext *ctx) 
     cfgs.back()->current_bb->exit_false = bb_expr_end;
     bb_expr_true->exit_true = bb_expr_end;
 
-    IRInstr *instruction_jump = new JumpFalse(cfgs.back()->current_bb, bb_expr_end->label, bb_expr_true->label, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+    IRInstr *instruction_jump_false = new JumpFalse(cfgs.back()->current_bb, bb_expr_end->label, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+    cfgs.back()->current_bb->add_IRInstr(instruction_jump_false);
+    IRInstr *instruction_jump = new Jump(cfgs.back()->current_bb, bb_expr_true->label);
     cfgs.back()->current_bb->add_IRInstr(instruction_jump);
 
     cfgs.back()->current_bb = bb_expr_true;
@@ -1251,7 +1602,9 @@ antlrcpp::Any IRGenVisitor::visitLogOrExpr(ifccParser::LogOrExprContext *ctx) {
     cfgs.back()->current_bb->exit_false = bb_expr_false;
     bb_expr_false->exit_true = bb_expr_end;
 
-    IRInstr *instruction_jump = new JumpFalse(cfgs.back()->current_bb, bb_expr_false->label, bb_expr_end->label, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+    IRInstr *instruction_jump_false = new JumpFalse(cfgs.back()->current_bb, bb_expr_end->label, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
+    cfgs.back()->current_bb->add_IRInstr(instruction_jump_false);
+    IRInstr *instruction_jump = new Jump(cfgs.back()->current_bb, bb_expr_end->label);
     cfgs.back()->current_bb->add_IRInstr(instruction_jump);
 
     cfgs.back()->current_bb = bb_expr_false;

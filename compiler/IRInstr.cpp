@@ -267,18 +267,25 @@ std::string Jump::get_operation_name() const {
     return "jump";
 }
 void Jump::gen_x86(std::ostream& o) {
-    o << "    jmp " << dest_label << " # jump\n";
+    auto it = std::find(bb->cfg->bbs.begin(), bb->cfg->bbs.end(), bb);
+    if (it+1 != bb->cfg->bbs.end() && (*(it+1))->label == dest_label) {
+        // le prochain bloc est celui vers lequel on saute
+        // donc pas besoin de jump
+        o << "    # jmp " << dest_label << " # jump\n";
+    }
+    else {
+        o << "    jmp " << dest_label << " # jump\n";
+    }
 }
 
-JumpFalse::JumpFalse(BasicBlock* p_bb, const std::string& p_dest_false, const std::string& p_dest_true, const VirtualRegister& p_op) 
-    : IRInstr(p_bb), dest_false(p_dest_false), dest_true(p_dest_true), op(p_op) {}
+JumpFalse::JumpFalse(BasicBlock* p_bb, const std::string& p_dest_false, const VirtualRegister& p_op) 
+    : IRInstr(p_bb), dest_false(p_dest_false), op(p_op) {}
 std::string JumpFalse::get_operation_name() const {
     return "jumpfalse";
 }
 void JumpFalse::gen_x86(std::ostream& o) {
     o << "    cmpl $0, " << bb->cfg->IR_reg_to_x86(op) << " # jump false\n";
     o << "    je " << dest_false << "\n";
-    o << "    jmp " << dest_true << "\n";
 }
 
 Push::Push(BasicBlock* p_bb, const VirtualRegister& p_op) 

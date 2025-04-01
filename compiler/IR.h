@@ -123,9 +123,8 @@ public:
 	// x86 code generation: could be encapsulated in a processor class in a retargetable compiler
 	void gen_x86(std::ostream& o); /**< x86 assembly code generation for the whole CFG */
 	void gen_wat(std::ostream& o); /**< wat code generation for the whole CFG */
-	std::string IR_reg_to_x86(const std::string &reg);
-	std::string IR_addr_to_x86 (const std::string &Iraddr);
 
+	std::string IR_addr_to_x86 (const std::string &Iraddr);
 	std::string IR_reg_to_x86(const VirtualRegister& reg);
 	std::string IR_reg_to_wat(const std::string &reg); /**< helper method: inputs a IR reg, returns WebAssembly local variable name */
 	std::string IR_addr_to_wat(const std::string &Iraddr);

@@ -45,11 +45,12 @@ void BasicBlock::gen_x86(ostream& o) {
 // Génère une représentation textuelle du bloc de base
 void BasicBlock::gen_wat(ostream& o) {
     o << "  ;; Bloc " << label << "\n";
-    
+    o << "  (block $" << label << "\n";
     for (IRInstr* instr : instructions) {
         instr->gen_wat(o);
         // if return_true vers epilogue, on arrête parce qu'on vient de voir un return et on ne veut pas générer de code après
     }
+    o << "  )\n";
 }
 
 // La méthode gen_wat n'est plus utilisée, elle est remplacée par la logique dans CFG::gen_wat
@@ -328,75 +329,26 @@ void CFG::gen_wat(ostream& o) {
             o << "    (local $!arg" << i << " i32)\n";
         }
     }
+
     
-    // Définir le nom du bloc d'épilogue
-    string funcEpilogueBlockName = "$" + functionName + "_body_block";
-    
-    // Définir uniquement le bloc d'épilogue (le seul qui est utilisé pour les sauts)
-    o << "    (block " << funcEpilogueBlockName << "\n";
-    
-    // Générer le prologue d'abord (toujours le bloc start_block)
-    for (IRInstr* instr : start_block->instructions) {
-        instr->gen_wat(o);
-    }
-    
-    // Créer une liste des blocs déjà traités par les instructions JumpFalse
-    std::set<std::string> processed_blocks;
+    // Générer tous les blocs
     for (BasicBlock* bb : bbs) {
-        for (IRInstr* instr : bb->instructions) {
-            if (instr->get_operation_name() == "jumpfalse") {
-                // Ce bloc contient un JumpFalse, donc ses cibles seront générées en ligne
-                JumpFalse* jump = dynamic_cast<JumpFalse*>(instr);
-                if (jump) {
-                    processed_blocks.insert(jump->dest_false);
-                    processed_blocks.insert(jump->dest_true);
-                }
-            }
-        }
-    }
-    
-    // Générer tous les blocs intermédiaires (ni prologue ni épilogue) qui ne sont pas traités par JumpFalse
-    for (BasicBlock* bb : bbs) {
-        if (bb != start_block && bb != end_block && processed_blocks.find(bb->label) == processed_blocks.end()) {
-            o << "      ;; Bloc " << bb->label << "\n";
+        // Afficher les informations du bloc de base
+        std::cout << "BasicBlock: " << bb->label << std::endl;
+        std::cout << "  exit_true: " << (bb->exit_true ? bb->exit_true->label : "null") << std::endl;
+        std::cout << "  exit_false: " << (bb->exit_false ? bb->exit_false->label : "null") << std::endl;
+        std::cout << "  instructions: " << bb->instructions.size() << std::endl;
+        if (bb != start_block && bb != end_block ) {
+            o << "      ;; Bloc inside " << bb->label << "\n";
+            o << "  (block $" << bb->label << "\n";
             for (IRInstr* instr : bb->instructions) {
                 instr->gen_wat(o);
             }
+            o << "  )\n";
         }
     }
-    
-    // Si on arrive ici sans sauter à l'épilogue, on continue naturellement
-    
-    // Fermer le bloc d'épilogue
-    o << "    )\n"; // Fin du bloc epilogue
-    
-    // Générer l'épilogue (toujours le bloc end_block)
-    for (IRInstr* instr : end_block->instructions) {
-        instr->gen_wat(o);
-    }
-    
-    // Pas besoin d'autre bloc
-    
-    // Valeur de retour par défaut - ne devrait jamais être atteinte car l'épilogue a son propre return
-    o << "    (return (i32.const 0))\n";
-    o << ")\n";
+    o << "    )\n";
 }
-
-// void CFG::add_to_symbol_table(string name, Type t) {
-//     if (stv.symbolTable.find(name) == stv.symbolTable.end()) {
-//         // Suivant le type, allocate un certain nombre d'octets
-//         if (t == Type::INT || t == Type::INT32_T) {
-//             nextFreeSymbolIndex -= 4;  // 4 octets pour un int
-//         } else if (t == Type::CHAR || t == Type::INT8_T) {
-//             nextFreeSymbolIndex -= 1;  // 1 octet pour un char
-//         } else if (t == Type::INT64_T) {
-//             nextFreeSymbolIndex -= 8;  // 8 octets pour un int64_t
-//         }
-        
-//         SymbolIndex[name] = nextFreeSymbolIndex;
-//         SymbolType[name] = t;
-//     }
-// }
 
 string CFG::create_new_tempvar(Type t) {    
     // Récupérer l'offset:

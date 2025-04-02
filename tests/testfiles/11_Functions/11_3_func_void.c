@@ -2,6 +2,7 @@
 
 void print(int a) {
     putchar(a);
+    putchar('\n');
 }
 
 int main() {

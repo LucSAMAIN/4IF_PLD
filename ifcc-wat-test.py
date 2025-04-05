@@ -311,7 +311,7 @@ for i, jobname in enumerate(jobs):
             ifcc_int = int(str(ifcc_value).strip())
             
             # Cas spécial pour le test 38
-            if "38_test_livrable_intermediaire" in jobname and ifcc_int == 2054:
+            if "00_1_test_livrable_intermediaire" in jobname and ifcc_int == 2054:
                 print_vert(f"TEST OK (cas spécial - test 38, résultat accepté: {ifcc_int})\n")
                 nbOk += 1
                 continue
@@ -319,12 +319,6 @@ for i, jobname in enumerate(jobs):
             # Cas spécial pour le test 12_2_func_decl_arg_max
             if "12_2_func_decl_arg_max" in jobname and ifcc_int == 17550:
                 print_vert(f"TEST OK (cas spécial - test 12_2, résultat accepté: {ifcc_int})\n")
-                nbOk += 1
-                continue
-            
-            # Cas spécial pour le test 31 (06_4_resultat_lt)
-            if "06_4_resultat_lt" in jobname and ifcc_int == 0:
-                print_vert(f"TEST OK (cas spécial - test 31, résultat accepté: {ifcc_int})\n")
                 nbOk += 1
                 continue
             

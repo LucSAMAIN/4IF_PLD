@@ -337,6 +337,9 @@ public:
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
     void gen_wat(std::ostream& o) override;
+    
+    // Getter pour dest_label
+    std::string get_dest_label() const { return dest_label; }
 };
 
 class JumpFalse : public IRInstr

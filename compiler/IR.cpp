@@ -329,10 +329,8 @@ void CFG::gen_wat(ostream& o) {
         }
     }
     
-    // Définir le nom du bloc d'épilogue
+    // Définir le bloc principal de la fonction qui sert d'épilogue
     string funcEpilogueBlockName = "$" + functionName + "_body_block";
-    
-    // Définir uniquement le bloc d'épilogue (le seul qui est utilisé pour les sauts)
     o << "    (block " << funcEpilogueBlockName << "\n";
     
     // Générer le prologue d'abord (toujours le bloc start_block)
@@ -340,44 +338,194 @@ void CFG::gen_wat(ostream& o) {
         instr->gen_wat(o);
     }
     
-    // Créer une liste des blocs déjà traités par les instructions JumpFalse
-    std::set<std::string> processed_blocks;
+    // Identifier les structures de while
+    struct WhileInfo {
+        BasicBlock* testBlock;   // Bloc de test de la condition
+        BasicBlock* bodyBlock;   // Bloc du corps du while
+        BasicBlock* endBlock;    // Bloc après le while
+    };
+    std::vector<WhileInfo> whileStructures;
+    
+    // Trouver les blocs de test de while
     for (BasicBlock* bb : bbs) {
-        for (IRInstr* instr : bb->instructions) {
-            if (instr->get_operation_name() == "jumpfalse") {
-                // Ce bloc contient un JumpFalse, donc ses cibles seront générées en ligne
-                JumpFalse* jump = dynamic_cast<JumpFalse*>(instr);
-                if (jump) {
-                    processed_blocks.insert(jump->dest_false);
-                    processed_blocks.insert(jump->dest_true);
+        if (bb->label.find("_test_while") != std::string::npos) {
+            // Trouver le JumpFalse qui définit les cibles de saut
+            for (IRInstr* instr : bb->instructions) {
+                if (instr->get_operation_name() == "jumpfalse") {
+                    JumpFalse* jumpf = dynamic_cast<JumpFalse*>(instr);
+                    if (jumpf) {
+                        WhileInfo info;
+                        info.testBlock = bb;
+                        
+                        // Chercher le bloc de corps correspondant
+                        for (BasicBlock* bodyBB : bbs) {
+                            if (bodyBB->label == jumpf->dest_true) {
+                                info.bodyBlock = bodyBB;
+                                break;
+                            }
+                        }
+                        
+                        // Chercher le bloc de fin correspondant
+                        for (BasicBlock* endBB : bbs) {
+                            if (endBB->label == jumpf->dest_false) {
+                                info.endBlock = endBB;
+                                break;
+                            }
+                        }
+                        
+                        if (info.bodyBlock && info.endBlock) {
+                            whileStructures.push_back(info);
+                        }
+                        break;
+                    }
                 }
             }
         }
     }
     
-    // Générer tous les blocs intermédiaires (ni prologue ni épilogue) qui ne sont pas traités par JumpFalse
+    // Identifier les blocs faisant partie des structures if-else
+    std::set<std::string> ifElseBlocks;
     for (BasicBlock* bb : bbs) {
-        if (bb != start_block && bb != end_block && processed_blocks.find(bb->label) == processed_blocks.end()) {
-            o << "      ;; Bloc " << bb->label << "\n";
-            for (IRInstr* instr : bb->instructions) {
-                instr->gen_wat(o);
+        for (IRInstr* instr : bb->instructions) {
+            if (instr->get_operation_name() == "jumpfalse" && bb->label.find("_test_while") == std::string::npos) {
+                JumpFalse* jumpf = dynamic_cast<JumpFalse*>(instr);
+                if (jumpf) {
+                    // Ajouter les blocs destination au set des blocs if-else
+                    ifElseBlocks.insert(jumpf->dest_true);
+                    ifElseBlocks.insert(jumpf->dest_false);
+                }
             }
         }
     }
     
-    // Si on arrive ici sans sauter à l'épilogue, on continue naturellement
+    // Générer tous les blocs qui ne font pas partie des structures spéciales
+    for (BasicBlock* bb : bbs) {
+        if (bb != start_block && bb != end_block) {
+            // Vérifier si ce bloc fait partie d'un while
+            bool isPartOfWhile = false;
+            for (const WhileInfo& info : whileStructures) {
+                if (bb == info.testBlock || bb == info.bodyBlock) {
+                    isPartOfWhile = true;
+                    break;
+                }
+            }
+            
+            // Vérifier si ce bloc fait partie d'un if-else
+            bool isPartOfIfElse = ifElseBlocks.find(bb->label) != ifElseBlocks.end();
+            
+            // Si le bloc n'est pas une partie spéciale, le générer normalement
+            if (!isPartOfWhile && !isPartOfIfElse) {
+                // Générer le bloc
+                o << "      ;; Bloc " << bb->label << "\n";
+                
+                // Générer les instructions du bloc
+                for (IRInstr* instr : bb->instructions) {
+                    std::stringstream ss;
+                    instr->gen_wat(ss);
+                    std::string instr_str = ss.str();
+                    // Indentation
+                    size_t pos = 0;
+                    while ((pos = instr_str.find('\n', pos)) != std::string::npos) {
+                        instr_str.insert(pos + 1, "      ");
+                        pos += 7;
+                    }
+                    o << instr_str;
+                }
+            }
+        }
+    }
     
-    // Fermer le bloc d'épilogue
+    // Générer les structures if-else
+    for (BasicBlock* bb : bbs) {
+        // Ne pas traiter les blocs des while comme des if-else
+        if (bb->label.find("_test_while") == std::string::npos) {
+            for (IRInstr* instr : bb->instructions) {
+                if (instr->get_operation_name() == "jumpfalse") {
+                    o << "      ;; Structure if-else dans le bloc " << bb->label << "\n";
+                    std::stringstream ss;
+                    instr->gen_wat(ss);
+                    std::string instr_str = ss.str();
+                    // Indentation
+                    size_t pos = 0;
+                    while ((pos = instr_str.find('\n', pos)) != std::string::npos) {
+                        instr_str.insert(pos + 1, "      ");
+                        pos += 7;
+                    }
+                    o << instr_str;
+                }
+            }
+        }
+    }
+    
+    // Générer les structures while
+    for (const WhileInfo& info : whileStructures) {
+        o << "      ;; Structure while: test=" << info.testBlock->label 
+          << ", corps=" << info.bodyBlock->label 
+          << ", fin=" << info.endBlock->label << "\n";
+        
+        // Structure WAT d'un while:
+        // block $end
+        //   loop $continue
+        //     <condition>
+        //     br_if $end (i32.eqz <condition>)
+        //     <body>
+        //     br $continue
+        //   end
+        // end
+        
+        o << "      (block $" << info.endBlock->label << "\n";
+        o << "        (loop $" << info.testBlock->label << "\n";
+        
+        // Générer le code de test (sans le JumpFalse)
+        for (IRInstr* instr : info.testBlock->instructions) {
+            if (instr->get_operation_name() != "jumpfalse") {
+                std::stringstream ss;
+                instr->gen_wat(ss);
+                std::string instr_str = ss.str();
+                // Indentation
+                size_t pos = 0;
+                while ((pos = instr_str.find('\n', pos)) != std::string::npos) {
+                    instr_str.insert(pos + 1, "          ");
+                    pos += 11;
+                }
+                o << instr_str;
+            }
+        }
+        
+        // Condition de sortie
+        o << "          (br_if $" << info.endBlock->label << " (i32.eqz (local.get $reg)))\n";
+        
+        // Générer le corps du while (sans le Jump de retour)
+        for (IRInstr* instr : info.bodyBlock->instructions) {
+            if (instr->get_operation_name() != "jump") {
+                std::stringstream ss;
+                instr->gen_wat(ss);
+                std::string instr_str = ss.str();
+                // Indentation
+                size_t pos = 0;
+                while ((pos = instr_str.find('\n', pos)) != std::string::npos) {
+                    instr_str.insert(pos + 1, "          ");
+                    pos += 11;
+                }
+                o << instr_str;
+            }
+        }
+        
+        // Retour au début du while
+        o << "          (br $" << info.testBlock->label << ")\n";
+        o << "        )\n";
+        o << "      )\n";
+    }
+    
+    // Fermer le bloc d'épilogue principal
     o << "    )\n"; // Fin du bloc epilogue
     
-    // Générer l'épilogue (toujours le bloc end_block)
+    // Générer l'épilogue
     for (IRInstr* instr : end_block->instructions) {
         instr->gen_wat(o);
     }
     
-    // Pas besoin d'autre bloc
-    
-    // Valeur de retour par défaut - ne devrait jamais être atteinte car l'épilogue a son propre return
+    // Valeur de retour par défaut (ne devrait jamais être atteinte)
     o << "    (return (i32.const 0))\n";
     o << ")\n";
 }

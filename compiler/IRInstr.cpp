@@ -517,25 +517,38 @@ void JumpFalse::gen_x86(std::ostream& o) {
 
 void JumpFalse::gen_wat(std::ostream& o) {
     o << "    ;; Conditional jump\n";
-    std::string epilogueBlockName = "$" + bb->cfg->functionName + "_body_block";
     
+    // Détecter si c'est un bloc de test de while
+    bool isWhileTest = bb->label.find("_test_while") != std::string::npos;
+    
+    // Traitement spécial pour les while
+    if (isWhileTest) {
+        // Pour les while, la structure est différente:
+        // - dest_true est le corps du while
+        // - dest_false est le bloc après le while
+        
+        // Pas besoin de génération spéciale, car le while est traité dans la 
+        // méthode CFG::gen_wat avec les structures loop/block
+        o << "    ;; Condition de while - saut vers " << dest_false << " si faux, " << dest_true << " si vrai\n";
+        return;
+    }
+    
+    // Dans le cas d'un saut conditionnel simple (sans bloc true/false séparé)
     if (dest_false == bb->cfg->functionName + "_epilogue") {
-        // Saut conditionnel vers l'épilogue si la condition est fausse
-        o << "      (if (i32.eqz (local.get " << bb->cfg->IR_reg_to_wat(op) << "))\n";
-        o << "        (then (br " << epilogueBlockName << "))\n";
-        o << "      )\n";
+        // Saut vers l'épilogue si la condition est fausse
+        std::string epilogueBlockName = "$" + bb->cfg->functionName + "_body_block";
+        o << "      (br_if " << epilogueBlockName << " (i32.eqz (local.get " << bb->cfg->IR_reg_to_wat(op) << ")))\n";
     } else if (dest_true == bb->cfg->functionName + "_epilogue") {
-        // Saut conditionnel vers l'épilogue si la condition est vraie
-        o << "      (if (i32.ne (local.get " << bb->cfg->IR_reg_to_wat(op) << ") (i32.const 0))\n";
-        o << "        (then (br " << epilogueBlockName << "))\n";
-        o << "      )\n";
+        // Saut vers l'épilogue si la condition est vraie
+        std::string epilogueBlockName = "$" + bb->cfg->functionName + "_body_block";
+        o << "      (br_if " << epilogueBlockName << " (local.get " << bb->cfg->IR_reg_to_wat(op) << "))\n";
     } else {
-        // Implémentation correcte des sauts conditionnels vers d'autres blocs
+        // Pour les structures if-else complètes, générer les blocs de code
         o << "      (if (i32.eqz (local.get " << bb->cfg->IR_reg_to_wat(op) << "))\n";
         o << "        (then\n";
-        o << "          ;; Exécution du bloc " << dest_false << "\n";
         
-        // Recherche du bloc de destination false dans le CFG
+        // Bloc else part (dest_false)
+        o << "          ;; Else part (" << dest_false << ")\n";
         BasicBlock* false_block = nullptr;
         for (BasicBlock* block : bb->cfg->bbs) {
             if (block->label == dest_false) {
@@ -544,27 +557,29 @@ void JumpFalse::gen_wat(std::ostream& o) {
             }
         }
         
-        // Instructions du bloc false
         if (false_block) {
             for (IRInstr* instr : false_block->instructions) {
-                std::stringstream ss;
-                instr->gen_wat(ss);
-                std::string instr_str = ss.str();
-                // Ajouter une indentation pour chaque ligne
-                size_t pos = 0;
-                while ((pos = instr_str.find('\n', pos)) != std::string::npos) {
-                    instr_str.insert(pos + 1, "          ");
-                    pos += 11; // 10 espaces + 1 pour le \n
+                // Ne pas générer les sauts vers endif (ils seront implicites)
+                if (instr->get_operation_name() != "jump") {
+                    std::stringstream ss;
+                    instr->gen_wat(ss);
+                    std::string instr_str = ss.str();
+                    // Indentation
+                    size_t pos = 0;
+                    while ((pos = instr_str.find('\n', pos)) != std::string::npos) {
+                        instr_str.insert(pos + 1, "          ");
+                        pos += 11;
+                    }
+                    o << instr_str;
                 }
-                o << instr_str;
             }
         }
         
         o << "        )\n";
         o << "        (else\n";
-        o << "          ;; Exécution du bloc " << dest_true << "\n";
         
-        // Recherche du bloc de destination true dans le CFG
+        // Bloc then part (dest_true)
+        o << "          ;; Then part (" << dest_true << ")\n";
         BasicBlock* true_block = nullptr;
         for (BasicBlock* block : bb->cfg->bbs) {
             if (block->label == dest_true) {
@@ -573,19 +588,21 @@ void JumpFalse::gen_wat(std::ostream& o) {
             }
         }
         
-        // Instructions du bloc true
         if (true_block) {
             for (IRInstr* instr : true_block->instructions) {
-                std::stringstream ss;
-                instr->gen_wat(ss);
-                std::string instr_str = ss.str();
-                // Ajouter une indentation pour chaque ligne
-                size_t pos = 0;
-                while ((pos = instr_str.find('\n', pos)) != std::string::npos) {
-                    instr_str.insert(pos + 1, "          ");
-                    pos += 11; // 10 espaces + 1 pour le \n
+                // Ne pas générer les sauts vers endif (ils seront implicites)
+                if (instr->get_operation_name() != "jump") {
+                    std::stringstream ss;
+                    instr->gen_wat(ss);
+                    std::string instr_str = ss.str();
+                    // Indentation
+                    size_t pos = 0;
+                    while ((pos = instr_str.find('\n', pos)) != std::string::npos) {
+                        instr_str.insert(pos + 1, "          ");
+                        pos += 11;
+                    }
+                    o << instr_str;
                 }
-                o << instr_str;
             }
         }
         

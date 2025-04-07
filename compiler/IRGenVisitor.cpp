@@ -1061,7 +1061,11 @@ antlrcpp::Any IRGenVisitor::visitMulDivExpr(ifccParser::MulDivExprContext *ctx) 
     ExprReturn* res_right(visit(ctx->right));
     Type operation_type = res_left->type == Type::FLOAT64_T || res_right->type == Type::FLOAT64_T ? Type::FLOAT64_T : Type::INT32_T;
     if (res_right->isConst) {
-        if (res_left->isConst) { // is const expr
+        if (res_left->isConst && 
+            !((ctx->mOp()->SLASH() || ctx->mOp()->MOD()) && 
+                ((res_right->type == Type::INT32_T && res_right->ivalue == 0) || 
+                (res_right->type == Type::FLOAT64_T && res_right->dvalue == 0)))) { 
+            // is const expr and not a zero division
             cfgs.back()->current_bb->pop_IRInstr();
             cfgs.back()->current_bb->pop_IRInstr();
             if (operation_type == Type::INT32_T) {

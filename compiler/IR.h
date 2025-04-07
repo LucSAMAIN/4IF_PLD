@@ -126,7 +126,7 @@ public:
 
 	std::string IR_addr_to_x86 (const std::string &Iraddr);
 	std::string IR_reg_to_x86(const VirtualRegister& reg);
-	std::string IR_reg_to_wat(const std::string &reg); /**< helper method: inputs a IR reg, returns WebAssembly local variable name */
+	std::string IR_reg_to_wat(const VirtualRegister& reg); /**< helper method: inputs a IR reg, returns WebAssembly local variable name */
 	std::string IR_addr_to_wat(const std::string &Iraddr);
 
 	// symbol table methods

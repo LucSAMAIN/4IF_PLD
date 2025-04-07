@@ -174,6 +174,49 @@ std::string CFG::IR_reg_to_x86(const VirtualRegister& vr) {
     return "%" + it->second;
 }
 
+std::string CFG::IR_reg_to_wat(const VirtualRegister& reg) {
+    // Gérer tous les registres d'arguments (!arg0, !arg1, etc.) indépendamment de leur taille
+    if (reg.regFunc == RegisterFunction::ARG0 || 
+        reg.regFunc == RegisterFunction::ARG1 ||
+        reg.regFunc == RegisterFunction::ARG2 ||
+        reg.regFunc == RegisterFunction::ARG3 ||
+        reg.regFunc == RegisterFunction::ARG4 ||
+        reg.regFunc == RegisterFunction::ARG5) {
+        // Extraire le numéro de l'argument (0-5)
+        std::string argNum = std::to_string(static_cast<int>(reg.regFunc));
+        return "$!arg" + argNum;
+    } else if (reg.regFunc == RegisterFunction::REG_LEFT) {
+        return "$regLeft";
+    } else if (reg.regFunc == RegisterFunction::REG_RIGHT) {
+        return "$regRight";
+    } else if (reg.regFunc == RegisterFunction::REG) {
+        return "$reg";
+    }
+    std::string regName = std::to_string(static_cast<int>(reg.regFunc));
+    return "$" + regName;  // Ajouter le préfixe $ pour les variables WebAssembly
+} 
+
+// std::string CFG::IR_reg_to_wat(const std::string &reg) {
+//     // Gérer tous les registres d'arguments (!arg0, !arg1, etc.) indépendamment de leur taille
+//     if (reg.substr(0, 5) == "!arg0" || 
+//         reg.substr(0, 5) == "!arg1" ||
+//         reg.substr(0, 5) == "!arg2" ||
+//         reg.substr(0, 5) == "!arg3" ||
+//         reg.substr(0, 5) == "!arg4" ||
+//         reg.substr(0, 5) == "!arg5") {
+//         // Extraire le numéro de l'argument (0-5)
+//         std::string argNum = reg.substr(4, 1);
+//         return "$!arg" + argNum;
+//     } else if (reg.substr(0, 8) == "!regLeft") {
+//         return "$regLeft";
+//     } else if (reg.substr(0, 9) == "!regRight") {
+//         return "$regRight";
+//     } else if (reg.substr(0, 4) == "!reg") {
+//         return "$reg";
+//     }
+//     return "$" + reg;  // Ajouter le préfixe $ pour les variables WebAssembly
+// } 
+
 std::string CFG::IR_addr_to_x86(const std::string &addr)
 {
     // std::cout << "# addr IR_addr_to_x86 " << addr << "\n";
@@ -218,12 +261,12 @@ void CFG::gen_wat(ostream& o) {
 
     stv.printSymbolTable();
     // Déclaration des arguments
-    if (stv.offsetTable.find(functionName) != stv.offsetTable.end()) {
+    if (stv.funcTable.find(functionName) != stv.funcTable.end()) {
         // Pour chaque argument de la fonction (jusqu'à 6 maximum)
-        int numArgs = std::min(6, stv.symbolTable[functionName].index_arg);
+        int numArgs = std::min(6, static_cast<int>(stv.funcTable[functionName].args.size()));
         for (int i = 0; i < numArgs; i++) {
             // Déclarer chaque argument comme un paramètre i32
-            o << " (param $!arg" << i << " i32)";
+            o << " (param $!arg" << i << " i32)";   
         }
     }
     
@@ -269,12 +312,12 @@ void CFG::gen_wat(ostream& o) {
                         info.testBlock = bb;
                         
                         // Chercher le bloc de corps correspondant
-                        for (BasicBlock* bodyBB : bbs) {
-                            if (bodyBB->label == jumpf->dest_true) {
-                                info.bodyBlock = bodyBB;
-                                break;
-                            }
-                        }
+                        // for (BasicBlock* bodyBB : bbs) {
+                        //     if (bodyBB->label == jumpf->dest_true) {
+                        //         info.bodyBlock = bodyBB;
+                        //         break;
+                        //     }
+                        // }
                         
                         // Chercher le bloc de fin correspondant
                         for (BasicBlock* endBB : bbs) {
@@ -302,7 +345,7 @@ void CFG::gen_wat(ostream& o) {
                 JumpFalse* jumpf = dynamic_cast<JumpFalse*>(instr);
                 if (jumpf) {
                     // Ajouter les blocs destination au set des blocs if-else
-                    ifElseBlocks.insert(jumpf->dest_true);
+                    // ifElseBlocks.insert(jumpf->dest_true);
                     ifElseBlocks.insert(jumpf->dest_false);
                 }
             }

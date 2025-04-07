@@ -259,7 +259,6 @@ void CFG::gen_wat(ostream& o) {
         o << " (export \"main\")";
     }
 
-    stv.printSymbolTable();
     // Déclaration des arguments
     if (stv.funcTable.find(functionName) != stv.funcTable.end()) {
         // Pour chaque argument de la fonction (jusqu'à 6 maximum)

@@ -76,6 +76,11 @@ void LdConstInt::gen_x86(std::ostream& o) {
     o << "    movl $" << value << ", " << bb->cfg->IR_reg_to_x86(dest) << " # ldconstint\n";
 }
 
+void LdConstInt::gen_wat(std::ostream& o) {
+    o << "    ;; Load integer constant\n";
+    o << "    (local.set " << bb->cfg->IR_reg_to_wat(dest) << " (i32.const " << value << "))\n";
+}
+
 LdConstDouble::LdConstDouble(BasicBlock* p_bb, const VirtualRegister& dest_reg, double val) 
     : IRInstr(p_bb), dest(dest_reg), value(val) {};
 
@@ -157,12 +162,6 @@ void UnaryMinus::gen_wat(std::ostream& o) {
     o << "    (local.set " << bb->cfg->IR_reg_to_wat(dest) << " (i32.sub (i32.const 0) (local.get " << bb->cfg->IR_reg_to_wat(dest) << ")))\n";
 }
 
-void UnaryMinus::gen_wat(std::ostream& o) {
-    o << "    ;; Unary minus\n";
-    o << "    (local.set " << bb->cfg->IR_reg_to_wat(dest) << " (i32.sub (i32.const 0) (local.get " << bb->cfg->IR_reg_to_wat(dest) << ")))\n";
-}
-
-
 Not::Not(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& src_reg) 
     : IRInstr(p_bb), dest(dest_reg), op(src_reg) {}
 std::string Not::get_operation_name() const {
@@ -173,6 +172,11 @@ void Not::gen_x86(std::ostream& o) {
     VirtualRegister byte_dest(dest.regFunc, RegisterSize::SIZE_8, dest.regType);
     o << "    sete " << bb->cfg->IR_reg_to_x86(byte_dest) << "\n";
     o << "    movzbl " << bb->cfg->IR_reg_to_x86(byte_dest) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+}
+
+void Not::gen_wat(std::ostream& o) {
+    o << "    ;; Logical not\n";
+    o << "    (local.set " << bb->cfg->IR_reg_to_wat(dest) << " (i32.eqz (local.get " << bb->cfg->IR_reg_to_wat(dest) << ")))\n";
 }
 
 // Implémentation de Mul
@@ -346,6 +350,11 @@ void And::gen_x86(std::ostream& o) {
     o << "    andl " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << " # and\n";
 }
 
+void And::gen_wat(std::ostream& o) {
+    o << "    ;; Logical and\n";
+    o << "    (local.set " << bb->cfg->IR_reg_to_wat(dest) << " (i32.and (local.get " << bb->cfg->IR_reg_to_wat(dest) << ") (local.get " << bb->cfg->IR_reg_to_wat(op2) << ")))\n";
+}
+
 Or::Or(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
     : IRInstr(p_bb), dest(dest_reg), op2(operand2) {};
 std::string Or::get_operation_name() const {
@@ -353,6 +362,11 @@ std::string Or::get_operation_name() const {
 }
 void Or::gen_x86(std::ostream& o) {
     o << "    orl " << bb->cfg->IR_reg_to_x86(op2) << ", " << bb->cfg->IR_reg_to_x86(dest) << " # or\n";
+}
+
+void Or::gen_wat(std::ostream& o) {
+    o << "    ;; Logical or\n";
+    o << "    (local.set " << bb->cfg->IR_reg_to_wat(dest) << " (i32.or (local.get " << bb->cfg->IR_reg_to_wat(dest) << ") (local.get " << bb->cfg->IR_reg_to_wat(op2) << ")))\n";
 }
 
 Xor::Xor(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
@@ -386,6 +400,22 @@ void Jump::gen_x86(std::ostream& o) {
     }
 }
 
+void Jump::gen_wat(std::ostream& o) {
+    o << "    ;; Jump\n";
+    if (dest_label == bb->cfg->functionName + "_epilogue") {
+        // Nom du bloc d'épilogue spécifique à la fonction
+        std::string epilogueBlockName = "$" + bb->cfg->functionName + "_body_block";
+        o << "      (br " << epilogueBlockName << ")\n";
+    } else if (dest_label.find(bb->cfg->functionName + "_") == 0) {
+        // Le saut est vers un autre bloc de la même fonction
+        // En WebAssembly, l'exécution est linéaire par défaut
+        o << "      ;; Jump to " << dest_label << " (handled by linear execution)\n";
+    } else {
+        // Saut vers une autre fonction ou un bloc inconnu
+        o << "      ;; Jump to unknown destination " << dest_label << " (not implemented)\n";
+    }
+}
+
 JumpFalse::JumpFalse(BasicBlock* p_bb, const std::string& p_dest_false, const VirtualRegister& p_op) 
     : IRInstr(p_bb), dest_false(p_dest_false), op(p_op) {};
 std::string JumpFalse::get_operation_name() const {
@@ -395,6 +425,84 @@ void JumpFalse::gen_x86(std::ostream& o) {
     o << "    cmpl $0, " << bb->cfg->IR_reg_to_x86(op) << " # jump false\n";
     o << "    je " << dest_false << "\n";
 }
+void JumpFalse::gen_wat(std::ostream& o) {
+    o << "    ;; Conditional jump\n";
+    std::string epilogueBlockName = "$" + bb->cfg->functionName + "_body_block";
+    
+    if (dest_false == bb->cfg->functionName + "_epilogue") {
+        // Saut conditionnel vers l'épilogue si la condition est fausse
+        o << "      (if (i32.eqz (local.get " << bb->cfg->IR_reg_to_wat(op) << "))\n";
+        o << "        (then (br " << epilogueBlockName << "))\n";
+        o << "      )\n";
+    } else if (dest_true == bb->cfg->functionName + "_epilogue") {
+        // Saut conditionnel vers l'épilogue si la condition est vraie
+        o << "      (if (i32.ne (local.get " << bb->cfg->IR_reg_to_wat(op) << ") (i32.const 0))\n";
+        o << "        (then (br " << epilogueBlockName << "))\n";
+        o << "      )\n";
+    } else {
+        // Implémentation correcte des sauts conditionnels vers d'autres blocs
+        o << "      (if (i32.eqz (local.get " << bb->cfg->IR_reg_to_wat(op) << "))\n";
+        o << "        (then\n";
+        o << "          ;; Exécution du bloc " << dest_false << "\n";
+        
+        // Recherche du bloc de destination false dans le CFG
+        BasicBlock* false_block = nullptr;
+        for (BasicBlock* block : bb->cfg->bbs) {
+            if (block->label == dest_false) {
+                false_block = block;
+                break;
+            }
+        }
+        
+        // Instructions du bloc false
+        if (false_block) {
+            for (IRInstr* instr : false_block->instructions) {
+                std::stringstream ss;
+                instr->gen_wat(ss);
+                std::string instr_str = ss.str();
+                // Ajouter une indentation pour chaque ligne
+                size_t pos = 0;
+                while ((pos = instr_str.find('\n', pos)) != std::string::npos) {
+                    instr_str.insert(pos + 1, "          ");
+                    pos += 11; // 10 espaces + 1 pour le \n
+                }
+                o << instr_str;
+            }
+        }
+        
+        o << "        )\n";
+        o << "        (else\n";
+        o << "          ;; Exécution du bloc " << dest_true << "\n";
+        
+        // Recherche du bloc de destination true dans le CFG
+        BasicBlock* true_block = nullptr;
+        for (BasicBlock* block : bb->cfg->bbs) {
+            if (block->label == dest_true) {
+                true_block = block;
+                break;
+            }
+        }
+        
+        // Instructions du bloc true
+        if (true_block) {
+            for (IRInstr* instr : true_block->instructions) {
+                std::stringstream ss;
+                instr->gen_wat(ss);
+                std::string instr_str = ss.str();
+                // Ajouter une indentation pour chaque ligne
+                size_t pos = 0;
+                while ((pos = instr_str.find('\n', pos)) != std::string::npos) {
+                    instr_str.insert(pos + 1, "          ");
+                    pos += 11; // 10 espaces + 1 pour le \n
+                }
+                o << instr_str;
+            }
+        }
+        
+        o << "        )\n";
+        o << "      )\n";
+    }
+}
 
 Push::Push(BasicBlock* p_bb, const VirtualRegister& p_op) 
     : IRInstr(p_bb), op(p_op) {};
@@ -403,6 +511,11 @@ std::string Push::get_operation_name() const {
 }
 void Push::gen_x86(std::ostream& o) {
     o << "    push " << bb->cfg->IR_reg_to_x86(op) << " # push\n";
+}
+void Push::gen_wat(std::ostream& o) {
+    o << "    ;; Push\n";
+    o << "    (i32.store (global.get $sp) (local.get " << bb->cfg->IR_reg_to_wat(op) << "))\n";
+    o << "    (global.set $sp (i32.add (global.get $sp) (i32.const 4)))\n";
 }
 
 Pop::Pop(BasicBlock* p_bb, const VirtualRegister& p_dest)

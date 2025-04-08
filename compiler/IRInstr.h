@@ -259,10 +259,11 @@ class JumpFalse : public IRInstr
 {
 private:
     std::string dest_false;
+    std::string dest_true;
     VirtualRegister op;
 
 public:
-    JumpFalse(BasicBlock* bb, const std::string& dest_false, const VirtualRegister& operand);
+    JumpFalse(BasicBlock* bb, const std::string& dest_false, const std::string& dest_true, const VirtualRegister& operand);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
 };

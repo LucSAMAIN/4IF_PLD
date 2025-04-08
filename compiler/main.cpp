@@ -38,24 +38,21 @@ int main(int argn, const char **argv)
 
     if (parser.getNumberOfSyntaxErrors() != 0)
     {
-        std::cerr << "error: syntax error during parsing\n";
         exit(1);
     }
 
-    ContinueBreakCheckVisitor cbv;
+    ContinueBreakCheckVisitor cbv(input);
     cbv.visit(tree);
     if (cbv.getNumberError() != 0)
     {
-        std::cerr << "error: continue/break error\n";
         exit(1);
     }
 
-    SymbolTableGenVisitor stv;
+    SymbolTableGenVisitor stv(input);
     stv.visit(tree);
 
-    if (stv.getErrorCount() != 0)
+    if (stv.getNumberError() != 0)
     {
-        std::cerr << "error: symbol table generation error\n";
         exit(1);
     }
 
@@ -80,11 +77,10 @@ int main(int argn, const char **argv)
         std::cout << "\n";
     }
 
-    TypeCheckVisitor tcv(stv);
+    TypeCheckVisitor tcv(input, stv);
     tcv.visit(tree);
-    if (tcv.getNumberTypeError() != 0)
+    if (tcv.getNumberError() != 0)
     {
-        std::cerr << "error: type error during type checking\n";
         exit(1);
     }
 

@@ -1,6 +1,8 @@
+#include <sstream>
+
 #include "ContinueBreakCheckVisitor.h"
 
-ContinueBreakCheckVisitor::ContinueBreakCheckVisitor() : error(0), while_count(0) {}
+ContinueBreakCheckVisitor::ContinueBreakCheckVisitor(antlr4::ANTLRInputStream& input) : ErrorVisitor(input), while_count(0) {}
 ContinueBreakCheckVisitor::~ContinueBreakCheckVisitor() {}
 
 antlrcpp::Any ContinueBreakCheckVisitor::visitBlock(ifccParser::BlockContext *ctx)
@@ -25,7 +27,7 @@ antlrcpp::Any ContinueBreakCheckVisitor::visitWhile_stmt(ifccParser::While_stmtC
 
 antlrcpp::Any ContinueBreakCheckVisitor::visitContinue_stmt(ifccParser::Continue_stmtContext *ctx) {
     if (while_count == 0) {
-        std::cerr << "error: continue statement outside of while loop\n";
+        reportError("error: continue statement outside of while loop", ctx);
         error++;
     }
     
@@ -34,7 +36,7 @@ antlrcpp::Any ContinueBreakCheckVisitor::visitContinue_stmt(ifccParser::Continue
 
 antlrcpp::Any ContinueBreakCheckVisitor::visitBreak_stmt(ifccParser::Break_stmtContext *ctx) {
     if (while_count == 0) {
-        std::cerr << "error: break statement outside of while loop\n";
+        reportError("error: break statement outside of while loop", ctx);
         error++;
     }
     

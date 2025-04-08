@@ -19,6 +19,7 @@ OBJECTS=build/ifccBaseVisitor.o \
 	build/ifccParser.o \
 	build/main.o \
 	build/IRGenVisitor.o \
+	build/ErrorVisitor.o \
 	build/SymbolTableGenVisitor.o \
 	build/TypeCheckVisitor.o \
 	build/ContinueBreakCheckVisitor.o \

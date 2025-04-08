@@ -5,8 +5,7 @@
 #include <map>
 #include <vector>
 
-#include "antlr4-runtime.h"
-#include "generated/ifccBaseVisitor.h"
+#include "ErrorVisitor.h"
 
 enum class Type {
     VOID,
@@ -40,13 +39,11 @@ typedef struct FuncInfos
     bool used;
 } FuncInfos;
 
-class SymbolTableGenVisitor : public ifccBaseVisitor
+class SymbolTableGenVisitor : public ErrorVisitor
 {
 public:
-    SymbolTableGenVisitor();
+    SymbolTableGenVisitor(antlr4::ANTLRInputStream &input);
     virtual ~SymbolTableGenVisitor() {}
-
-    int getErrorCount() { return error_count; }
 
     virtual antlrcpp::Any visitFuncDecl(ifccParser::FuncDeclContext *ctx) override;
     virtual antlrcpp::Any visitDecl_stmt(ifccParser::Decl_stmtContext *ctx) override;
@@ -62,7 +59,6 @@ public:
     std::map<std::string, VarInfos> varTable;
     std::map<std::string, FuncInfos> funcTable;
     std::string scope;
-    int error_count;
 };
 
 #endif // SYMBOL_TABLE_GEN_VISITOR_H

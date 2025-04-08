@@ -43,7 +43,7 @@ int typeSize(Type t)
     return typeSize[(int)t];
 }
 
-SymbolTableGenVisitor::SymbolTableGenVisitor() : varTable(), funcTable(), scope(), error_count(0) {
+SymbolTableGenVisitor::SymbolTableGenVisitor(antlr4::ANTLRInputStream& input) : ErrorVisitor(input), varTable(), funcTable(), scope() {
     funcTable["putchar"] = {.type = Type::VOID, .offset = 0, .args = {}, .used = false};
     varTable["putchar_0"] = {.type = Type::INT32_T, .name = "putchar_0", .offset = 0, .declared = true, .used = false};
     funcTable["putchar"].args.push_back(&varTable["putchar_0"]);
@@ -87,8 +87,8 @@ antlrcpp::Any SymbolTableGenVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext
         }
 
         if (varTable.find(varName) != varTable.end()) {
-            std::cerr << "error: variable name already declared " << varName << "\n";
-            error_count++;
+            reportError("error: variable name already declared " + varName, ctx->decl_element(i)->decl_var());
+            error++;
         }
         std::string funcName;
         std::istringstream ss_scope(scope);
@@ -154,8 +154,8 @@ antlrcpp::Any SymbolTableGenVisitor::visitIdUse(ifccParser::IdUseContext *ctx) {
         }
     }
     if (tried_scope.size() == 0) {
-        std::cerr << "error: variable not declared " << ctx->ID()->getText() << " in scope " << scope << "\n";
-        error_count++;
+        reportError("error: variable not declared " + ctx->ID()->getText() + " in scope " + scope, ctx);
+        error++;
     }
     varTable[tried_scope + '_' + ctx->ID()->getText()].used = true;
     return 0;
@@ -172,8 +172,8 @@ antlrcpp::Any SymbolTableGenVisitor::visitLIdUse(ifccParser::LIdUseContext *ctx)
         }
     }
     if (tried_scope.size() == 0) {
-        std::cerr << "error: variable not declared " << ctx->ID()->getText() << " in scope " << scope << "\n";
-        error_count++;
+        reportError("error: variable not declared " + ctx->ID()->getText() + " in scope " + scope, ctx);
+        error++;
     }
     return tried_scope + '_' + ctx->ID()->getText();
 }
@@ -228,12 +228,12 @@ antlrcpp::Any SymbolTableGenVisitor::visitAssignExpr(ifccParser::AssignExprConte
 
 antlrcpp::Any SymbolTableGenVisitor::visitFuncCall(ifccParser::FuncCallContext *ctx) {
     if (funcTable.find(ctx->ID()->getText()) == funcTable.end()) {
-        std::cerr << "error: function not declared " << ctx->ID()->getText() << " in scope " << scope << "\n";
-        error_count++;
+        reportError("error: function not declared " + ctx->ID()->getText() + " in scope " + scope, ctx);
+        error++;
     }
     if (funcTable[ctx->ID()->getText()].args.size() != ctx->expr().size()) {
-        std::cerr << "error: function " << ctx->ID()->getText() << " expects " << funcTable[ctx->ID()->getText()].args.size() << " arguments, got " << ctx->expr().size() << "\n";
-        error_count++;
+        reportError("error: function " + ctx->ID()->getText() + " expects " + std::to_string(funcTable[ctx->ID()->getText()].args.size()) + " arguments, got " + std::to_string(ctx->expr().size()), ctx);
+        error++;
     }
     funcTable[ctx->ID()->getText()].used = true;
     for (int i = 0; i < ctx->expr().size(); i++) {

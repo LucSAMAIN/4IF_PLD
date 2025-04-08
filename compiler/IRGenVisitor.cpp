@@ -40,6 +40,42 @@ typedef struct ExprReturn {
     }
 } ExprReturn;
 
+typedef struct ExprReturn {
+    bool isConst;
+    Type type;
+    union {
+        int32_t ivalue;
+        double dvalue;
+    };
+
+    ExprReturn() : isConst(false), type(Type::INT64_T), ivalue(0) {}
+    ExprReturn(bool isConst, Type type, int32_t val) : isConst(isConst), type(type), ivalue(val) {}
+    ExprReturn(bool isConst, Type type, double val) : isConst(isConst), type(type), dvalue(val) {}
+    ExprReturn(const ExprReturn& other) : isConst(other.isConst), type(other.type) {
+        if (isConst) {
+            if (type == Type::FLOAT64_T) {
+                dvalue = other.dvalue;
+            } else {
+                ivalue = other.ivalue;
+            }
+        }
+    }
+    ExprReturn& operator=(const ExprReturn& other) {
+        if (this != &other) {
+            isConst = other.isConst;
+            type = other.type;
+            if (isConst) {
+                if (type == Type::FLOAT64_T) {
+                    dvalue = other.dvalue;
+                } else {
+                    ivalue = other.ivalue;
+                }
+            }
+        }
+        return *this;
+    }
+} ExprReturn;
+
 IRGenVisitor::IRGenVisitor(SymbolTableGenVisitor& p_stv) 
     : stv(p_stv), cfgs(), currentBB(nullptr), scope() {}
 
@@ -1061,7 +1097,11 @@ antlrcpp::Any IRGenVisitor::visitMulDivExpr(ifccParser::MulDivExprContext *ctx) 
     ExprReturn* res_right(visit(ctx->right));
     Type operation_type = res_left->type == Type::FLOAT64_T || res_right->type == Type::FLOAT64_T ? Type::FLOAT64_T : Type::INT32_T;
     if (res_right->isConst) {
-        if (res_left->isConst) { // is const expr
+        if (res_left->isConst && 
+            !((ctx->mOp()->SLASH() || ctx->mOp()->MOD()) && 
+                ((res_right->type == Type::INT32_T && res_right->ivalue == 0) || 
+                (res_right->type == Type::FLOAT64_T && res_right->dvalue == 0)))) { 
+            // is const expr and not a zero division
             cfgs.back()->current_bb->pop_IRInstr();
             cfgs.back()->current_bb->pop_IRInstr();
             if (operation_type == Type::INT32_T) {

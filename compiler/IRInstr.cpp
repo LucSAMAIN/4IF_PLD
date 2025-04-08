@@ -11,13 +11,31 @@ std::string Prologue::get_operation_name() const {
 }
 void Prologue::gen_x86(std::ostream& o) {
     o << "    pushq %rbp # prologue\n";
+    o << "    pushq %rbp # prologue\n";
     o << "    movq %rsp, %rbp" << "\n";
     
     // Allouer de l'espace pour les variables locales
     int frameSize = ((-bb->cfg->stv.funcTable[bb->cfg->functionName].offset + 15) & ~15);  // Alignement sur 16 octets uniquement
+    int frameSize = ((-bb->cfg->stv.funcTable[bb->cfg->functionName].offset + 15) & ~15);  // Alignement sur 16 octets uniquement
     if (frameSize > 0) {
         o << "    subq $" << frameSize << ", %rsp" << "\n";
     }
+
+    // on sauvegarde les registres
+    static const RegisterFunction index_to_reg[6] = { RegisterFunction::ARG0, RegisterFunction::ARG1, RegisterFunction::ARG2, RegisterFunction::ARG3, RegisterFunction::ARG4, RegisterFunction::ARG5 };
+    int index_int = 0;
+    int index_double = 0;
+    for (VarInfos* p : bb->cfg->stv.funcTable[bb->cfg->functionName].args) {
+        if (p->type == Type::INT32_T) {
+            o << "    movl " << bb->cfg->IR_reg_to_x86(VirtualRegister(index_to_reg[index_int], RegisterSize::SIZE_32, RegisterType::GPR)) << ", " << bb->cfg->IR_addr_to_x86("RBP" + std::to_string(bb->cfg->stv.varTable[bb->cfg->stv.funcTable[bb->cfg->functionName].args[index_int+index_double]->name].offset)) << "\n";
+            index_int++;
+        }
+        else if (p->type == Type::FLOAT64_T) {
+            o << "    movsd " << bb->cfg->IR_reg_to_x86(VirtualRegister(index_to_reg[index_double], RegisterSize::SIZE_64, RegisterType::XMM)) << ", " << bb->cfg->IR_addr_to_x86("RBP" + std::to_string(bb->cfg->stv.varTable[bb->cfg->stv.funcTable[bb->cfg->functionName].args[index_int+index_double]->name].offset)) << "\n";
+            index_double++;
+        }
+    }
+
 
     // on sauvegarde les registres
     static const RegisterFunction index_to_reg[6] = { RegisterFunction::ARG0, RegisterFunction::ARG1, RegisterFunction::ARG2, RegisterFunction::ARG3, RegisterFunction::ARG4, RegisterFunction::ARG5 };
@@ -55,6 +73,7 @@ std::string Epilogue::get_operation_name() const {
     return "epilogue";
 }
 void Epilogue::gen_x86(std::ostream& o) {
+    o << "    movq %rbp, %rsp # epilogue\n";
     o << "    movq %rbp, %rsp # epilogue\n";
     o << "    popq %rbp\n";
     o << "    ret\n";
@@ -106,6 +125,7 @@ void LdConstDouble::gen_wat(std::ostream& o) {
 
 // Implémentation de Copy
 Copy::Copy(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& src_reg) 
+Copy::Copy(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& src_reg) 
     : IRInstr(p_bb), dest(dest_reg), src(src_reg) {}
 std::string Copy::get_operation_name() const {
     return "copy";
@@ -121,6 +141,7 @@ void Copy::gen_wat(std::ostream& o) {
 
 // Implémentation de Add
 Add::Add(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
+Add::Add(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
     : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 std::string Add::get_operation_name() const {
     return "add";
@@ -135,6 +156,7 @@ void Add::gen_wat(std::ostream& o) {
 }
 
 // Implémentation de Sub
+Sub::Sub(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
 Sub::Sub(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
     : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 std::string Sub::get_operation_name() const {
@@ -153,11 +175,13 @@ void Sub::gen_wat(std::ostream& o) {
 
 // UnaryMinus
 UnaryMinus::UnaryMinus(BasicBlock* p_bb, const VirtualRegister& dest_reg) 
+UnaryMinus::UnaryMinus(BasicBlock* p_bb, const VirtualRegister& dest_reg) 
     : IRInstr(p_bb), dest(dest_reg) {}
 std::string UnaryMinus::get_operation_name() const {
     return "unaryMinus";
 }
 void UnaryMinus::gen_x86(std::ostream& o) {
+    o << "    neg " << bb->cfg->IR_reg_to_x86(dest) << " # unary minus\n";
     o << "    neg " << bb->cfg->IR_reg_to_x86(dest) << " # unary minus\n";
 }
 
@@ -166,6 +190,8 @@ void UnaryMinus::gen_wat(std::ostream& o) {
     o << "    (local.set " << bb->cfg->IR_reg_to_wat(dest) << " (i32.sub (i32.const 0) (local.get " << bb->cfg->IR_reg_to_wat(dest) << ")))\n";
 }
 
+Not::Not(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& src_reg) 
+    : IRInstr(p_bb), dest(dest_reg), op(src_reg) {}
 Not::Not(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& src_reg) 
     : IRInstr(p_bb), dest(dest_reg), op(src_reg) {}
 std::string Not::get_operation_name() const {
@@ -185,6 +211,7 @@ void Not::gen_wat(std::ostream& o) {
 
 // Implémentation de Mul
 Mul::Mul(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
+Mul::Mul(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
     : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 std::string Mul::get_operation_name() const {
     return "mul";
@@ -200,11 +227,13 @@ void Mul::gen_wat(std::ostream& o) {
 
 // Implémentation de Div
 Div::Div(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
+Div::Div(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
     : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 std::string Div::get_operation_name() const {
     return "div";
 }
 void Div::gen_x86(std::ostream& o) {
+    o << "    cqo # div\n";
     o << "    cqo # div\n";
     o << "    idivl " << bb->cfg->IR_reg_to_x86(op2) << "\n";
     if (bb->cfg->IR_reg_to_x86(dest) != "%eax") {
@@ -219,11 +248,13 @@ void Div::gen_wat(std::ostream& o) {
 
 // Implémentation de Mod
 Mod::Mod(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
+Mod::Mod(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
     : IRInstr(p_bb), dest(dest_reg), op2(operand2) {}
 std::string Mod::get_operation_name() const {
     return "mod";
 }
 void Mod::gen_x86(std::ostream& o) {
+    o << "    cqo # mod\n";
     o << "    cqo # mod\n";
     o << "    idivl " << bb->cfg->IR_reg_to_x86(op2) << "\n";
     if (bb->cfg->IR_reg_to_x86(dest) != "%edx") {
@@ -277,6 +308,20 @@ std::string Call::get_operation_name() const {
 }
 void Call::gen_x86(std::ostream& o) {
     // on place les variables dans les registres
+    static const RegisterFunction index_to_reg[6] = { RegisterFunction::ARG0, RegisterFunction::ARG1, RegisterFunction::ARG2, RegisterFunction::ARG3, RegisterFunction::ARG4, RegisterFunction::ARG5 };
+    int index_int = 0;
+    int index_double = 0;
+
+    o << "    # call " << func_name << "\n";
+    for (VarInfos* p : bb->cfg->stv.funcTable[func_name].args) {
+        if (p->type == Type::INT32_T) {
+            o << "    movl " << bb->cfg->IR_addr_to_x86(args[index_int+index_double]) << ", " << bb->cfg->IR_reg_to_x86(VirtualRegister(index_to_reg[index_int], RegisterSize::SIZE_32, RegisterType::GPR)) << "\n";
+            index_int++;
+        }
+        else if (p->type == Type::FLOAT64_T) {
+            o << "    movsd " << bb->cfg->IR_addr_to_x86(args[index_int+index_double]) << ", " << bb->cfg->IR_reg_to_x86(VirtualRegister(index_to_reg[index_double], RegisterSize::SIZE_64, RegisterType::XMM)) << "\n";
+            index_double++;
+        }
     static const RegisterFunction index_to_reg[6] = { RegisterFunction::ARG0, RegisterFunction::ARG1, RegisterFunction::ARG2, RegisterFunction::ARG3, RegisterFunction::ARG4, RegisterFunction::ARG5 };
     int index_int = 0;
     int index_double = 0;
@@ -440,6 +485,7 @@ std::string JumpFalse::get_operation_name() const {
 }
 void JumpFalse::gen_x86(std::ostream& o) {
     o << "    cmpl $0, " << bb->cfg->IR_reg_to_x86(op) << " # jump false\n";
+    o << "    cmpl $0, " << bb->cfg->IR_reg_to_x86(op) << " # jump false\n";
     o << "    je " << dest_false << "\n";
 }
 void JumpFalse::gen_wat(std::ostream& o) {
@@ -527,6 +573,7 @@ std::string Push::get_operation_name() const {
     return "push";
 }
 void Push::gen_x86(std::ostream& o) {
+    o << "    push " << bb->cfg->IR_reg_to_x86(op) << " # push\n";
     o << "    push " << bb->cfg->IR_reg_to_x86(op) << " # push\n";
 }
 void Push::gen_wat(std::ostream& o) {

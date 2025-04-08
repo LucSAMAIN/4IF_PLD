@@ -63,7 +63,11 @@ void Epilogue::gen_x86(std::ostream& o) {
 void Epilogue::gen_wat(std::ostream& o) {
     o << "    ;; Epilogue\n";
     o << "    (global.set $sp (local.get $bp))\n";
-    o << "    (return (local.get $reg))\n"; // Retourne explicitement la valeur
+    if (bb->cfg->stv.funcTable[bb->cfg->functionName].type == Type::INT32_T) {
+        o << "    (return (local.get $reg_32))\n"; // Retourne explicitement la valeur
+    } else if (bb->cfg->stv.funcTable[bb->cfg->functionName].type == Type::FLOAT64_T) {
+        o << "    (return (local.get $reg_64))\n"; // Retourne explicitement la valeur
+    }
 }
 
 // Implémentation de LdConst
@@ -295,14 +299,22 @@ void Call::gen_x86(std::ostream& o) {
 void Call::gen_wat(std::ostream& o) {
     o << "    ;; Function call\n";
     // Passer les arguments et stocker la valeur de retour
-    o << "    (local.set $reg (call $" << func_name;
+    if (bb->cfg->stv.funcTable[func_name].type == Type::INT32_T) {
+        o << "    (local.set $reg_32 (call $" << func_name;
+    } else if (bb->cfg->stv.funcTable[func_name].type == Type::FLOAT64_T) {
+        o << "    (local.set $reg_64 (call $" << func_name;
+    }
     
     // Récupérer le nombre d'arguments attendus par la fonction appelée (max 6)
     int numArgs = std::min(6, static_cast<int>(bb->cfg->stv.funcTable[func_name].args.size()));
     
     // Passer les arguments depuis les registres d'arguments
     for (int i = 0; i < numArgs; i++) {
-        o << "\n        (i32.load " << bb->cfg->IR_addr_to_wat(args[i]) << ")";
+        if (bb->cfg->stv.funcTable[func_name].args[i]->type == Type::INT32_T) {
+            o << "\n        (i32.load " << bb->cfg->IR_addr_to_wat(args[i]) << ")";
+        } else if (bb->cfg->stv.funcTable[func_name].args[i]->type == Type::FLOAT64_T) {
+            o << "\n        (f64.load " << bb->cfg->IR_addr_to_wat(args[i]) << ")";
+        }
     }
     
     o << "))\n";
@@ -339,6 +351,11 @@ void CompareInt::gen_x86(std::ostream& o) {
         o << "    setle " << byte_dest_name << "\n";  // Below or equal: CF=1 or ZF=1
     }
     o << "    movzbl " << bb->cfg->IR_reg_to_x86(byte_dest) << ", " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+}
+
+void CompareInt::gen_wat(std::ostream& o) {
+    o << "    ;; Compare int\n";
+    o << "    (local.set " << bb->cfg->IR_reg_to_wat(dest) << " (i32.cmp (local.get " << bb->cfg->IR_reg_to_wat(left) << ") (local.get " << bb->cfg->IR_reg_to_wat(right) << ")))\n";
 }
 
 And::And(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
@@ -434,11 +451,11 @@ void JumpFalse::gen_wat(std::ostream& o) {
         o << "      (if (i32.eqz (local.get " << bb->cfg->IR_reg_to_wat(op) << "))\n";
         o << "        (then (br " << epilogueBlockName << "))\n";
         o << "      )\n";
-    } else if (dest_true == bb->cfg->functionName + "_epilogue") {
-        // Saut conditionnel vers l'épilogue si la condition est vraie
-        o << "      (if (i32.ne (local.get " << bb->cfg->IR_reg_to_wat(op) << ") (i32.const 0))\n";
-        o << "        (then (br " << epilogueBlockName << "))\n";
-        o << "      )\n";
+    // } else if (dest_true == bb->cfg->functionName + "_epilogue") {
+    //     // Saut conditionnel vers l'épilogue si la condition est vraie
+    //     o << "      (if (i32.ne (local.get " << bb->cfg->IR_reg_to_wat(op) << ") (i32.const 0))\n";
+    //     o << "        (then (br " << epilogueBlockName << "))\n";
+    //     o << "      )\n";
     } else {
         // Implémentation correcte des sauts conditionnels vers d'autres blocs
         o << "      (if (i32.eqz (local.get " << bb->cfg->IR_reg_to_wat(op) << "))\n";
@@ -472,16 +489,16 @@ void JumpFalse::gen_wat(std::ostream& o) {
         
         o << "        )\n";
         o << "        (else\n";
-        o << "          ;; Exécution du bloc " << dest_true << "\n";
+        // o << "          ;; Exécution du bloc " << dest_true << "\n";
         
         // Recherche du bloc de destination true dans le CFG
         BasicBlock* true_block = nullptr;
-        for (BasicBlock* block : bb->cfg->bbs) {
-            if (block->label == dest_true) {
-                true_block = block;
-                break;
-            }
-        }
+        // for (BasicBlock* block : bb->cfg->bbs) {
+        //     if (block->label == dest_true) {
+        //         true_block = block;
+        //         break;
+        //     }
+        // }
         
         // Instructions du bloc true
         if (true_block) {

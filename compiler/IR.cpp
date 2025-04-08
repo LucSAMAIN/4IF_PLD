@@ -176,46 +176,50 @@ std::string CFG::IR_reg_to_x86(const VirtualRegister& vr) {
 
 std::string CFG::IR_reg_to_wat(const VirtualRegister& reg) {
     // Gérer tous les registres d'arguments (!arg0, !arg1, etc.) indépendamment de leur taille
-    if (reg.regFunc == RegisterFunction::ARG0 || 
+    if (reg.regSize == RegisterSize::SIZE_64) {
+        if (reg.regFunc == RegisterFunction::ARG0 || 
         reg.regFunc == RegisterFunction::ARG1 ||
         reg.regFunc == RegisterFunction::ARG2 ||
         reg.regFunc == RegisterFunction::ARG3 ||
         reg.regFunc == RegisterFunction::ARG4 ||
         reg.regFunc == RegisterFunction::ARG5) {
         // Extraire le numéro de l'argument (0-5)
-        std::string argNum = std::to_string(static_cast<int>(reg.regFunc));
-        return "$!arg" + argNum;
-    } else if (reg.regFunc == RegisterFunction::REG_LEFT) {
-        return "$regLeft";
-    } else if (reg.regFunc == RegisterFunction::REG_RIGHT) {
-        return "$regRight";
-    } else if (reg.regFunc == RegisterFunction::REG) {
-        return "$reg";
+            std::string argNum = std::to_string(static_cast<int>(reg.regFunc));
+            return "$!arg_64" + argNum;
+        } else if (reg.regFunc == RegisterFunction::REG_LEFT) {
+            return "$regLeft_64";
+        } else if (reg.regFunc == RegisterFunction::REG_RIGHT) {
+            return "$regRight_64";
+        } else if (reg.regFunc == RegisterFunction::REG) {
+            return "$reg_64";
+        }
+        std::string regName = std::to_string(static_cast<int>(reg.regFunc));
+        return "$" + regName + "_64";  // Ajouter le préfixe $ pour les variables WebAssembly
     }
-    std::string regName = std::to_string(static_cast<int>(reg.regFunc));
-    return "$" + regName;  // Ajouter le préfixe $ pour les variables WebAssembly
-} 
+    else{
+        if (reg.regFunc == RegisterFunction::ARG0 || 
+                reg.regFunc == RegisterFunction::ARG1 ||
+                reg.regFunc == RegisterFunction::ARG2 ||
+                reg.regFunc == RegisterFunction::ARG3 ||
+                reg.regFunc == RegisterFunction::ARG4 ||
+                reg.regFunc == RegisterFunction::ARG5) {
+                // Extraire le numéro de l'argument (0-5)
+                std::string argNum = std::to_string(static_cast<int>(reg.regFunc));
+                return "$!arg_32" + argNum;
+            } else if (reg.regFunc == RegisterFunction::REG_LEFT) {
+                return "$regLeft_32";
+            } else if (reg.regFunc == RegisterFunction::REG_RIGHT) {
+                return "$regRight_32";
+            } else if (reg.regFunc == RegisterFunction::REG) {
+                return "$reg_32";
+            }
+            std::string regName = std::to_string(static_cast<int>(reg.regFunc));
+            return "$" + regName + "_32";  // Ajouter le préfixe $ pour les variables WebAssembly
+    }
 
-// std::string CFG::IR_reg_to_wat(const std::string &reg) {
-//     // Gérer tous les registres d'arguments (!arg0, !arg1, etc.) indépendamment de leur taille
-//     if (reg.substr(0, 5) == "!arg0" || 
-//         reg.substr(0, 5) == "!arg1" ||
-//         reg.substr(0, 5) == "!arg2" ||
-//         reg.substr(0, 5) == "!arg3" ||
-//         reg.substr(0, 5) == "!arg4" ||
-//         reg.substr(0, 5) == "!arg5") {
-//         // Extraire le numéro de l'argument (0-5)
-//         std::string argNum = reg.substr(4, 1);
-//         return "$!arg" + argNum;
-//     } else if (reg.substr(0, 8) == "!regLeft") {
-//         return "$regLeft";
-//     } else if (reg.substr(0, 9) == "!regRight") {
-//         return "$regRight";
-//     } else if (reg.substr(0, 4) == "!reg") {
-//         return "$reg";
-//     }
-//     return "$" + reg;  // Ajouter le préfixe $ pour les variables WebAssembly
-// } 
+
+    
+} 
 
 std::string CFG::IR_addr_to_x86(const std::string &addr)
 {
@@ -265,20 +269,31 @@ void CFG::gen_wat(ostream& o) {
         int numArgs = std::min(6, static_cast<int>(stv.funcTable[functionName].args.size()));
         for (int i = 0; i < numArgs; i++) {
             // Déclarer chaque argument comme un paramètre i32
-            o << " (param $!arg" << i << " i32)";   
+            if (stv.funcTable[functionName].args[i]->type == Type::INT32_T) {
+                o << " (param $!arg_32" << i << " i32)";   
+            } else if (stv.funcTable[functionName].args[i]->type == Type::FLOAT64_T) {
+                o << " (param $!arg_64" << i << " f64)";
+            }
         }
     }
-    
-    o << " (result i32)\n";
-    o << "    (local $reg i32)\n";      // Registre pour les résultats
-    o << "    (local $regLeft i32)\n";  // Registre pour l'opérande gauche
-    o << "    (local $regRight i32)\n"; // Registre pour l'opérande droite
+    if (stv.funcTable[functionName].type == Type::INT32_T) {
+        o << " (result i32)\n";
+    } else if (stv.funcTable[functionName].type == Type::FLOAT64_T) {
+        o << " (result f64)\n";
+    }
+    o << "    (local $reg_32 i32)\n";      // Registre pour les résultats
+    o << "    (local $regLeft_32 i32)\n";  // Registre pour l'opérande gauche
+    o << "    (local $regRight_32 i32)\n"; // Registre pour l'opérande droite
     o << "    (local $bp i32)\n";       // Base pointer
+    o << "    (local $reg_64 f64)\n";      // Registre pour les résultats
+    o << "    (local $regLeft_64 f64)\n";  // Registre pour l'opérande gauche
+    o << "    (local $regRight_64 f64)\n"; // Registre pour l'opérande droite
     
     // Si c'est la fonction main, déclarer les variables locales pour les arguments
     if (functionName == "main") {
         for (int i = 0; i < 6; i++) {
-            o << "    (local $!arg" << i << " i32)\n";
+            o << "    (local $!arg_32" << i << " i32)\n";
+            o << "    (local $!arg_64" << i << " f64)\n";
         }
     }
     
@@ -479,7 +494,11 @@ void CFG::gen_wat(ostream& o) {
     }
     
     // Valeur de retour par défaut (ne devrait jamais être atteinte)
-    o << "    (return (i32.const 0))\n";
+    // if (stv.funcTable[functionName].type == Type::INT32_T) {
+    //     o << "    (return (i32.const 0))\n";
+    // } else if (stv.funcTable[functionName].type == Type::FLOAT64_T) {
+    //     o << "    (return (f64.const 0))\n";
+    // }
     o << ")\n";
 }
 

@@ -40,42 +40,6 @@ typedef struct ExprReturn {
     }
 } ExprReturn;
 
-typedef struct ExprReturn {
-    bool isConst;
-    Type type;
-    union {
-        int32_t ivalue;
-        double dvalue;
-    };
-
-    ExprReturn() : isConst(false), type(Type::INT64_T), ivalue(0) {}
-    ExprReturn(bool isConst, Type type, int32_t val) : isConst(isConst), type(type), ivalue(val) {}
-    ExprReturn(bool isConst, Type type, double val) : isConst(isConst), type(type), dvalue(val) {}
-    ExprReturn(const ExprReturn& other) : isConst(other.isConst), type(other.type) {
-        if (isConst) {
-            if (type == Type::FLOAT64_T) {
-                dvalue = other.dvalue;
-            } else {
-                ivalue = other.ivalue;
-            }
-        }
-    }
-    ExprReturn& operator=(const ExprReturn& other) {
-        if (this != &other) {
-            isConst = other.isConst;
-            type = other.type;
-            if (isConst) {
-                if (type == Type::FLOAT64_T) {
-                    dvalue = other.dvalue;
-                } else {
-                    ivalue = other.ivalue;
-                }
-            }
-        }
-        return *this;
-    }
-} ExprReturn;
-
 IRGenVisitor::IRGenVisitor(SymbolTableGenVisitor& p_stv) 
     : stv(p_stv), cfgs(), currentBB(nullptr), scope() {}
 

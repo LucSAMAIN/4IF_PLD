@@ -77,15 +77,6 @@ int main(int argc, const char **argv)
         std::cerr << "error: continue/break error\n";
         exit(1);
     }
-
-    ContinueBreakCheckVisitor cbv;
-    cbv.visit(tree);
-    if (cbv.getNumberError() != 0)
-    {
-        std::cerr << "error: continue/break error\n";
-        exit(1);
-    }
-
     SymbolTableGenVisitor stv;
     stv.visit(tree);
 

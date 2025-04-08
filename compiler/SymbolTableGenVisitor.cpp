@@ -1,21 +1,6 @@
 #include <sstream>
 
 #include "SymbolTableGenVisitor.h"
-
-std::string typeToString(Type t)
-{
-    std::string typeToString[] = {
-        "void",
-        "int64_t",
-        "int32_t",
-        "int16_t",
-        "int8_t",
-        "float64_t",
-        "ptr_int32_t",
-        "ptr_float64_t"
-    };
-    return typeToString[(int)t];
-}
 std::string typeToString(Type t)
 {
     std::string typeToString[] = {

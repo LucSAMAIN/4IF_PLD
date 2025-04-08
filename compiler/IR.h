@@ -53,47 +53,6 @@ typedef struct VirtualRegister {
 	}
 } VirtualRegister;
 
-enum class RegisterFunction {
-	REG,
-	REG_LEFT,
-	REG_RIGHT,
-	ARG0,
-	ARG1,
-	ARG2,
-	ARG3,
-	ARG4,
-	ARG5,
-	ARG6
-};
-enum class RegisterSize {
-	SIZE_64 = 64,
-	SIZE_32 = 32,
-	SIZE_16 = 16,
-	SIZE_8 = 8
-};
-enum class RegisterType {
-	GPR,
-	XMM
-};
-typedef struct VirtualRegister {
-	RegisterFunction regFunc;
-	RegisterSize regSize;
-	RegisterType regType;
-
-	VirtualRegister(RegisterFunction func, RegisterSize size, RegisterType type)
-		: regFunc(func), regSize(size), regType(type) {}
-	VirtualRegister(const VirtualRegister& other)
-		: regFunc(other.regFunc), regSize(other.regSize), regType(other.regType) {}
-	VirtualRegister& operator=(const VirtualRegister& other) {
-		if (this != &other) {
-			regFunc = other.regFunc;
-			regSize = other.regSize;
-			regType = other.regType;
-		}
-		return *this;
-	}
-} VirtualRegister;
-
 
 /**  The class for a basic block */
 

@@ -326,12 +326,12 @@ void CFG::gen_wat(ostream& o) {
                         info.testBlock = bb;
                         
                         // Chercher le bloc de corps correspondant
-                        // for (BasicBlock* bodyBB : bbs) {
-                        //     if (bodyBB->label == jumpf->dest_true) {
-                        //         info.bodyBlock = bodyBB;
-                        //         break;
-                        //     }
-                        // }
+                        for (BasicBlock* bodyBB : bbs) {
+                            if (bodyBB->label == jumpf->dest_true) {
+                                info.bodyBlock = bodyBB;
+                                break;
+                            }
+                        }
                         
                         // Chercher le bloc de fin correspondant
                         for (BasicBlock* endBB : bbs) {
@@ -359,7 +359,7 @@ void CFG::gen_wat(ostream& o) {
                 JumpFalse* jumpf = dynamic_cast<JumpFalse*>(instr);
                 if (jumpf) {
                     // Ajouter les blocs destination au set des blocs if-else
-                    // ifElseBlocks.insert(jumpf->dest_true);
+                    ifElseBlocks.insert(jumpf->dest_true);
                     ifElseBlocks.insert(jumpf->dest_false);
                 }
             }

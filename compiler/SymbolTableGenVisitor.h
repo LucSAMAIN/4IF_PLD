@@ -39,14 +39,6 @@ typedef struct FuncInfos
     bool used;
 } FuncInfos;
 
-typedef struct FuncInfos
-{
-    Type type;
-    int offset;
-    std::vector<VarInfos*> args;
-    bool used;
-} FuncInfos;
-
 class SymbolTableGenVisitor : public ErrorVisitor
 {
 public:

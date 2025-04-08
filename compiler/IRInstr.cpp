@@ -87,6 +87,15 @@ void LdConstInt::gen_wat(std::ostream& o) {
     o << "    ;; Load integer constant\n";
     o << "    (local.set " << bb->cfg->IR_reg_to_wat(dest) << " (i32.const " << value << "))\n";
 }
+
+LdConstDouble::LdConstDouble(BasicBlock* p_bb, const VirtualRegister& dest_reg, double val)
+    : IRInstr(p_bb), dest(dest_reg), value(val) {}
+
+
+std::string LdConstDouble::get_operation_name() const {
+    return "ldconstdouble";
+}
+
 void LdConstDouble::gen_x86(std::ostream& o) {
     uint64_t bits = *reinterpret_cast<uint64_t*>(&value);
     o << "    movq $0x" << std::hex << bits << std::dec << ", %rax # ldconstdouble " << value << "\n";
@@ -427,7 +436,7 @@ void Jump::gen_wat(std::ostream& o) {
     }
 }
 
-JumpFalse::JumpFalse(BasicBlock* p_bb, const std::string& p_dest_false, const VirtualRegister& p_op) 
+JumpFalse::JumpFalse(BasicBlock* p_bb, const std::string& p_dest_false, const std::string& p_dest_true, const VirtualRegister& p_op) 
     : IRInstr(p_bb), dest_false(p_dest_false), op(p_op) {};
 std::string JumpFalse::get_operation_name() const {
     return "jumpfalse";
@@ -445,11 +454,11 @@ void JumpFalse::gen_wat(std::ostream& o) {
         o << "      (if (i32.eqz (local.get " << bb->cfg->IR_reg_to_wat(op) << "))\n";
         o << "        (then (br " << epilogueBlockName << "))\n";
         o << "      )\n";
-    // } else if (dest_true == bb->cfg->functionName + "_epilogue") {
-    //     // Saut conditionnel vers l'épilogue si la condition est vraie
-    //     o << "      (if (i32.ne (local.get " << bb->cfg->IR_reg_to_wat(op) << ") (i32.const 0))\n";
-    //     o << "        (then (br " << epilogueBlockName << "))\n";
-    //     o << "      )\n";
+    } else if (dest_true == bb->cfg->functionName + "_epilogue") {
+        // Saut conditionnel vers l'épilogue si la condition est vraie
+        o << "      (if (i32.ne (local.get " << bb->cfg->IR_reg_to_wat(op) << ") (i32.const 0))\n";
+        o << "        (then (br " << epilogueBlockName << "))\n";
+        o << "      )\n";
     } else {
         // Implémentation correcte des sauts conditionnels vers d'autres blocs
         o << "      (if (i32.eqz (local.get " << bb->cfg->IR_reg_to_wat(op) << "))\n";
@@ -483,16 +492,16 @@ void JumpFalse::gen_wat(std::ostream& o) {
         
         o << "        )\n";
         o << "        (else\n";
-        // o << "          ;; Exécution du bloc " << dest_true << "\n";
+        o << "          ;; Exécution du bloc " << dest_true << "\n";
         
         // Recherche du bloc de destination true dans le CFG
         BasicBlock* true_block = nullptr;
-        // for (BasicBlock* block : bb->cfg->bbs) {
-        //     if (block->label == dest_true) {
-        //         true_block = block;
-        //         break;
-        //     }
-        // }
+        for (BasicBlock* block : bb->cfg->bbs) {
+            if (block->label == dest_true) {
+                true_block = block;
+                break;
+            }
+        }
         
         // Instructions du bloc true
         if (true_block) {

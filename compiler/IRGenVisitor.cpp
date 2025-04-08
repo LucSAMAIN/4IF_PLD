@@ -407,9 +407,7 @@ antlrcpp::Any IRGenVisitor::visitIf_stmt(ifccParser::If_stmtContext *ctx) {
         cfgs.back()->add_bb(bb_true);
         cfgs.back()->add_bb(bb_endif);
 
-        IRInstr *instruction_jump_false = new JumpFalse(cfgs.back()->current_bb, bb_endif->label, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
-        cfgs.back()->current_bb->add_IRInstr(instruction_jump_false);
-        IRInstr *instruction_jump = new Jump(cfgs.back()->current_bb, bb_true->label);
+        IRInstr *instruction_jump = new JumpFalse(cfgs.back()->current_bb, bb_endif->label, bb_true->label, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
         cfgs.back()->current_bb->add_IRInstr(instruction_jump);
 
         cfgs.back()->current_bb = bb_true;
@@ -429,9 +427,7 @@ antlrcpp::Any IRGenVisitor::visitIf_stmt(ifccParser::If_stmtContext *ctx) {
         cfgs.back()->add_bb(bb_false);
         cfgs.back()->add_bb(bb_endif);
 
-        IRInstr *instruction_jump_false = new JumpFalse(cfgs.back()->current_bb, bb_false->label, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
-        cfgs.back()->current_bb->add_IRInstr(instruction_jump_false);
-        IRInstr *instruction_jump = new Jump(cfgs.back()->current_bb, bb_true->label);
+        IRInstr *instruction_jump = new JumpFalse(cfgs.back()->current_bb, bb_false->label, bb_true->label, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
         cfgs.back()->current_bb->add_IRInstr(instruction_jump);
 
         cfgs.back()->current_bb = bb_true;
@@ -477,9 +473,7 @@ antlrcpp::Any IRGenVisitor::visitWhile_stmt(ifccParser::While_stmtContext *ctx) 
     cfgs.back()->add_bb(bb_true);
     cfgs.back()->add_bb(bb_endwhile);
 
-    IRInstr *instruction_jump_false = new JumpFalse(cfgs.back()->current_bb, bb_endwhile->label, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
-    cfgs.back()->current_bb->add_IRInstr(instruction_jump_false);
-    IRInstr *instruction_jump = new Jump(cfgs.back()->current_bb, bb_true->label);
+    IRInstr *instruction_jump = new JumpFalse(cfgs.back()->current_bb, bb_endwhile->label, bb_true->label, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
     cfgs.back()->current_bb->add_IRInstr(instruction_jump);
     
 
@@ -1061,7 +1055,11 @@ antlrcpp::Any IRGenVisitor::visitMulDivExpr(ifccParser::MulDivExprContext *ctx) 
     ExprReturn* res_right(visit(ctx->right));
     Type operation_type = res_left->type == Type::FLOAT64_T || res_right->type == Type::FLOAT64_T ? Type::FLOAT64_T : Type::INT32_T;
     if (res_right->isConst) {
-        if (res_left->isConst) { // is const expr
+        if (res_left->isConst && 
+            !((ctx->mOp()->SLASH() || ctx->mOp()->MOD()) && 
+                ((res_right->type == Type::INT32_T && res_right->ivalue == 0) || 
+                (res_right->type == Type::FLOAT64_T && res_right->dvalue == 0)))) { 
+            // is const expr and not a zero division
             cfgs.back()->current_bb->pop_IRInstr();
             cfgs.back()->current_bb->pop_IRInstr();
             if (operation_type == Type::INT32_T) {
@@ -1693,9 +1691,7 @@ antlrcpp::Any IRGenVisitor::visitLogAndExpr(ifccParser::LogAndExprContext *ctx) 
     cfgs.back()->current_bb->exit_false = bb_expr_end;
     bb_expr_true->exit_true = bb_expr_end;
 
-    IRInstr *instruction_jump_false = new JumpFalse(cfgs.back()->current_bb, bb_expr_end->label, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
-    cfgs.back()->current_bb->add_IRInstr(instruction_jump_false);
-    IRInstr *instruction_jump = new Jump(cfgs.back()->current_bb, bb_expr_true->label);
+    IRInstr *instruction_jump = new JumpFalse(cfgs.back()->current_bb, bb_expr_end->label, bb_expr_true->label, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
     cfgs.back()->current_bb->add_IRInstr(instruction_jump);
 
     cfgs.back()->current_bb = bb_expr_true;
@@ -1762,9 +1758,7 @@ antlrcpp::Any IRGenVisitor::visitLogOrExpr(ifccParser::LogOrExprContext *ctx) {
     cfgs.back()->current_bb->exit_false = bb_expr_false;
     bb_expr_false->exit_true = bb_expr_end;
 
-    IRInstr *instruction_jump_false = new JumpFalse(cfgs.back()->current_bb, bb_expr_end->label, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
-    cfgs.back()->current_bb->add_IRInstr(instruction_jump_false);
-    IRInstr *instruction_jump = new Jump(cfgs.back()->current_bb, bb_expr_end->label);
+    IRInstr *instruction_jump = new JumpFalse(cfgs.back()->current_bb, bb_expr_false->label, bb_expr_end->label, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
     cfgs.back()->current_bb->add_IRInstr(instruction_jump);
 
     cfgs.back()->current_bb = bb_expr_false;

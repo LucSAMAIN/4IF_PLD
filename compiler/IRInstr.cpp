@@ -72,10 +72,13 @@ void Epilogue::gen_wat(std::ostream& o) {
 
 // Implémentation de LdConst
 LdConstInt::LdConstInt(BasicBlock* p_bb, const VirtualRegister& dest_reg, int val) 
-    : IRInstr(p_bb), dest(dest_reg), value(val) {};
+    : IRInstr(p_bb), dest(dest_reg), value(val) {}
+
+
 std::string LdConstInt::get_operation_name() const {
     return "ldconstint";
 }
+
 void LdConstInt::gen_x86(std::ostream& o) {
     o << "    movl $" << value << ", " << bb->cfg->IR_reg_to_x86(dest) << " # ldconstint\n";
 }
@@ -84,19 +87,10 @@ void LdConstInt::gen_wat(std::ostream& o) {
     o << "    ;; Load integer constant\n";
     o << "    (local.set " << bb->cfg->IR_reg_to_wat(dest) << " (i32.const " << value << "))\n";
 }
-
-LdConstDouble::LdConstDouble(BasicBlock* p_bb, const VirtualRegister& dest_reg, double val) 
-    : IRInstr(p_bb), dest(dest_reg), value(val) {};
-
-
-std::string LdConstDouble::get_operation_name() const {
-    return "ldconstdouble";
-}
-
 void LdConstDouble::gen_x86(std::ostream& o) {
     uint64_t bits = *reinterpret_cast<uint64_t*>(&value);
     o << "    movq $0x" << std::hex << bits << std::dec << ", %rax # ldconstdouble " << value << "\n";
-    o << "    movq %rax, " << bb->cfg->IR_reg_to_x86(dest) << "\n";
+    o << "    movq %rax, " << bb->cfg->IR_reg_to_x86(dest) << " # ldconstint\n";
 }
 
 void LdConstDouble::gen_wat(std::ostream& o) {

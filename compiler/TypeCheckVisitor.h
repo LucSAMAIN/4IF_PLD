@@ -1,17 +1,14 @@
 #ifndef TYPECHECKVISITOR_H
 #define TYPECHECKVISITOR_H
 
-#include "antlr4-runtime.h"
-#include "generated/ifccBaseVisitor.h"
+#include "ErrorVisitor.h"
 #include "SymbolTableGenVisitor.h"
 
-class TypeCheckVisitor : public ifccBaseVisitor
+class TypeCheckVisitor : public ErrorVisitor
 {
 public:
-    TypeCheckVisitor(SymbolTableGenVisitor& symbolTableGenVisitor); 
+    TypeCheckVisitor(antlr4::ANTLRInputStream& input, SymbolTableGenVisitor& symbolTableGenVisitor); 
     virtual ~TypeCheckVisitor();
-
-    int getNumberTypeError() { return type_error; }
     
     virtual antlrcpp::Any visitFuncDecl(ifccParser::FuncDeclContext *ctx) override;
     virtual antlrcpp::Any visitBlock(ifccParser::BlockContext *ctx) override;
@@ -46,7 +43,6 @@ public:
 private:
     SymbolTableGenVisitor stv;
     std::string scope;
-    int type_error;
 };
 
 #endif

@@ -65,25 +65,23 @@ int main(int argc, const char **argv)
     ifccParser parser(&tokens);
     tree::ParseTree *tree = parser.axiom();
 
-    if (parser.getNumberOfSyntaxErrors() != 0) {
-        std::cerr << "error: syntax error during parsing\n";
-        return 1;
-    }
-
-    ContinueBreakCheckVisitor cbv;
-    cbv.visit(tree);
-    if (cbv.getNumberError() != 0)
+    if (parser.getNumberOfSyntaxErrors() != 0)
     {
-        std::cerr << "error: continue/break error\n";
         exit(1);
     }
 
-    SymbolTableGenVisitor stv;
+    ContinueBreakCheckVisitor cbv(input);
+    cbv.visit(tree);
+    if (cbv.getNumberError() != 0)
+    {
+        exit(1);
+    }
+
+    SymbolTableGenVisitor stv(input);
     stv.visit(tree);
 
-    if (stv.getErrorCount() != 0)
+    if (stv.getNumberError() != 0)
     {
-        std::cerr << "error: symbol table generation error\n";
         exit(1);
     }
 
@@ -108,11 +106,10 @@ int main(int argc, const char **argv)
         std::cout << "\n";
     }
 
-    TypeCheckVisitor tcv(stv);
+    TypeCheckVisitor tcv(input, stv);
     tcv.visit(tree);
-    if (tcv.getNumberTypeError() != 0)
+    if (tcv.getNumberError() != 0)
     {
-        std::cerr << "error: type error during type checking\n";
         exit(1);
     }
 

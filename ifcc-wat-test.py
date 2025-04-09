@@ -196,7 +196,7 @@ for i, jobname in enumerate(jobs):
     os.chdir(jobname)
     
     ## Reference compiler = Emscripten
-    emccstatus=command("emcc -O0 -o exe-emcc.js input.c", "emcc-compile.txt")
+    emccstatus=command("emcc -O0 -sEXIT_RUNTIME=1 -o exe-emcc.js input.c", "emcc-compile.txt")
     
     ## IFCC compiler with WAT output
     ifccstatus=command(wrapper+" output.wat input.c -w", "ifcc-compile.txt")
@@ -310,6 +310,21 @@ for i, jobname in enumerate(jobs):
             emcc_int = int(str(emcc_value).strip())
             ifcc_int = int(str(ifcc_value).strip())
             
+            # Cas 0: Les résultats sont identiques
+            if emcc_int == ifcc_int:
+                print_vert(f"TEST OK (résultat: {emcc_int})\n")
+                nbOk += 1
+                continue
+                
+            # Cas 0.5: Vérifier si le résultat ifcc tronqué correspond au résultat emcc
+            # Cela gère les cas où main retourne une valeur > 255 ou < 0
+            # Note: L'opérateur % en Python gère correctement les négatifs pour obtenir un résultat dans [0, 255] si le diviseur est 256
+            #       L'opérateur & 0xFF normalise la valeur emcc (potentiellement négative si < -128) vers [0, 255]
+            if (ifcc_int % 256) == (emcc_int & 0xFF):
+                 print_vert(f"TEST OK (ifcc result: {ifcc_int}, matches emcc exit code: {emcc_int})\n")
+                 nbOk += 1
+                 continue
+
             # Cas spécial pour le test 38
             if "00_1_test_livrable_intermediaire" in jobname and ifcc_int == 2054:
                 print_vert(f"TEST OK (cas spécial - test 38, résultat accepté: {ifcc_int})\n")
@@ -322,31 +337,14 @@ for i, jobname in enumerate(jobs):
                 nbOk += 1
                 continue
             
-            # Cas 1: emcc retourne une valeur non signée, ifcc une valeur signée
-            if emcc_int > 127 and ifcc_int < 0:
-                # Conversion de non signé à signé (8 bits)
-                if emcc_int == (256 + ifcc_int) & 0xFF:
-                    print_vert(f"TEST OK (résultat: {ifcc_int} [interprété depuis {emcc_int}])\n")
-                    nbOk += 1
-                    continue
-            
-            # Cas 2: ifcc retourne une valeur non signée, emcc une valeur signée
-            if ifcc_int > 127 and emcc_int < 0:
-                # Conversion de non signé à signé (8 bits)
-                if ifcc_int == (256 + emcc_int) & 0xFF:
-                    print_vert(f"TEST OK (résultat: {emcc_int} [interprété depuis {ifcc_int}])\n")
-                    nbOk += 1
-                    continue
-            
-            if emcc_int == ifcc_int:
-                print_vert(f"TEST OK (résultat: {emcc_int})\n")
-                nbOk += 1
-                continue
-        except:
-            # Si la conversion échoue, on continue avec la comparaison normale
-            pass
+            # Si on arrive ici après toutes les vérifications, les valeurs sont différentes
+            # La comparaison string finale est conservée comme dernier recours si la conversion int échoue
+
+        except ValueError:
+            # Si la conversion échoue, on continue avec la comparaison normale des strings
+            pass # La comparaison string aura lieu après le bloc try/except
         
-        # Si on arrive ici, soit la conversion a échoué, soit les valeurs sont différentes
+        # Comparaison finale des sorties brutes si les comparaisons numériques ont échoué ou n'ont pas pu être faites
         if str(emcc_value).strip() == str(ifcc_value).strip():
             print_vert(f"TEST OK (résultat: {emcc_value})\n")
             nbOk += 1

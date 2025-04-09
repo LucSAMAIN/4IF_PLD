@@ -44,6 +44,34 @@ void Prologue::gen_wat(std::ostream& o) {
     int frameSize = ((-bb->cfg->stv.funcTable[bb->cfg->functionName].offset + 15) & ~15);
     frameSize = std::max(16, frameSize); // Au moins 16 octets pour le cadre de pile
     o << "    (global.set $sp (i32.sub (global.get $sp) (i32.const " << frameSize << ")))\n";
+
+    // Copier les arguments des paramètres locaux vers la pile
+    o << "    ;; Copie des arguments vers la pile\n";
+    static const RegisterFunction index_to_regFunc[6] = { 
+        RegisterFunction::ARG0, RegisterFunction::ARG1, RegisterFunction::ARG2, 
+        RegisterFunction::ARG3, RegisterFunction::ARG4, RegisterFunction::ARG5 
+    };
+    int arg_idx = 0; // Index global pour les arguments
+    for (VarInfos* argInfo : bb->cfg->stv.funcTable[bb->cfg->functionName].args) {
+        if (arg_idx >= 6) break; // Limité aux 6 premiers arguments pour l'instant
+
+        std::string stack_addr_wat = bb->cfg->IR_addr_to_wat("RBP" + std::to_string(argInfo->offset));
+        
+        if (argInfo->type == Type::INT32_T || argInfo->type == Type::INT8_T) {
+             // Les types GPR plus petits sont traités comme i32 pour les params WAT
+            VirtualRegister argReg(index_to_regFunc[arg_idx], RegisterSize::SIZE_32, RegisterType::GPR);
+            std::string param_name = bb->cfg->IR_reg_to_wat(argReg);
+            o << "    (i32.store " << stack_addr_wat << " (local.get " << param_name << ")) ;; Store arg " << arg_idx << " (" << argInfo->name << ")\n";
+        } else if (argInfo->type == Type::FLOAT64_T) {
+             // Les types XMM sont f64
+            VirtualRegister argReg(index_to_regFunc[arg_idx], RegisterSize::SIZE_64, RegisterType::XMM);
+             std::string param_name = bb->cfg->IR_reg_to_wat(argReg);
+            o << "    (f64.store " << stack_addr_wat << " (local.get " << param_name << ")) ;; Store arg " << arg_idx << " (" << argInfo->name << ")\n";
+        }
+        // Ajoutez d'autres types si nécessaire (ex: INT64_T -> i64.store)
+        
+        arg_idx++;
+    }
 }
 
 // implémentation de Epilogue
@@ -306,6 +334,8 @@ void Call::gen_wat(std::ostream& o) {
         o << "    (local.set $reg_32 (call $" << func_name;
     } else if (bb->cfg->stv.funcTable[func_name].type == Type::FLOAT64_T) {
         o << "    (local.set $reg_64 (call $" << func_name;
+    } else if (bb->cfg->stv.funcTable[func_name].type == Type::VOID) {
+        o << "    (call $" << func_name;
     }
     
     // Récupérer le nombre d'arguments attendus par la fonction appelée (max 6)
@@ -319,8 +349,13 @@ void Call::gen_wat(std::ostream& o) {
             o << "\n        (f64.load " << bb->cfg->IR_addr_to_wat(args[i]) << ")";
         }
     }
-    
-    o << "))\n";
+    if (bb->cfg->stv.funcTable[func_name].type == Type::INT32_T) {
+        o << "))\n";
+    } else if (bb->cfg->stv.funcTable[func_name].type == Type::FLOAT64_T) {
+        o << "))\n";
+    } else if (bb->cfg->stv.funcTable[func_name].type == Type::VOID) {
+        o << ")\n";
+    }
 }
 
 CompareInt::CompareInt(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& p_left, const VirtualRegister& p_right, const std::string& comp) 
@@ -357,8 +392,36 @@ void CompareInt::gen_x86(std::ostream& o) {
 }
 
 void CompareInt::gen_wat(std::ostream& o) {
-    o << "    ;; Compare int\n";
-    o << "    (local.set " << bb->cfg->IR_reg_to_wat(dest) << " (i32.cmp (local.get " << bb->cfg->IR_reg_to_wat(left) << ") (local.get " << bb->cfg->IR_reg_to_wat(right) << ")))\n";
+    std::string leftWat = bb->cfg->IR_reg_to_wat(left);
+    std::string rightWat = bb->cfg->IR_reg_to_wat(right);
+    std::string destWat = bb->cfg->IR_reg_to_wat(dest);
+
+    o << "    ;; Compare int (" << comp << ")\n";
+    // Charger les opérandes sur la pile
+    o << "    (local.get " << leftWat << ")\n";
+    o << "    (local.get " << rightWat << ")\n";
+
+    // Choisir l'instruction de comparaison WAT appropriée
+    // (en supposant une comparaison signée pour >, <, >=, <= comme dans gen_x86)
+    if (comp == ">") {
+        o << "    (i32.gt_s)\n";
+    } else if (comp == "<") {
+        o << "    (i32.lt_s)\n";
+    } else if (comp == "==") {
+        o << "    (i32.eq)\n";
+    } else if (comp == "!=") {
+        o << "    (i32.ne)\n";
+    } else if (comp == ">=") {
+        o << "    (i32.ge_s)\n";
+    } else if (comp == "<=") {
+        o << "    (i32.le_s)\n";
+    } else {
+        // Gérer une erreur si l'opérateur n'est pas reconnu
+        o << "    (unreachable) ;; Error: Unsupported comparison operator: " << comp << "\n";
+    }
+
+    // Stocker le résultat (0 ou 1) de la pile dans la destination
+    o << "    (local.set " << destWat << ")\n";
 }
 
 And::And(BasicBlock* p_bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2) 
@@ -437,13 +500,14 @@ void Jump::gen_wat(std::ostream& o) {
 }
 
 JumpFalse::JumpFalse(BasicBlock* p_bb, const std::string& p_dest_false, const std::string& p_dest_true, const VirtualRegister& p_op) 
-    : IRInstr(p_bb), dest_false(p_dest_false), op(p_op) {};
+    : IRInstr(p_bb), dest_false(p_dest_false), dest_true(p_dest_true), op(p_op) {};
 std::string JumpFalse::get_operation_name() const {
     return "jumpfalse";
 }
 void JumpFalse::gen_x86(std::ostream& o) {
     o << "    cmpl $0, " << bb->cfg->IR_reg_to_x86(op) << " # jump false\n";
     o << "    je " << dest_false << "\n";
+    o << "    jmp " << dest_true << "\n";
 }
 void JumpFalse::gen_wat(std::ostream& o) {
     o << "    ;; Conditional jump\n";

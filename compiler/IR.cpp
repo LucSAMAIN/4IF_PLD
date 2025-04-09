@@ -175,50 +175,57 @@ std::string CFG::IR_reg_to_x86(const VirtualRegister& vr) {
 }
 
 std::string CFG::IR_reg_to_wat(const VirtualRegister& reg) {
-    // Gérer tous les registres d'arguments (!arg0, !arg1, etc.) indépendamment de leur taille
-    if (reg.regSize == RegisterSize::SIZE_64) {
-        if (reg.regFunc == RegisterFunction::ARG0 || 
-        reg.regFunc == RegisterFunction::ARG1 ||
-        reg.regFunc == RegisterFunction::ARG2 ||
-        reg.regFunc == RegisterFunction::ARG3 ||
-        reg.regFunc == RegisterFunction::ARG4 ||
-        reg.regFunc == RegisterFunction::ARG5) {
-        // Extraire le numéro de l'argument (0-5)
-            std::string argNum = std::to_string(static_cast<int>(reg.regFunc));
-            return "$!arg_64" + argNum;
-        } else if (reg.regFunc == RegisterFunction::REG_LEFT) {
-            return "$regLeft_64";
-        } else if (reg.regFunc == RegisterFunction::REG_RIGHT) {
-            return "$regRight_64";
-        } else if (reg.regFunc == RegisterFunction::REG) {
-            return "$reg_64";
-        }
-        std::string regName = std::to_string(static_cast<int>(reg.regFunc));
-        return "$" + regName + "_64";  // Ajouter le préfixe $ pour les variables WebAssembly
-    }
-    else{
-        if (reg.regFunc == RegisterFunction::ARG0 || 
-                reg.regFunc == RegisterFunction::ARG1 ||
-                reg.regFunc == RegisterFunction::ARG2 ||
-                reg.regFunc == RegisterFunction::ARG3 ||
-                reg.regFunc == RegisterFunction::ARG4 ||
-                reg.regFunc == RegisterFunction::ARG5) {
-                // Extraire le numéro de l'argument (0-5)
-                std::string argNum = std::to_string(static_cast<int>(reg.regFunc));
-                return "$!arg_32" + argNum;
-            } else if (reg.regFunc == RegisterFunction::REG_LEFT) {
-                return "$regLeft_32";
-            } else if (reg.regFunc == RegisterFunction::REG_RIGHT) {
-                return "$regRight_32";
-            } else if (reg.regFunc == RegisterFunction::REG) {
-                return "$reg_32";
-            }
-            std::string regName = std::to_string(static_cast<int>(reg.regFunc));
-            return "$" + regName + "_32";  // Ajouter le préfixe $ pour les variables WebAssembly
+    // Mapping of virtual register functions to base WAT variable names
+    static const std::map<std::tuple<RegisterFunction, RegisterType>, std::string> baseNameMap = {
+        {{RegisterFunction::REG, RegisterType::GPR}, "reg"},
+        {{RegisterFunction::REG, RegisterType::XMM}, "reg"},
+        {{RegisterFunction::REG_LEFT, RegisterType::GPR}, "regLeft"},
+        {{RegisterFunction::REG_LEFT, RegisterType::XMM}, "regLeft"},
+        {{RegisterFunction::REG_RIGHT, RegisterType::GPR}, "regRight"},
+        {{RegisterFunction::REG_RIGHT, RegisterType::XMM}, "regRight"},
+        {{RegisterFunction::ARG0, RegisterType::GPR}, "!arg"},
+        {{RegisterFunction::ARG0, RegisterType::XMM}, "!arg"},
+        {{RegisterFunction::ARG1, RegisterType::GPR}, "!arg"},
+        {{RegisterFunction::ARG1, RegisterType::XMM}, "!arg"},
+        {{RegisterFunction::ARG2, RegisterType::GPR}, "!arg"},
+        {{RegisterFunction::ARG2, RegisterType::XMM}, "!arg"},
+        {{RegisterFunction::ARG3, RegisterType::GPR}, "!arg"},
+        {{RegisterFunction::ARG3, RegisterType::XMM}, "!arg"},
+        {{RegisterFunction::ARG4, RegisterType::GPR}, "!arg"},
+        {{RegisterFunction::ARG4, RegisterType::XMM}, "!arg"},
+        {{RegisterFunction::ARG5, RegisterType::GPR}, "!arg"},
+        {{RegisterFunction::ARG5, RegisterType::XMM}, "!arg"}
+    };
+
+    auto it = baseNameMap.find({reg.regFunc, reg.regType});
+    if (it == baseNameMap.end()) {
+        std::cerr << "Unknown combination of virtual register function and type\n";
+        std::cerr << "RegFunc: " << static_cast<int>(reg.regFunc) << ", RegType: " << static_cast<int>(reg.regType) << "\n";
+        return ""; // Or throw an exception
     }
 
+    std::string baseName = it->second;
+    std::string sizeSuffix;
+    std::string argNumStr;
 
-    
+    // Determine size suffix based on RegisterSize or RegisterType for XMM
+    if (reg.regType == RegisterType::XMM || reg.regSize == RegisterSize::SIZE_64) {
+        sizeSuffix = "_64";
+    } else if (reg.regSize == RegisterSize::SIZE_32 || reg.regSize == RegisterSize::SIZE_16 || reg.regSize == RegisterSize::SIZE_8) {
+         // Treat 8, 16, 32 bits GPR as i32 in WAT for simplicity currently
+        sizeSuffix = "_32";
+    } else {
+        std::cerr << "Unknown register size: " << static_cast<int>(reg.regSize) << "\n";
+        return ""; // Or throw an exception
+    }
+
+    // Append argument number if it's an argument register
+    if (reg.regFunc >= RegisterFunction::ARG0 && reg.regFunc <= RegisterFunction::ARG5) {
+        argNumStr = std::to_string(static_cast<int>(reg.regFunc) - static_cast<int>(RegisterFunction::ARG0));
+    }
+
+    // Construct the final WAT variable name
+    return "$" + baseName + sizeSuffix + argNumStr;
 } 
 
 std::string CFG::IR_addr_to_x86(const std::string &addr)
@@ -276,11 +283,16 @@ void CFG::gen_wat(ostream& o) {
             }
         }
     }
-    if (stv.funcTable[functionName].type == Type::INT32_T) {
-        o << " (result i32)\n";
-    } else if (stv.funcTable[functionName].type == Type::FLOAT64_T) {
-        o << " (result f64)\n";
-    }
+    // Gérer le type de retour de la fonction
+    Type returnType = stv.funcTable[functionName].type;
+    if (returnType == Type::FLOAT64_T) {
+        o << " (result f64)";
+    } else if (returnType == Type::INT32_T || returnType == Type::INT8_T || returnType == Type::INT64_T) { // Supposons que char/int retournent i32
+        o << " (result i32)";
+    } // Ne rien générer pour Type::VOID_T ou autres types non gérés explicitement ici
+
+    o << "\n"; // Nouvelle ligne après les paramètres/resultat
+
     o << "    (local $reg_32 i32)\n";      // Registre pour les résultats
     o << "    (local $regLeft_32 i32)\n";  // Registre pour l'opérande gauche
     o << "    (local $regRight_32 i32)\n"; // Registre pour l'opérande droite
@@ -461,7 +473,7 @@ void CFG::gen_wat(ostream& o) {
         }
         
         // Condition de sortie
-        o << "          (br_if $" << info.endBlock->label << " (i32.eqz (local.get $reg)))\n";
+        o << "          (br_if $" << info.endBlock->label << " (i32.eqz (local.get $reg_32)))\n";
         
         // Générer le corps du while (sans le Jump de retour)
         for (IRInstr* instr : info.bodyBlock->instructions) {

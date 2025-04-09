@@ -539,7 +539,7 @@ void JumpFalse::gen_wat(std::ostream& o) {
         }
         
         // Instructions du bloc false
-        if (false_block) {
+        if (false_block && false_block->label.find("_endif") == std::string::npos) {
             for (IRInstr* instr : false_block->instructions) {
                 std::stringstream ss;
                 instr->gen_wat(ss);

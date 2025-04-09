@@ -416,26 +416,26 @@ void CFG::gen_wat(ostream& o) {
     }
     
     // Générer les structures if-else
-    for (BasicBlock* bb : bbs) {
-        // Ne pas traiter les blocs des while comme des if-else
-        if (bb->label.find("_test_while") == std::string::npos) {
-            for (IRInstr* instr : bb->instructions) {
-                if (instr->get_operation_name() == "jumpfalse") {
-                    o << "      ;; Structure if-else dans le bloc " << bb->label << "\n";
-                    std::stringstream ss;
-                    instr->gen_wat(ss);
-                    std::string instr_str = ss.str();
-                    // Indentation
-                    size_t pos = 0;
-                    while ((pos = instr_str.find('\n', pos)) != std::string::npos) {
-                        instr_str.insert(pos + 1, "      ");
-                        pos += 7;
-                    }
-                    o << instr_str;
-                }
-            }
-        }
-    }
+    // for (BasicBlock* bb : bbs) {
+    //     // Ne pas traiter les blocs des while comme des if-else
+    //     if (bb->label.find("_test_while") == std::string::npos) {
+    //         for (IRInstr* instr : bb->instructions) {
+    //             if (instr->get_operation_name() == "jumpfalse") {
+    //                 o << "      ;; Structure if-else dans le bloc " << bb->label << "\n";
+    //                 std::stringstream ss;
+    //                 instr->gen_wat(ss);
+    //                 std::string instr_str = ss.str();
+    //                 // Indentation
+    //                 size_t pos = 0;
+    //                 while ((pos = instr_str.find('\n', pos)) != std::string::npos) {
+    //                     instr_str.insert(pos + 1, "      ");
+    //                     pos += 7;
+    //                 }
+    //                 o << instr_str;
+    //             }
+    //         }
+    //     }
+    // }
     
     // Générer les structures while
     for (const WhileInfo& info : whileStructures) {

@@ -7,6 +7,7 @@ int main() {
     else {
         x = 40.3;
     }
+    double y = 10.5;
 
     return x;
 }

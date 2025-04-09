@@ -71,3 +71,5 @@ Cette approche est équivalente à la logique des sauts en x86, mais adaptée au
 Un jump conditionnel en x86 (je, jne) devient un br_if en WebAssembly
 Un jump inconditionnel en x86 (jmp) devient un br en WebAssembly
 Une boucle while utilise les instructions block et loop pour définir les points d'entrée et de sortie
+
+Execption pour la div par 0 (car gcc l'accepte et pas emcc)

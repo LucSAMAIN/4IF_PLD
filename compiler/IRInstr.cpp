@@ -91,10 +91,22 @@ void Epilogue::gen_x86(std::ostream& o) {
 void Epilogue::gen_wat(std::ostream& o) {
     o << "    ;; Epilogue\n";
     o << "    (global.set $sp (local.get $bp))\n";
-    if (bb->cfg->stv.funcTable[bb->cfg->functionName].type == Type::INT32_T) {
+    
+    // Si le type de retour est INT32_T ou INT8_T
+    if (bb->cfg->stv.funcTable[bb->cfg->functionName].type == Type::INT32_T ||
+        bb->cfg->stv.funcTable[bb->cfg->functionName].type == Type::INT8_T) {
+        
+        // La valeur à retourner est déjà dans le registre $reg_32
         o << "    (return (local.get $reg_32))\n"; // Retourne explicitement la valeur
-    } else if (bb->cfg->stv.funcTable[bb->cfg->functionName].type == Type::FLOAT64_T) {
+    } 
+    // Si le type de retour est FLOAT64_T
+    else if (bb->cfg->stv.funcTable[bb->cfg->functionName].type == Type::FLOAT64_T) {
+        // La valeur à retourner est déjà dans le registre $reg_64
         o << "    (return (local.get $reg_64))\n"; // Retourne explicitement la valeur
+    }
+    // Pour les fonctions void
+    else if (bb->cfg->stv.funcTable[bb->cfg->functionName].type == Type::VOID) {
+        o << "    (return)\n"; // Retourne explicitement la valeur void
     }
 }
 
@@ -520,71 +532,110 @@ void JumpFalse::gen_wat(std::ostream& o) {
         o << "      )\n";
     } else if (dest_true == bb->cfg->functionName + "_epilogue") {
         // Saut conditionnel vers l'épilogue si la condition est vraie
-        o << "      (if (i32.ne (local.get " << bb->cfg->IR_reg_to_wat(op) << ") (i32.const 0))\n";
+        o << "      (if (local.get " << bb->cfg->IR_reg_to_wat(op) << ")\n";
         o << "        (then (br " << epilogueBlockName << "))\n";
         o << "      )\n";
     } else {
-        // Implémentation correcte des sauts conditionnels vers d'autres blocs
-        o << "      (if (i32.eqz (local.get " << bb->cfg->IR_reg_to_wat(op) << "))\n";
-        o << "        (then\n";
-        o << "          ;; Exécution du bloc " << dest_false << "\n";
+        // Vérifier si le bloc false est un bloc endif ou un vrai bloc else
+        bool hasElse = (dest_false.find("_if_false") != std::string::npos);
         
-        // Recherche du bloc de destination false dans le CFG
-        BasicBlock* false_block = nullptr;
-        for (BasicBlock* block : bb->cfg->bbs) {
-            if (block->label == dest_false) {
-                false_block = block;
-                break;
-            }
-        }
-        
-        // Instructions du bloc false
-        if (false_block && false_block->label.find("_endif") == std::string::npos) {
-            for (IRInstr* instr : false_block->instructions) {
-                std::stringstream ss;
-                instr->gen_wat(ss);
-                std::string instr_str = ss.str();
-                // Ajouter une indentation pour chaque ligne
-                size_t pos = 0;
-                while ((pos = instr_str.find('\n', pos)) != std::string::npos) {
-                    instr_str.insert(pos + 1, "          ");
-                    pos += 11; // 10 espaces + 1 pour le \n
+        // Si le bloc false est un bloc endif, alors il n'y a pas de branche else dans le code C
+        if (!hasElse) {
+            // Générer seulement la partie then
+            o << "      (if (local.get " << bb->cfg->IR_reg_to_wat(op) << ")\n";
+            o << "        (then\n";
+            o << "          ;; Exécution du bloc " << dest_true << "\n";
+            
+            // Recherche du bloc de destination true dans le CFG
+            BasicBlock* true_block = nullptr;
+            for (BasicBlock* block : bb->cfg->bbs) {
+                if (block->label == dest_true) {
+                    true_block = block;
+                    break;
                 }
-                o << instr_str;
             }
-        }
-        
-        o << "        )\n";
-        o << "        (else\n";
-        o << "          ;; Exécution du bloc " << dest_true << "\n";
-        
-        // Recherche du bloc de destination true dans le CFG
-        BasicBlock* true_block = nullptr;
-        for (BasicBlock* block : bb->cfg->bbs) {
-            if (block->label == dest_true) {
-                true_block = block;
-                break;
-            }
-        }
-        
-        // Instructions du bloc true
-        if (true_block) {
-            for (IRInstr* instr : true_block->instructions) {
-                std::stringstream ss;
-                instr->gen_wat(ss);
-                std::string instr_str = ss.str();
-                // Ajouter une indentation pour chaque ligne
-                size_t pos = 0;
-                while ((pos = instr_str.find('\n', pos)) != std::string::npos) {
-                    instr_str.insert(pos + 1, "          ");
-                    pos += 11; // 10 espaces + 1 pour le \n
+            
+            // Instructions du bloc true
+            if (true_block && true_block->label.find("_endif") == std::string::npos) {
+                for (IRInstr* instr : true_block->instructions) {
+                    std::stringstream ss;
+                    instr->gen_wat(ss);
+                    std::string instr_str = ss.str();
+                    // Ajouter une indentation pour chaque ligne
+                    size_t pos = 0;
+                    while ((pos = instr_str.find('\n', pos)) != std::string::npos) {
+                        instr_str.insert(pos + 1, "          ");
+                        pos += 11; // 10 espaces + 1 pour le \n
+                    }
+                    o << instr_str;
                 }
-                o << instr_str;
             }
+            
+            o << "        )\n";
+            o << "      )\n";
+        } else {
+            // Implémentation correcte des sauts conditionnels vers d'autres blocs
+            o << "      (if (local.get " << bb->cfg->IR_reg_to_wat(op) << ")\n";
+            o << "        (then\n";
+            o << "          ;; Exécution du bloc " << dest_true << "\n";
+            
+            // Recherche du bloc de destination true dans le CFG
+            BasicBlock* true_block = nullptr;
+            for (BasicBlock* block : bb->cfg->bbs) {
+                if (block->label == dest_true) {
+                    true_block = block;
+                    break;
+                }
+            }
+            
+            // Instructions du bloc true
+            if (true_block && true_block->label.find("_endif") == std::string::npos) {
+                for (IRInstr* instr : true_block->instructions) {
+                    std::stringstream ss;
+                    instr->gen_wat(ss);
+                    std::string instr_str = ss.str();
+                    // Ajouter une indentation pour chaque ligne
+                    size_t pos = 0;
+                    while ((pos = instr_str.find('\n', pos)) != std::string::npos) {
+                        instr_str.insert(pos + 1, "          ");
+                        pos += 11; // 10 espaces + 1 pour le \n
+                    }
+                    o << instr_str;
+                }
+            }
+            
+            o << "        )\n";
+            o << "        (else\n";
+            o << "          ;; Exécution du bloc " << dest_false << "\n";
+            
+            // Recherche du bloc de destination false dans le CFG
+            BasicBlock* false_block = nullptr;
+            for (BasicBlock* block : bb->cfg->bbs) {
+                if (block->label == dest_false) {
+                    false_block = block;
+                    break;
+                }
+            }
+            
+            // Instructions du bloc false
+            if (false_block) {
+                for (IRInstr* instr : false_block->instructions) {
+                    std::stringstream ss;
+                    instr->gen_wat(ss);
+                    std::string instr_str = ss.str();
+                    // Ajouter une indentation pour chaque ligne
+                    size_t pos = 0;
+                    while ((pos = instr_str.find('\n', pos)) != std::string::npos) {
+                        instr_str.insert(pos + 1, "          ");
+                        pos += 11; // 10 espaces + 1 pour le \n
+                    }
+                    o << instr_str;
+                }
+            }
+            
+            o << "        )\n";
+            o << "      )\n";
         }
-        
-        o << "        )\n";
-        o << "      )\n";
     }
 }
 

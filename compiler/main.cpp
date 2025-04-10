@@ -65,51 +65,49 @@ int main(int argc, const char **argv)
     ifccParser parser(&tokens);
     tree::ParseTree *tree = parser.axiom();
 
-    if (parser.getNumberOfSyntaxErrors() != 0)
-    {
+    if (parser.getNumberOfSyntaxErrors() != 0) {
         exit(1);
     }
 
     ContinueBreakCheckVisitor cbv(input);
     cbv.visit(tree);
-    if (cbv.getNumberError() != 0)
-    {
+    if (cbv.getNumberError() != 0) {
         exit(1);
     }
 
     SymbolTableGenVisitor stv(input);
     stv.visit(tree);
 
-    if (stv.getNumberError() != 0)
-    {
+    if (stv.getNumberError() != 0) {
         exit(1);
     }
 
     // Print the content of the variable table
-    std::cout << "# Variable Table:\n";
-    for (const auto &entry : stv.varTable)
-    {
-        std::cout << "# Name: " << entry.first << ", Type: " << typeToString(entry.second.type)
-                << ", offset: " << entry.second.offset << ", declared: " << entry.second.declared << ", used: " << entry.second.used << "\n";
-    }
-
-    // Print the content of the function table
-    std::cout << "# Function Table:\n";
-    for (const auto &entry : stv.funcTable)
-    {
-        std::cout << "# Name: " << entry.first << ", Return Type: " << typeToString(entry.second.type)
-                << ", Parameters: ";
-        for (const auto &param : entry.second.args)
+    if (verbose) {
+        out << "# Variable Table:\n";
+        for (const auto &entry : stv.varTable)
         {
-            std::cout << typeToString(param->type) << " " << param->name << ", ";
+            out << "# Name: " << entry.first << ", Type: " << typeToString(entry.second.type)
+                    << ", offset: " << entry.second.offset << ", declared: " << entry.second.declared << ", used: " << entry.second.used << "\n";
         }
-        std::cout << "\n";
+
+        // Print the content of the function table
+        out << "# Function Table:\n";
+        for (const auto &entry : stv.funcTable)
+        {
+            out << "# Name: " << entry.first << ", Return Type: " << typeToString(entry.second.type)
+                    << ", Parameters: ";
+            for (const auto &param : entry.second.args)
+            {
+                out << typeToString(param->type) << " " << param->name << ", ";
+            }
+            out << "\n";
+        }
     }
 
     TypeCheckVisitor tcv(input, stv);
     tcv.visit(tree);
-    if (tcv.getNumberError() != 0)
-    {
+    if (tcv.getNumberError() != 0) {
         exit(1);
     }
 

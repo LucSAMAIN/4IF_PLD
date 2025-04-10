@@ -51,6 +51,16 @@ SymbolTableGenVisitor::SymbolTableGenVisitor(antlr4::ANTLRInputStream& input) : 
     funcTable["getchar"] = {.type = Type::INT32_T, .offset = 0, .args = {}, .used = false};
 }
 
+antlrcpp::Any SymbolTableGenVisitor::visitProg(ifccParser::ProgContext *ctx) {
+    visitChildren(ctx);
+    // on verifie qu'on a bien un main
+    if (funcTable.find("main") == funcTable.end()) {
+        reportError("error: main function not declared", ctx);
+        error++;
+    }
+    return 0;
+}
+
 antlrcpp::Any SymbolTableGenVisitor::visitFuncDecl(ifccParser::FuncDeclContext *ctx) {
     scope = ctx->funcName->getText();
     funcTable[ctx->funcName->getText()] = {.type = stringToType(ctx->funcType()->getText()),

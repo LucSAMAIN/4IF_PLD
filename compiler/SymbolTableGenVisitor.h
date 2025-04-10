@@ -45,6 +45,7 @@ public:
     SymbolTableGenVisitor(antlr4::ANTLRInputStream &input);
     virtual ~SymbolTableGenVisitor() {}
 
+    virtual antlrcpp::Any visitProg(ifccParser::ProgContext *ctx) override;
     virtual antlrcpp::Any visitFuncDecl(ifccParser::FuncDeclContext *ctx) override;
     virtual antlrcpp::Any visitDecl_stmt(ifccParser::Decl_stmtContext *ctx) override;
     virtual antlrcpp::Any visitIdUse(ifccParser::IdUseContext *ctx) override;

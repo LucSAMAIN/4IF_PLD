@@ -23,7 +23,7 @@ int main(int argc, char* argv[])
     while ((option = getopt(argc, argv, "ho:v")) != -1) {
         switch (option) {
             case 'h':
-                std::cout << "usage: ifcc [-h] [-o output_file.s] [-v] path/to/file.c\n";
+                std::cout << "usage: ifcc [-h] [-o output_file] [-v] path/to/file.c\n";
                 std::cout << "options:\n";
                 std::cout << "\t-h\t\tDisplay this help message\n";
                 std::cout << "\t-o <file>\tOutput the backend code to the specified file\n";

@@ -19,5 +19,10 @@ This will create the `ifcc` executable in the `compiler` directory.
 To compile your C program, use the following command:
 
 ```bash
-path/to/ifcc <source_file.c>
+path/to/ifcc [-h] [-v] [-o <output_file>] <source_file.c>
 ```
+
+The options are :
+- `-o <output_file>`: Specify the output file name
+- `-v`: Enable verbose mode, which prints the symbol table in the output
+- `-h`: Show help message

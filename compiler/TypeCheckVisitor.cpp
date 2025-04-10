@@ -72,11 +72,14 @@ antlrcpp::Any TypeCheckVisitor::visitReturn_stmt(ifccParser::Return_stmtContext 
     std::string func_name;
     std::getline(ss, func_name, '_');
 
-    if (type_expr == Type::VOID) {
+    if (stv.funcTable[func_name].type == Type::VOID && ctx->expr() != nullptr) {
+        reportError("warning: return expr found in void function " + func_name, ctx);
+    }
+    else if (type_expr == Type::VOID) {
         reportError("error: type mismatch in return statement of function " + func_name + ", expected " + typeToString(stv.funcTable[func_name].type) + " found " + typeToString(type_expr), ctx);
         error++;
     }
-    if (type_expr != stv.funcTable[func_name].type) {
+    else if (type_expr != stv.funcTable[func_name].type) {
         reportError("warning: type mismatch in return statement of function " + func_name + ", expected " + typeToString(stv.funcTable[func_name].type) + " found " + typeToString(type_expr), ctx);
     }
     if (type_expr != stv.funcTable[func_name].type) {

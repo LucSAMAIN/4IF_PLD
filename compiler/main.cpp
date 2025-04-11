@@ -1,10 +1,6 @@
-#include <iostream>
+#include <getopt.h>
 #include <fstream>
-#include <sstream>
-#include <cstdlib>
-#include <string>
-#include <vector>
-#include "antlr4-runtime.h"
+
 #include "generated/ifccLexer.h"
 
 #include "IRGenVisitor.h"
@@ -13,53 +9,67 @@
 
 using namespace antlr4;
 
-void wat_init(std::ostream& o) {
-    o << "(module\n ;; Import de putchar depuis l'environnement hôte\n (import \"env\" \"putchar\" (func $putchar (param i32) (result i32)))\n";
-    o << "  ;; Déclaration de la mémoire\n";
-    o << "  (memory 1)\n";  
-    o << "  (export \"memory\" (memory 0))\n";  // Exporter la mémoire pour pouvoir l'accéder depuis JS
-    o << "  (global $sp (mut i32) (i32.const 1024))\n";  // Commencer avec un stack pointer non nul
-}
-
-void wat_end(std::ostream& o) {
-    o << ")\n";
-}
-
-int main(int argc, const char **argv)
+int main(int argc, char* argv[])
 {
     std::stringstream in;
-    bool wasm = false;
-    std::string input_file;
-    std::string output_file;
+    if (argc < 2) {
+        std::cerr << "usage: ifcc path/to/file.c\n";
+        exit(1);
+    }
     
-    // Parse command line arguments
-    for(int i = 1; i < argc; i++) {
-        std::string arg = argv[i];
-        if(arg == "-w" || arg == "--wat") {
-            wasm = true;
-        } else if(arg == "-o" && i + 1 < argc) {
-            output_file = argv[++i];
-        } else {
-            input_file = arg;
+
+    int option;
+    bool has_output_file = false, verbose = false, wat = false;
+    std::ofstream output_file;
+    while ((option = getopt(argc, argv, "ho:vw")) != -1) {
+        switch (option) {
+            case 'h':
+                std::cout << "usage: ifcc [-h] [-o output_file] [-v] path/to/file.c\n";
+                std::cout << "options:\n";
+                std::cout << "\t-h\t\tDisplay this help message\n";
+                std::cout << "\t-o <file>\tOutput the backend code to the specified file\n";
+                std::cout << "\t-v\t\tVerbose, print the symbol table in the output\n";
+                std::cout << "\t-w\t\tOutput the backend code to the specified file\n";
+                exit(0);
+            case 'o':
+                output_file.open(optarg);
+                if (!output_file.good())
+                {
+                    std::cerr << "error: cannot open file: " << optarg << "\n";
+                    exit(1);
+                }
+                has_output_file = true;
+                break;
+            case 'v':
+                verbose = true;
+                break;
+            case 'w':
+                wat = true;
+                break;
+            default:
+                std::cerr << "bad option: -" << (char)option << "\n";
+                exit(1);
         }
     }
-    
-    if(input_file.empty()) {
-        std::cerr << "usage: ifcc [-w|--wat] [-o output_file] path/to/file.c\n";
-        return 1;
+    if (optind < argc) {
+        std::ifstream lecture(argv[optind]);
+        if (!lecture.good()) {
+            std::cerr << "error: cannot read file: " << argv[optind] << "\n";
+            exit(1);
+        }
+        in << lecture.rdbuf();
     }
-
-    // Lecture du fichier d'entrée
-    std::ifstream lecture(input_file);
-    if (!lecture.good()) {
-        std::cerr << "error: cannot read file: " << input_file << "\n";
-        return 1;
+    else {
+        std::cerr << "error: no input file\n";
+        exit(1);
     }
-    in << lecture.rdbuf();
+    std::ostream& out = has_output_file ? output_file : std::cout;
 
     ANTLRInputStream input(in.str());
+
     ifccLexer lexer(&input);
     CommonTokenStream tokens(&lexer);
+
     tokens.fill();
 
     ifccParser parser(&tokens);
@@ -116,45 +126,27 @@ int main(int argc, const char **argv)
 
     // Récupération du CFG généré
     std::vector<CFG*> cfgs = cgv.getCFGs();
-
-    if (cfgs.size() > 0) {        
-        if (wasm) {
-            if(has_output_file) {
-                wat_init(output_file);  
-                // Génère le code pour tous les CFG
-                for (auto cfg : cfgs) {
-                    cfg->gen_wat(output_file);
-                }
-                wat_end(output_file);
-            } else {
-                wat_init(std::cout);
-                for (auto cfg : cfgs) {
-                    cfg->gen_wat(std::cout);    
-                }
-                wat_end(std::cout);
-            }
-        } else {
-            if(has_output_file) {
-                output_file << ".text\n";
-                output_file << ".globl main\n";
-                // Génère le code pour tous les CFG
-                for (auto cfg : cfgs) {
-                    cfg->gen_x86(output_file);
-                }
-            } else {
-                std::cout << ".text\n";
-                std::cout << ".globl main\n";
-                for (auto cfg : cfgs) {
-                    cfg->gen_x86(std::cout);
-                }
-            }
-        }
-        
-        // Libération de la mémoire
-        for (auto cfg : cfgs) {
+    if(wat) {
+        out << "(module\n ;; Import de putchar depuis l'environnement hôte\n (import \"env\" \"putchar\" (func $putchar (param i32) (result i32)))\n";
+        out << "  ;; Déclaration de la mémoire\n";
+        out << "  (memory 1)\n";  
+        out << "  (export \"memory\" (memory 0))\n";  // Exporter la mémoire pour pouvoir l'accéder depuis JS
+        out << "  (global $sp (mut i32) (i32.const 1024))\n";  // Commencer avec un stack pointer non nul
+        for (CFG* cfg : cfgs) {
+            cfg->gen_wat(out);
             delete cfg;
         }
+        out << ")\n";
     }
+    else{
+        out << ".text\n";
+        out << ".globl main\n";
+        for (CFG* cfg : cfgs) {
+            cfg->gen_x86(out);
+            delete cfg;
+        }
+    }    
+
 
     return 0;
 }

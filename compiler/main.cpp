@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
                 std::cout << "\t-h\t\tDisplay this help message\n";
                 std::cout << "\t-o <file>\tOutput the backend code to the specified file\n";
                 std::cout << "\t-v\t\tVerbose, print the symbol table in the output\n";
-                std::cout << "\t-w\t\tOutput the backend code to the specified file\n";
+                std::cout << "\t-w\t\tGenerate WebAssembly code instead of x86_64\n";
                 exit(0);
             case 'o':
                 output_file.open(optarg);

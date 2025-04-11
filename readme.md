@@ -19,16 +19,18 @@ This will create the `ifcc` executable in the `compiler` directory.
 To compile your C program, use the following command:
 
 ```bash
-path/to/ifcc [-h] [-v] [-o <output_file>] <source_file.c>
+path/to/ifcc [-h] [-v] [-o <output_file>] [-w] <source_file.c>
 ```
 
 The options are :
 - `-o <output_file>`: Specify the output file name
 - `-v`: Enable verbose mode, which prints the symbol table in the output
 - `-h`: Show help message
+- `-w`: Generate WebAssembly code instead of x86_64
+- `<source_file.c>`: The input C source file to be compiled
 
 ## WebAssembly
 
-Si vous souhaitez compiler en WebAssembly, il faut installer différents programmes dont Node.js. 
+If you want to compile to WebAssembly, you need to install different programs including Node.js. 
 
-Vous pouvez lancer setup.sh qui le fera à votre place, si vous avez les droits nécessaires évidemment.
+You can run setup.sh which will do it for you, if you have the necessary rights of course.

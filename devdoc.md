@@ -14,6 +14,8 @@ We have a simple command line argument parser. It takes the following arguments:
 - `-o <output_file>`: Specify the output file name
 - `-v`: Enable verbose mode, which print the symbol table in the output
 - `-h`: Show help message
+- `-w`: Generate WebAssembly code instead of x86_64
+- `<source_file.c>`: The input C source file to be compiled
 
 ## Tokenize and parse the input program
 The input program is tokenized and parsed using ANTLR4. The parser generates a parse tree according to our grammar written in `ifcc.g4`, which is then traversed by the visitors to perform various tasks.
@@ -31,7 +33,7 @@ The `TypeCheckVisitor` is responsible for checking the types of expressions and 
 The `IRGenVisitor` is responsible for generating the intermediate representation (IR) of the program. It traverses the parse tree and generates IR instructions for each statement and expression. The IR is a representation of the program that is easier to optimize and translate to machine code. The IR is generated in a form that is independent of the target architecture, allowing for easier optimization and code generation. Our IR uses CFG (Control Flow Graph) to represent the flow of control in the program.
 
 ## Generate the backend code
-The backend code is generated using the CFGs created by the `IRGenVisitor`. The backend code is generated for the target architecture (x86_64 or WebAssembly) and is optimized for performance. The backend code generation is done using a set of rules that translate the IR instructions into machine code instructions.
+The backend code is generated using the CFGs created by the `IRGenVisitor`. The backend code is generated for the target architecture (x86_64 or WebAssembly) and is optimized for performance. The backend code generation is done using a set of rules that translate the IR instructions into the target architecture's assembly language.
 
 # Summary
 

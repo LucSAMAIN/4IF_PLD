@@ -26,3 +26,9 @@ The options are :
 - `-o <output_file>`: Specify the output file name
 - `-v`: Enable verbose mode, which prints the symbol table in the output
 - `-h`: Show help message
+
+## WebAssembly
+
+Si vous souhaitez compiler en WebAssembly, il faut installer différents programmes dont Node.js. 
+
+Vous pouvez lancer setup.sh qui le fera à votre place, si vous avez les droits nécessaires évidemment.

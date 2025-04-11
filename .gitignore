@@ -1,5 +1,12 @@
 # Prerequisites
 *.d
+*.js
+*.log
+*.txt
+*.out
+*.err
+*.err.txt
+*.err.log
 
 # Compiled Object files
 *.slo
@@ -46,3 +53,18 @@ settings.json
 
 ./compiler/build/
 ./compiler/generated/
+
+# Compiled WAT files
+*.wat
+*.wasm
+*.wat.txt
+*.wasm.txt
+
+
+#tous les fichiers dans tests/ifcc-test-output et tests/ifcc-wat-test-output
+tests/ifcc-test-output/*
+tests/ifcc-wat-test-output/*
+compiler/ifcc-wat-test-output/*
+compiler/ifcc-test-output/*
+
+ifcc-wat-test-output/*

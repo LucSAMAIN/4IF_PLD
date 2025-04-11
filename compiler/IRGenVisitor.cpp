@@ -475,6 +475,7 @@ antlrcpp::Any IRGenVisitor::visitWhile_stmt(ifccParser::While_stmtContext *ctx) 
 
     IRInstr *instruction_jump = new JumpFalse(cfgs.back()->current_bb, bb_endwhile->label, bb_true->label, VirtualRegister(RegisterFunction::REG, RegisterSize::SIZE_32, RegisterType::GPR));
     cfgs.back()->current_bb->add_IRInstr(instruction_jump);
+    
 
     cfgs.back()->current_bb = bb_true;
     visit(ctx->block());

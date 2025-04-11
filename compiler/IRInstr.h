@@ -17,7 +17,7 @@ public:
     virtual std::string get_operation_name() const = 0; /**< Return the name of the operation */
     /** Actual code generation */
     virtual void gen_x86(std::ostream &o) = 0; /**< Representation textuelle de l'instruction IR */
-
+    virtual void gen_wat(std::ostream &o) = 0; /**< Representation textuelle de l'instruction IR */
 protected:
     BasicBlock* bb; /**< The BB this instruction belongs to, which provides a pointer to the CFG this instruction belong to */
 };
@@ -29,6 +29,7 @@ public:
     Prologue(BasicBlock* bb);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
+    void gen_wat(std::ostream& o) override;
 };
 
 // Sous-classe pour l'épilogue d'une fonction
@@ -39,6 +40,7 @@ public:
     Epilogue(BasicBlock* bb);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
+    void gen_wat(std::ostream& o) override;
 };
 
 // Sous-classe pour l'opération de chargement d'une constante
@@ -54,6 +56,7 @@ public:
     LdConstInt(BasicBlock* bb, const VirtualRegister& dest_reg, int val);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
+    void gen_wat(std::ostream& o) override;
 };
 
 // Sous-classe pour l'opération de copie
@@ -67,6 +70,7 @@ public:
     Copy(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& src_reg);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
+    void gen_wat(std::ostream& o) override;
 };
 
 // Sous-classe pour l'opération d'addition
@@ -80,6 +84,7 @@ public:
     Add(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
+    void gen_wat(std::ostream& o) override;
 };
 
 // Sous-classe pour l'opération de soustraction
@@ -93,6 +98,7 @@ public:
     Sub(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
+    void gen_wat(std::ostream& o) override;
 };
 
 class UnaryMinus : public IRInstr
@@ -104,6 +110,7 @@ public:
     UnaryMinus(BasicBlock* bb, const VirtualRegister& dest_reg);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
+    void gen_wat(std::ostream& o) override;
 };
 
 class Not : public IRInstr
@@ -116,6 +123,7 @@ public:
     Not(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& src_reg);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
+    void gen_wat(std::ostream& o) override;
 };
 
 // Sous-classe pour l'opération de multiplication
@@ -129,6 +137,7 @@ public:
     Mul(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
+    void gen_wat(std::ostream& o) override;
 };
 
 class Div : public IRInstr
@@ -141,6 +150,7 @@ public:
     Div(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
+    void gen_wat(std::ostream& o) override;
 };
 
 class Mod : public IRInstr
@@ -153,6 +163,7 @@ public:
     Mod(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
+    void gen_wat(std::ostream& o) override;
 };
 
 // Sous-classe pour la lecture mémoire
@@ -166,6 +177,7 @@ public:
     Rmem(BasicBlock* bb, const VirtualRegister& dest_reg, const std::string& address);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
+    void gen_wat(std::ostream& o) override;
 };
 
 // Sous-classe pour l'écriture mémoire
@@ -179,6 +191,7 @@ public:
     Wmem(BasicBlock* bb, const std::string& address, const VirtualRegister& src_reg);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
+    void gen_wat(std::ostream& o) override;
 };
 
 // Sous-classe pour l'appel de fonction
@@ -192,6 +205,7 @@ public:
     Call(BasicBlock* bb, const std::string& function, const std::vector<std::string>& arguments);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
+    void gen_wat(std::ostream& o) override;
 };
 
 // Sous-classe pour la comparaison d'égalité
@@ -206,6 +220,7 @@ public:
     CompareInt(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& p_left, const VirtualRegister& p_right, const std::string& comp);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
+    void gen_wat(std::ostream& o) override;
 };
 
 class And : public IRInstr
@@ -218,6 +233,7 @@ public:
     And(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
+    void gen_wat(std::ostream& o) override;
 };
 
 class Or : public IRInstr
@@ -230,6 +246,7 @@ public:
     Or(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
+    void gen_wat(std::ostream& o) override;
 };
 
 class Xor : public IRInstr
@@ -242,6 +259,7 @@ public:
     Xor(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
+    void gen_wat(std::ostream& o) override;
 };
 
 class Jump : public IRInstr
@@ -253,11 +271,17 @@ public:
     Jump(BasicBlock* bb, const std::string& dest_label);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
+    void gen_wat(std::ostream& o) override;
+    
+    // Getter pour dest_label
+    std::string get_dest_label() const { return dest_label; }
 };
 
 class JumpFalse : public IRInstr
 {
-private:
+
+
+public:
     std::string dest_false;
     std::string dest_true;
     VirtualRegister op;
@@ -266,6 +290,7 @@ public:
     JumpFalse(BasicBlock* bb, const std::string& dest_false, const std::string& dest_true, const VirtualRegister& operand);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
+    void gen_wat(std::ostream& o) override;
 };
 
 class Push : public IRInstr
@@ -277,6 +302,7 @@ public:
     Push(BasicBlock* bb, const VirtualRegister& operand);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
+    void gen_wat(std::ostream& o) override;
 };
 
 class Pop : public IRInstr
@@ -288,6 +314,7 @@ public:
     Pop(BasicBlock* bb, const VirtualRegister& dest);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
+    void gen_wat(std::ostream& o) override;
 };
 
 // double operations
@@ -303,6 +330,7 @@ public:
     LdConstDouble(BasicBlock* bb, const VirtualRegister& dest_reg, double val);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
+    void gen_wat(std::ostream& o) override;
 };
 
 class DAdd : public IRInstr
@@ -314,6 +342,7 @@ public:
     DAdd(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
+    void gen_wat(std::ostream& o) override;
 };
 class DSub : public IRInstr
 {
@@ -324,6 +353,7 @@ public:
     DSub(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
+    void gen_wat(std::ostream& o) override;
 };
 class DMul : public IRInstr
 {
@@ -334,16 +364,19 @@ public:
     DMul(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
+    void gen_wat(std::ostream& o) override;
 };
 class DDiv : public IRInstr
 {
 private:
     VirtualRegister dest;
     VirtualRegister op2;
+
 public:
     DDiv(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& operand2);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
+    void gen_wat(std::ostream& o) override;
 };
 
 class CompareDouble : public IRInstr
@@ -357,6 +390,7 @@ public:
     CompareDouble(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& p_left, const VirtualRegister& p_right, const std::string& comp);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
+    void gen_wat(std::ostream& o) override;
 };
 
 class DRmem : public IRInstr
@@ -369,6 +403,7 @@ public:
     DRmem(BasicBlock* bb, const VirtualRegister& dest_reg, const std::string& address);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
+    void gen_wat(std::ostream& o) override;
 };
 
 class DWmem : public IRInstr
@@ -381,6 +416,7 @@ public:
     DWmem(BasicBlock* bb, const std::string& address, const VirtualRegister& src_reg);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
+    void gen_wat(std::ostream& o) override;
 };
 
 class DCopy : public IRInstr
@@ -393,6 +429,7 @@ public:
     DCopy(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& src_reg);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
+    void gen_wat(std::ostream& o) override;
 };
 
 class IntToDouble : public IRInstr
@@ -405,6 +442,7 @@ public:
     IntToDouble(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& src_reg);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
+    void gen_wat(std::ostream& o) override;
 };
 
 class DoubleToInt : public IRInstr
@@ -417,6 +455,7 @@ public:
     DoubleToInt(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& src_reg);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
+    void gen_wat(std::ostream& o) override;
 };
 
 class DUnaryMinus : public IRInstr
@@ -428,6 +467,7 @@ public:
     DUnaryMinus(BasicBlock* bb, const VirtualRegister& dest_reg);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
+    void gen_wat(std::ostream& o) override;
 };
 
 class DNot : public IRInstr
@@ -440,6 +480,7 @@ public:
     DNot(BasicBlock* bb, const VirtualRegister& dest_reg, const VirtualRegister& operand);
     std::string get_operation_name() const override;
     void gen_x86(std::ostream& o) override;
+    void gen_wat(std::ostream& o) override;
 };
 
 #endif // IRINSTR_H

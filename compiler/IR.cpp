@@ -53,6 +53,20 @@ void BasicBlock::gen_x86(ostream& o) {
     }
 }
 
+// Génère une représentation textuelle du bloc de base
+void BasicBlock::gen_wat(ostream& o) {
+    o << "  ;; Bloc " << label << "\n";
+    
+    for (IRInstr* instr : instructions) {
+        instr->gen_wat(o);
+        // if return_true vers epilogue, on arrête parce qu'on vient de voir un return et on ne veut pas générer de code après
+    }
+}
+
+// La méthode gen_wat n'est plus utilisée, elle est remplacée par la logique dans CFG::gen_wat
+
+
+
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////// NIVEAU CFG //////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -160,6 +174,60 @@ std::string CFG::IR_reg_to_x86(const VirtualRegister& vr) {
     return "%" + it->second;
 }
 
+std::string CFG::IR_reg_to_wat(const VirtualRegister& reg) {
+    // Mapping of virtual register functions to base WAT variable names
+    static const std::map<std::tuple<RegisterFunction, RegisterType>, std::string> baseNameMap = {
+        {{RegisterFunction::REG, RegisterType::GPR}, "reg"},
+        {{RegisterFunction::REG, RegisterType::XMM}, "reg"},
+        {{RegisterFunction::REG_LEFT, RegisterType::GPR}, "regLeft"},
+        {{RegisterFunction::REG_LEFT, RegisterType::XMM}, "regLeft"},
+        {{RegisterFunction::REG_RIGHT, RegisterType::GPR}, "regRight"},
+        {{RegisterFunction::REG_RIGHT, RegisterType::XMM}, "regRight"},
+        {{RegisterFunction::ARG0, RegisterType::GPR}, "!arg"},
+        {{RegisterFunction::ARG0, RegisterType::XMM}, "!arg"},
+        {{RegisterFunction::ARG1, RegisterType::GPR}, "!arg"},
+        {{RegisterFunction::ARG1, RegisterType::XMM}, "!arg"},
+        {{RegisterFunction::ARG2, RegisterType::GPR}, "!arg"},
+        {{RegisterFunction::ARG2, RegisterType::XMM}, "!arg"},
+        {{RegisterFunction::ARG3, RegisterType::GPR}, "!arg"},
+        {{RegisterFunction::ARG3, RegisterType::XMM}, "!arg"},
+        {{RegisterFunction::ARG4, RegisterType::GPR}, "!arg"},
+        {{RegisterFunction::ARG4, RegisterType::XMM}, "!arg"},
+        {{RegisterFunction::ARG5, RegisterType::GPR}, "!arg"},
+        {{RegisterFunction::ARG5, RegisterType::XMM}, "!arg"}
+    };
+
+    auto it = baseNameMap.find({reg.regFunc, reg.regType});
+    if (it == baseNameMap.end()) {
+        std::cerr << "Unknown combination of virtual register function and type\n";
+        std::cerr << "RegFunc: " << static_cast<int>(reg.regFunc) << ", RegType: " << static_cast<int>(reg.regType) << "\n";
+        return ""; // Or throw an exception
+    }
+
+    std::string baseName = it->second;
+    std::string sizeSuffix;
+    std::string argNumStr;
+
+    // Determine size suffix based on RegisterSize or RegisterType for XMM
+    if (reg.regType == RegisterType::XMM || reg.regSize == RegisterSize::SIZE_64) {
+        sizeSuffix = "_64";
+    } else if (reg.regSize == RegisterSize::SIZE_32 || reg.regSize == RegisterSize::SIZE_16 || reg.regSize == RegisterSize::SIZE_8) {
+         // Treat 8, 16, 32 bits GPR as i32 in WAT for simplicity currently
+        sizeSuffix = "_32";
+    } else {
+        std::cerr << "Unknown register size: " << static_cast<int>(reg.regSize) << "\n";
+        return ""; // Or throw an exception
+    }
+
+    // Append argument number if it's an argument register
+    if (reg.regFunc >= RegisterFunction::ARG0 && reg.regFunc <= RegisterFunction::ARG5) {
+        argNumStr = std::to_string(static_cast<int>(reg.regFunc) - static_cast<int>(RegisterFunction::ARG0));
+    }
+
+    // Construct the final WAT variable name
+    return "$" + baseName + sizeSuffix + argNumStr;
+} 
+
 std::string CFG::IR_addr_to_x86(const std::string &addr)
 {
     // std::cout << "# addr IR_addr_to_x86 " << addr << "\n";
@@ -173,6 +241,16 @@ std::string CFG::IR_addr_to_x86(const std::string &addr)
     return "";
 }
 
+std::string CFG::IR_addr_to_wat(const std::string &addr) {
+    if (addr.substr(0, 3) == "RBP") {
+        std::string offset = addr.substr(3);
+        return "(i32.add (local.get $bp) (i32.const " + offset + "))";
+    }
+    std::cerr << "# Erreur conversion adresse IR to wat\n"; 
+    return "";
+}
+
+
 // Génère une représentation textuelle du CFG
 void CFG::gen_x86(ostream& o) {
     // Générer le code pour tous les blocs de base
@@ -182,6 +260,400 @@ void CFG::gen_x86(ostream& o) {
         bb->gen_x86(o);
     }
     end_block->gen_x86(o);
+}
+
+void CFG::gen_wat(ostream& o) {
+    // Générer une seule fonction WebAssembly par fonction C
+    o << "(func $" << functionName;
+
+    if (functionName == "main") {
+        o << " (export \"main\")";
+    }
+
+    // Déclaration des arguments
+    if (stv.funcTable.find(functionName) != stv.funcTable.end()) {
+        // Pour chaque argument de la fonction (jusqu'à 6 maximum)
+        int numArgs = std::min(6, static_cast<int>(stv.funcTable[functionName].args.size()));
+        for (int i = 0; i < numArgs; i++) {
+            // Déclarer chaque argument comme un paramètre i32
+            if (stv.funcTable[functionName].args[i]->type == Type::INT32_T) {
+                o << " (param $!arg_32" << i << " i32)";   
+            } else if (stv.funcTable[functionName].args[i]->type == Type::FLOAT64_T) {
+                o << " (param $!arg_64" << i << " f64)";
+            }
+        }
+    }
+    // Gérer le type de retour de la fonction
+    Type returnType = stv.funcTable[functionName].type;
+    if (returnType == Type::FLOAT64_T) {
+        o << " (result f64)";
+    } else if (returnType == Type::INT32_T || returnType == Type::INT8_T || returnType == Type::INT64_T) { // Supposons que char/int retournent i32
+        o << " (result i32)";
+    } // Ne rien générer pour Type::VOID_T ou autres types non gérés explicitement ici
+
+    o << "\n"; // Nouvelle ligne après les paramètres/resultat
+
+    o << "    (local $reg_32 i32)\n";      // Registre pour les résultats
+    o << "    (local $regLeft_32 i32)\n";  // Registre pour l'opérande gauche
+    o << "    (local $regRight_32 i32)\n"; // Registre pour l'opérande droite
+    o << "    (local $bp i32)\n";       // Base pointer
+    o << "    (local $reg_64 f64)\n";      // Registre pour les résultats
+    o << "    (local $regLeft_64 f64)\n";  // Registre pour l'opérande gauche
+    o << "    (local $regRight_64 f64)\n"; // Registre pour l'opérande droite
+    
+    // Si c'est la fonction main, déclarer les variables locales pour les arguments
+    if (functionName == "main") {
+        for (int i = 0; i < 6; i++) {
+            o << "    (local $!arg_32" << i << " i32)\n";
+            o << "    (local $!arg_64" << i << " f64)\n";
+        }
+    }
+    
+    // Définir le bloc principal de la fonction qui sert d'épilogue
+    string funcEpilogueBlockName = "$" + functionName + "_body_block";
+    o << "    (block " << funcEpilogueBlockName << "\n";
+    
+    // Générer le prologue d'abord (toujours le bloc start_block)
+    for (IRInstr* instr : start_block->instructions) {
+        instr->gen_wat(o);
+    }
+    
+    // Identifier les structures de while
+    struct WhileInfo {
+        BasicBlock* testBlock;   // Bloc de test de la condition
+        BasicBlock* bodyBlock;   // Bloc du corps du while
+        BasicBlock* endBlock;    // Bloc après le while
+        string whileLabel;       // Étiquette unique pour cette boucle while
+    };
+    std::map<string, WhileInfo> whileStructures;
+    std::map<string, bool> blockProcessed;
+    
+    // Trouver les blocs de test de while
+    for (BasicBlock* bb : bbs) {
+        blockProcessed[bb->label] = false;
+        if (bb->label.find("_test_while") != std::string::npos) {
+            // Trouver le JumpFalse qui définit les cibles de saut
+            for (IRInstr* instr : bb->instructions) {
+                if (instr->get_operation_name() == "jumpfalse") {
+                    JumpFalse* jumpf = dynamic_cast<JumpFalse*>(instr);
+                    if (jumpf) {
+                        WhileInfo info;
+                        info.testBlock = bb;
+                        info.whileLabel = "while_" + bb->label;
+                        
+                        // Chercher le bloc de corps correspondant
+                        for (BasicBlock* bodyBB : bbs) {
+                            if (bodyBB->label == jumpf->dest_true) {
+                                info.bodyBlock = bodyBB;
+                                break;
+                            }
+                        }
+                        
+                        // Chercher le bloc de fin correspondant
+                        for (BasicBlock* endBB : bbs) {
+                            if (endBB->label == jumpf->dest_false) {
+                                info.endBlock = endBB;
+                                break;
+                            }
+                        }
+                        
+                        if (info.bodyBlock && info.endBlock) {
+                            whileStructures[info.endBlock->label] = info;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    
+    // Parcourir les blocs dans l'ordre et générer le code
+    for (BasicBlock* bb : bbs) {
+        if (bb != start_block && bb != end_block && !blockProcessed[bb->label]) {
+            // Si ce bloc est un bloc de fin de while, générer toute la structure while
+            if (whileStructures.find(bb->label) != whileStructures.end()) {
+                std::cerr << "# Processing while block: " << bb->label << "\n";
+                WhileInfo& info = whileStructures[bb->label];
+                
+                // Marquer les blocs comme traités
+                blockProcessed[info.testBlock->label] = true;
+                blockProcessed[info.bodyBlock->label] = true;
+                blockProcessed[info.endBlock->label] = true;
+                
+                o << "      ;; Structure while: test=" << info.testBlock->label 
+                  << ", corps=" << info.bodyBlock->label 
+                  << ", fin=" << info.endBlock->label << "\n";
+                
+                // Structure WAT d'un while:
+                // block $end
+                //   loop $continue
+                //     <condition>
+                //     br_if $end (i32.eqz <condition>)
+                //     <body>
+                //     br $continue
+                //   end
+                // end
+                
+                o << "      (block $" << info.endBlock->label << "\n";
+                o << "        (loop $" << info.testBlock->label << "\n";
+                
+                // Générer le code de test (sans le JumpFalse)
+                for (IRInstr* instr : info.testBlock->instructions) {
+                    if (instr->get_operation_name() != "jumpfalse") {
+                        std::stringstream ss;
+                        instr->gen_wat(ss);
+                        std::string instr_str = ss.str();
+                        // Indentation
+                        size_t pos = 0;
+                        while ((pos = instr_str.find('\n', pos)) != std::string::npos) {
+                            instr_str.insert(pos + 1, "          ");
+                            pos += 11;
+                        }
+                        o << instr_str;
+                    }
+                }
+                
+                // Condition de sortie
+                o << "          (br_if $" << info.endBlock->label << " (i32.eqz (local.get $reg_32)))\n";
+                
+                // Générer le corps du while (sans le Jump de retour)
+                for (IRInstr* instr : info.bodyBlock->instructions) {
+                    if (instr->get_operation_name() != "jump") {
+                        std::stringstream ss;
+                        instr->gen_wat(ss);
+                        std::string instr_str = ss.str();
+                        // Indentation
+                        size_t pos = 0;
+                        while ((pos = instr_str.find('\n', pos)) != std::string::npos) {
+                            instr_str.insert(pos + 1, "          ");
+                            pos += 11;
+                        }
+                        o << instr_str;
+                    }
+                }
+                
+                // Retour au début du while
+                o << "          (br $" << info.testBlock->label << ")\n";
+                o << "        )\n";
+                o << "      )\n";
+                
+                // Maintenant générer le bloc après le while
+                o << "      ;; Bloc " << info.endBlock->label << " (après le while)\n";
+                for (IRInstr* instr : info.endBlock->instructions) {
+                    std::stringstream ss;
+                    instr->gen_wat(ss);
+                    std::string instr_str = ss.str();
+                    // Indentation
+                    size_t pos = 0;
+                    while ((pos = instr_str.find('\n', pos)) != std::string::npos) {
+                        instr_str.insert(pos + 1, "      ");
+                        pos += 7;
+                    }
+                    o << instr_str;
+                }
+            }
+            // Traiter les structures if/else
+            else if (bb->label.find("_if_") != std::string::npos && bb->label.find("_endif") == std::string::npos) {
+                std::cerr << "# Processing if block: " << bb->label << "\n";
+                // Identifie les blocs associés à cette structure if/else
+                std::string prefix = bb->label.substr(0, bb->label.find_last_of('_'));
+                std::string trueBlockLabel, falseBlockLabel, endifBlockLabel;
+                
+                // Trouver le JumpFalse dans ce bloc pour déterminer les destinations
+                JumpFalse* jumpf = nullptr;
+                for (IRInstr* instr : bb->instructions) {
+                    if (instr->get_operation_name() == "jumpfalse") {
+                        jumpf = dynamic_cast<JumpFalse*>(instr);
+                        break;
+                    }
+                }
+                
+                if (jumpf) {
+                    trueBlockLabel = jumpf->dest_true;
+                    falseBlockLabel = jumpf->dest_false;
+                    
+                    // Trouver le bloc endif correspondant (habituellement la cible d'un saut depuis true ou false)
+                    for (BasicBlock* endifBB : bbs) {
+                        if (endifBB->label.find(prefix) != std::string::npos && 
+                            endifBB->label.find("_endif") != std::string::npos) {
+                            endifBlockLabel = endifBB->label;
+                            break;
+                        }
+                    }
+                    
+                    // Trouver les pointeurs vers les blocs correspondants
+                    BasicBlock* trueBlock = nullptr;
+                    BasicBlock* falseBlock = nullptr;
+                    BasicBlock* endifBlock = nullptr;
+                    
+                    for (BasicBlock* searchBB : bbs) {
+                        if (searchBB->label == trueBlockLabel) trueBlock = searchBB;
+                        if (searchBB->label == falseBlockLabel) falseBlock = searchBB;
+                        if (searchBB->label == endifBlockLabel) endifBlock = searchBB;
+                    }
+                    
+                    // Si on a trouvé tous les blocs, générer le code if/else
+                    if (trueBlock && falseBlock && endifBlock) {
+                        // Marquer tous les blocs comme traités
+                        blockProcessed[bb->label] = true;
+                        blockProcessed[trueBlock->label] = true;
+                        blockProcessed[falseBlock->label] = true;
+                        blockProcessed[endifBlock->label] = true;
+                        
+                        o << "      ;; Structure if-else: test=" << bb->label 
+                          << ", true=" << trueBlock->label 
+                          << ", false=" << falseBlock->label 
+                          << ", endif=" << endifBlock->label << "\n";
+                        
+                        // Générer le code de test (sans le JumpFalse)
+                        for (IRInstr* instr : bb->instructions) {
+                            if (instr->get_operation_name() != "jumpfalse") {
+                                std::stringstream ss;
+                                instr->gen_wat(ss);
+                                std::string instr_str = ss.str();
+                                // Indentation
+                                size_t pos = 0;
+                                while ((pos = instr_str.find('\n', pos)) != std::string::npos) {
+                                    instr_str.insert(pos + 1, "      ");
+                                    pos += 7;
+                                }
+                                o << instr_str;
+                            }
+                        }
+                        
+                        // Vérifier si le bloc false est un bloc endif ou un vrai bloc else
+                        bool hasElse = (falseBlock->label.find("_if_false") != std::string::npos);
+                        
+                        // Si le bloc false est un bloc endif, alors il n'y a pas de branche else dans le code C
+                        if (!hasElse) {
+                            // Générer seulement la partie then
+                            o << "      (if (local.get $reg_32)\n";
+                            o << "        (then\n";
+                            o << "          ;; Exécution du bloc " << trueBlock->label << "\n";
+                            
+                            // Générer le code du bloc true
+                            for (IRInstr* instr : trueBlock->instructions) {
+                                if (instr->get_operation_name() != "jump") {
+                                    std::stringstream ss;
+                                    instr->gen_wat(ss);
+                                    std::string instr_str = ss.str();
+                                    // Indentation
+                                    size_t pos = 0;
+                                    while ((pos = instr_str.find('\n', pos)) != std::string::npos) {
+                                        instr_str.insert(pos + 1, "          ");
+                                        pos += 11;
+                                    }
+                                    o << instr_str;
+                                }
+                            }
+                            
+                            o << "        )\n";
+                            o << "      )\n";
+                        } else {
+                            // Générer la structure if-else
+                            o << "      (if (local.get $reg_32)\n";
+                            o << "        (then\n";
+                            o << "          ;; Exécution du bloc " << trueBlock->label << "\n";
+                            
+                            // Générer le code du bloc true
+                            for (IRInstr* instr : trueBlock->instructions) {
+                                if (instr->get_operation_name() != "jump") {
+                                    std::stringstream ss;
+                                    instr->gen_wat(ss);
+                                    std::string instr_str = ss.str();
+                                    // Indentation
+                                    size_t pos = 0;
+                                    while ((pos = instr_str.find('\n', pos)) != std::string::npos) {
+                                        instr_str.insert(pos + 1, "          ");
+                                        pos += 11;
+                                    }
+                                    o << instr_str;
+                                }
+                            }
+                            
+                            o << "        )\n";
+                            o << "        (else\n";
+                            o << "          ;; Exécution du bloc " << falseBlock->label << "\n";
+                            
+                            // Générer le code du bloc false
+                            for (IRInstr* instr : falseBlock->instructions) {
+                                if (instr->get_operation_name() != "jump") {
+                                    std::stringstream ss;
+                                    instr->gen_wat(ss);
+                                    std::string instr_str = ss.str();
+                                    // Indentation
+                                    size_t pos = 0;
+                                    while ((pos = instr_str.find('\n', pos)) != std::string::npos) {
+                                        instr_str.insert(pos + 1, "          ");
+                                        pos += 11;
+                                    }
+                                    o << instr_str;
+                                }
+                            }
+                            
+                            o << "        )\n";
+                            o << "      )\n";
+                        }
+                        
+                        // Générer le bloc endif (après la structure if/else)
+                        std::cerr << "# Processing endif block: " << endifBlock->label << " with " << endifBlock->instructions.size() << " instructions\n";
+                        o << "      ;; Bloc " << endifBlock->label << " (après le if-else)\n";
+                        for (IRInstr* instr : endifBlock->instructions) {
+                            std::stringstream ss;
+                            instr->gen_wat(ss);
+                            std::string instr_str = ss.str();
+                            // Indentation
+                            size_t pos = 0;
+                            while ((pos = instr_str.find('\n', pos)) != std::string::npos) {
+                                instr_str.insert(pos + 1, "      ");
+                                pos += 7;
+                            }
+                            o << instr_str;
+                        }
+                    }
+                }
+            }
+            // Sinon, si c'est un bloc de test/corps de while, il sera traité avec sa structure while
+            else if (bb->label.find("_test_while") != std::string::npos || 
+                    bb->label.find("_while_true") != std::string::npos ||
+                    // Éviter de traiter séparément les blocs if/else/endif qui ont déjà été traités
+                    bb->label.find("_if_true") != std::string::npos ||
+                    bb->label.find("_if_false") != std::string::npos) {
+                std::cerr << "# Skipping block (already processed): " << bb->label << "\n";
+                continue;
+            }
+            // Sinon, génération normale du bloc
+            else {
+                std::cerr << "# Processing normal block: " << bb->label << " with " << bb->instructions.size() << " instructions\n";
+                blockProcessed[bb->label] = true;
+                o << "      ;; Bloc " << bb->label << "\n";
+                
+                // Générer les instructions du bloc
+                for (IRInstr* instr : bb->instructions) {
+                    std::stringstream ss;
+                    instr->gen_wat(ss);
+                    std::string instr_str = ss.str();
+                    // Indentation
+                    size_t pos = 0;
+                    while ((pos = instr_str.find('\n', pos)) != std::string::npos) {
+                        instr_str.insert(pos + 1, "      ");
+                        pos += 7;
+                    }
+                    o << instr_str;
+                }
+            }
+        }
+    }
+    
+    // Fermer le bloc d'épilogue principal
+    o << "    )\n"; // Fin du bloc epilogue
+    
+    // Générer l'épilogue
+    for (IRInstr* instr : end_block->instructions) {
+        instr->gen_wat(o);
+    }
+    
+    o << ")\n";
 }
 
 // void CFG::add_to_symbol_table(string name, Type t) {
@@ -227,4 +699,5 @@ string CFG::new_BB_name() {
     stringstream ss;
     ss << functionName << "_" << bbs.size(); // je pense ça passe car on ajoute le block direct dans la liste après
     return ss.str();
-} 
+}
+

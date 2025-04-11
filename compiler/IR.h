@@ -84,6 +84,7 @@ public:
 	BasicBlock(CFG* cfg, std::string entry_label);
 	virtual ~BasicBlock();	
 	void gen_x86(std::ostream &o); /**< x86 assembly code generation for this basic block */
+	void gen_wat(std::ostream &o); /**< wat code generation for this basic block */
 
 	// Méthode originale pour ajouter une instruction IRInstr (pour compatibilité)
 	void add_IRInstr(IRInstr *instruction);
@@ -121,9 +122,12 @@ public:
 
 	// x86 code generation: could be encapsulated in a processor class in a retargetable compiler
 	void gen_x86(std::ostream& o); /**< x86 assembly code generation for the whole CFG */
+	void gen_wat(std::ostream& o); /**< wat code generation for the whole CFG */
 
 	std::string IR_addr_to_x86 (const std::string &Iraddr);
 	std::string IR_reg_to_x86(const VirtualRegister& reg);
+	std::string IR_reg_to_wat(const VirtualRegister& reg); /**< helper method: inputs a IR reg, returns WebAssembly local variable name */
+	std::string IR_addr_to_wat(const std::string &Iraddr);
 
 	// symbol table methods
 	// void add_to_symbol_table(std::string name, Type t); pas besoin car visiteur symbol table

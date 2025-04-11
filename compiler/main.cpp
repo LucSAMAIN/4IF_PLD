@@ -16,11 +16,12 @@ int main(int argc, char* argv[])
         std::cerr << "usage: ifcc path/to/file.c\n";
         exit(1);
     }
+    
 
     int option;
-    bool has_output_file = false, verbose = false;
+    bool has_output_file = false, verbose = false, wat = false;
     std::ofstream output_file;
-    while ((option = getopt(argc, argv, "ho:v")) != -1) {
+    while ((option = getopt(argc, argv, "ho:vw")) != -1) {
         switch (option) {
             case 'h':
                 std::cout << "usage: ifcc [-h] [-o output_file] [-v] path/to/file.c\n";
@@ -28,6 +29,7 @@ int main(int argc, char* argv[])
                 std::cout << "\t-h\t\tDisplay this help message\n";
                 std::cout << "\t-o <file>\tOutput the backend code to the specified file\n";
                 std::cout << "\t-v\t\tVerbose, print the symbol table in the output\n";
+                std::cout << "\t-w\t\tOutput the backend code to the specified file\n";
                 exit(0);
             case 'o':
                 output_file.open(optarg);
@@ -40,6 +42,9 @@ int main(int argc, char* argv[])
                 break;
             case 'v':
                 verbose = true;
+                break;
+            case 'w':
+                wat = true;
                 break;
             default:
                 std::cerr << "bad option: -" << (char)option << "\n";
@@ -121,13 +126,27 @@ int main(int argc, char* argv[])
 
     // Récupération du CFG généré
     std::vector<CFG*> cfgs = cgv.getCFGs();
-    
-    out << ".text\n";
-    out << ".globl main\n";
-    for (CFG* cfg : cfgs) {
-        cfg->gen_x86(out);
-        delete cfg;
+    if(wat) {
+        out << "(module\n ;; Import de putchar depuis l'environnement hôte\n (import \"env\" \"putchar\" (func $putchar (param i32) (result i32)))\n";
+        out << "  ;; Déclaration de la mémoire\n";
+        out << "  (memory 1)\n";  
+        out << "  (export \"memory\" (memory 0))\n";  // Exporter la mémoire pour pouvoir l'accéder depuis JS
+        out << "  (global $sp (mut i32) (i32.const 1024))\n";  // Commencer avec un stack pointer non nul
+        for (CFG* cfg : cfgs) {
+            cfg->gen_wat(out);
+            delete cfg;
+        }
+        out << ")\n";
     }
+    else{
+        out << ".text\n";
+        out << ".globl main\n";
+        for (CFG* cfg : cfgs) {
+            cfg->gen_x86(out);
+            delete cfg;
+        }
+    }    
+
 
     return 0;
 }

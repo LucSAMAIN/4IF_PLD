@@ -199,7 +199,7 @@ for i, jobname in enumerate(jobs):
     emccstatus=command("emcc -O0 -sEXIT_RUNTIME=1 -o exe-emcc.js input.c", "emcc-compile.txt")
     
     ## IFCC compiler with WAT output
-    ifccstatus=command(wrapper+" output.wat input.c -w", "ifcc-compile.txt")
+    ifccstatus=command(wrapper+" output.wat -w input.c", "ifcc-compile.txt")
     
     # 1. Vérifier si le programme est valide selon emcc
     with open("emcc-compile.txt", "r") as f:

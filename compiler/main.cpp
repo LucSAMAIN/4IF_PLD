@@ -119,20 +119,13 @@ int main(int argc, const char **argv)
 
     if (cfgs.size() > 0) {        
         if (wasm) {
-            std::ofstream outFile;
-            if(!output_file.empty()) {
-                outFile.open(output_file);
-                if(!outFile.is_open()) {
-                    std::cerr << "error: cannot write to file: " << output_file << std::endl;
-                    return 1;
-                }
-                wat_init(outFile);  
+            if(has_output_file) {
+                wat_init(output_file);  
                 // Génère le code pour tous les CFG
                 for (auto cfg : cfgs) {
-                    cfg->gen_wat(outFile);
+                    cfg->gen_wat(output_file);
                 }
-                wat_end(outFile);
-                outFile.close();
+                wat_end(output_file);
             } else {
                 wat_init(std::cout);
                 for (auto cfg : cfgs) {
@@ -141,20 +134,13 @@ int main(int argc, const char **argv)
                 wat_end(std::cout);
             }
         } else {
-            std::ofstream outFile;
-            if(!output_file.empty()) {
-                outFile.open(output_file);
-                if(!outFile.is_open()) {
-                    std::cerr << "error: cannot write to file: " << output_file << std::endl;
-                    return 1;
-                }
-                outFile << ".text\n";
-                outFile << ".globl main\n";
+            if(has_output_file) {
+                output_file << ".text\n";
+                output_file << ".globl main\n";
                 // Génère le code pour tous les CFG
                 for (auto cfg : cfgs) {
-                    cfg->gen_x86(outFile);
+                    cfg->gen_x86(output_file);
                 }
-                outFile.close();
             } else {
                 std::cout << ".text\n";
                 std::cout << ".globl main\n";

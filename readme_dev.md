@@ -36,8 +36,6 @@ La grammaire définie dans `ifcc.g4` supporte:
 - Expressions arithmétiques et logiques
 - Structures de contrôle (if-else, while)
 - Instructions de saut (break, continue)
-- Pointeurs basiques
-- Tableaux à une dimension
 
 ## Visiteurs et Analyses
 
@@ -52,7 +50,7 @@ La grammaire définie dans `ifcc.g4` supporte:
 - Enregistrement des fonctions avec leur type et paramètres
 - Vérification des déclarations/utilisations
 - Calcul des adresses des variables en mémoire
-- Gestion des règles de portée (scoping)
+- Gestion des règles de portée (scope)
 - Vérification de la validité des appels de fonction et de la correspondance des arguments
 
 ### TypeCheckVisitor
@@ -63,17 +61,16 @@ La grammaire définie dans `ifcc.g4` supporte:
 - Génération d'avertissements si une conversion implicite est effectuée
 
 ### IRGenVisitor
-- Génération de la représentation intermédiaire
+- Génération d'un code IR indépendant de l'architecture cible
 - Traitement des expressions et conversion en instructions IR
 - Gestion des structures de contrôle (if, while)
 - Construction des blocs de base et du CFG (Control Flow Graph)
-- Génération d'un code IR indépendant de l'architecture cible
 
 ## Représentation Intermédiaire
 
-### Structure de la RI
+### Structure de l'IR
 - **CFG (Control Flow Graph)** : Représentation du flux de contrôle d'une fonction
-- **BasicBlock** : Bloc d'instructions sans branchement (sauf à la fin)
+- **BasicBlock** : Suite d'instructions linéaires avec éventuellement un saut à la fin
 - **IRInstr** : Instructions de la représentation intermédiaire
 
 ### Types d'Instructions IR
@@ -83,6 +80,7 @@ La grammaire définie dans `ifcc.g4` supporte:
 - Instructions de manipulation mémoire : `Rmem`, `Wmem`
 - Instructions de contrôle : `Prologue`, `Epilogue`, `Call`
 - Instructions de chargement : `LdConstInt`, `Copy`
+- Instructions de manipulation des doubles : `DAdd`, `DSub`, `DMul`, `DDiv`, `DUnaryMinus`, `CompareDouble`, `LdConstDouble`, `DRmem`, `DWmem`, `DCopy`, `IntToDouble`, `DoubleToInt`
 
 ## Génération de Code
 
@@ -99,14 +97,13 @@ La grammaire définie dans `ifcc.g4` supporte:
 
 ## Types Supportés
 
-- `int` (INT32_T, INT64_T)
-- `char` (INT8_T)
+- `int` (INT32_T)
+- `char` (traité comme INT32_T)
 - `double` (FLOAT64_T)
-- Pointeurs (PTR_INT32_T, PTR_FLOAT64_T)
 
 ## Fonctionnalités Avancées
 
-- **Optimisation constante** : Évaluation des expressions constantes à la compilation
+- **Optimisation des constantes** : Évaluation des expressions constantes à la compilation
 - **Gestion des registres virtuels** : Abstraction des registres physiques
 - **Multi-cibles** : Génération de code pour différentes architectures (x86, WebAssembly)
 - **Vérification des erreurs** : Détection d'erreurs sémantiques et rapport
@@ -116,10 +113,9 @@ La grammaire définie dans `ifcc.g4` supporte:
 ## Limitations Connues
 
 - Pas de support pour les structures et unions
-- Pas de support pour les énumérations
-- Support limité des pointeurs
+- Pas de support pour les pointeurs
+- Pas de support pour les tableaux
 - Pas d'optimisation avancée
-- Tableaux à une seule dimension uniquement
 
 ## Options de Ligne de Commande
 
@@ -127,7 +123,7 @@ Le compilateur accepte les options suivantes :
 - `-o <output_file>` : Spécifie le nom du fichier de sortie
 - `-v` : Active le mode verbeux, qui affiche la table des symboles dans la sortie
 - `-h` : Affiche le message d'aide
-- `-wat` : Génère du code WebAssembly au lieu de x86_64
+- `-w` : Génère du code WebAssembly au lieu de x86_64
 - `<source_file.c>` : Le fichier source C d'entrée à compiler
 
 ## Comment Compiler et Exécuter
@@ -145,7 +141,7 @@ Pour exécuter le compilateur sur un fichier source:
 
 Pour générer du WebAssembly:
 ```bash
-./ifcc input.c -wat -o output.wat
+./ifcc input.c -w -o output.wat
 ```
 
 ## Tests

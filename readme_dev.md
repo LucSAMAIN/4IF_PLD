@@ -4,6 +4,20 @@
 
 Le compilateur IFCC est un compilateur pour un sous-ensemble du langage C, développé comme projet pédagogique. Il utilise une approche basée sur la génération de code intermédiaire (IR) puis la traduction en code assembleur x86 et WebAssembly (WAT).
 
+## Flux d'exécution
+
+Le compilateur suit les étapes suivantes :
+
+1. Parse des arguments de la ligne de commande
+2. Tokenisation et analyse syntaxique du programme d'entrée
+3. Vérification des instructions `break` et `continue` avec ContinueBreakVisitor
+4. Construction de la table des symboles avec SymbolTableVisitor
+5. Vérification des types avec TypeCheckVisitor
+6. Génération de la représentation intermédiaire avec IRGenVisitor
+7. Génération du code cible (x86_64 ou WebAssembly)
+
+![image](schema_execution.png)
+
 ## Architecture du Compilateur
 
 L'architecture du compilateur est structurée selon les phases classiques de compilation:
@@ -27,25 +41,33 @@ La grammaire définie dans `ifcc.g4` supporte:
 
 ## Visiteurs et Analyses
 
+### ContinueBreakCheckVisitor
+- Validation de l'utilisation des instructions `break` et `continue` dans des contextes appropriés
+- Vérifie que ces instructions sont uniquement utilisées à l'intérieur des boucles
+- Signale une erreur si elles sont trouvées en dehors de leur contexte valide
+
 ### SymbolTableGenVisitor
 - Construction de la table des symboles
 - Enregistrement des variables avec leur type, offset et portée
 - Enregistrement des fonctions avec leur type et paramètres
 - Vérification des déclarations/utilisations
+- Calcul des adresses des variables en mémoire
+- Gestion des règles de portée (scoping)
+- Vérification de la validité des appels de fonction et de la correspondance des arguments
 
 ### TypeCheckVisitor
 - Vérification de la cohérence des types dans les expressions
 - Validation des types de retour des fonctions
 - Vérification de compatibilité lors des affectations
-
-### ContinueBreakCheckVisitor
-- Validation de l'utilisation des instructions `break` et `continue` dans des contextes appropriés (boucles)
+- Signalement d'erreurs si les types sont incompatibles
+- Génération d'avertissements si une conversion implicite est effectuée
 
 ### IRGenVisitor
 - Génération de la représentation intermédiaire
 - Traitement des expressions et conversion en instructions IR
 - Gestion des structures de contrôle (if, while)
 - Construction des blocs de base et du CFG (Control Flow Graph)
+- Génération d'un code IR indépendant de l'architecture cible
 
 ## Représentation Intermédiaire
 
@@ -69,10 +91,11 @@ La grammaire définie dans `ifcc.g4` supporte:
 - Gestion de la pile et des registres
 - Utilisation des conventions d'appel System V AMD64 ABI
 
-### Code WebAssembly (pas complet)
+### Code WebAssembly
 - Génération de fichiers WAT (WebAssembly Text Format)
 - Support des opérations arithmétiques et logiques
-- Gestion des variables locales
+- Gestion des variables locales et mémoire
+- Implémentation des contrôles de flux équivalents à ceux de x86
 
 ## Types Supportés
 
@@ -98,6 +121,15 @@ La grammaire définie dans `ifcc.g4` supporte:
 - Pas d'optimisation avancée
 - Tableaux à une seule dimension uniquement
 
+## Options de Ligne de Commande
+
+Le compilateur accepte les options suivantes :
+- `-o <output_file>` : Spécifie le nom du fichier de sortie
+- `-v` : Active le mode verbeux, qui affiche la table des symboles dans la sortie
+- `-h` : Affiche le message d'aide
+- `-wat` : Génère du code WebAssembly au lieu de x86_64
+- `<source_file.c>` : Le fichier source C d'entrée à compiler
+
 ## Comment Compiler et Exécuter
 
 Pour compiler le projet:
@@ -118,7 +150,18 @@ Pour générer du WebAssembly:
 
 ## Tests
 
-Des tests unitaires et d'intégration sont disponibles dans le répertoire `test/`. Ils peuvent être exécutés avec:
+Des tests unitaires et d'intégration sont disponibles dans le répertoire `../tests/testfiles/`. Pour exécuter les tests:
+
 ```bash
+cd compiler
 make test
-``` 
+```
+
+Cette commande lance le script Python `../ifcc-test.py` qui exécute tous les tests dans le répertoire `../tests/testfiles/`. Le script vérifie la sortie du compilateur par rapport aux résultats attendus. 
+
+Pour lancer les tests en WebAssembly:
+```bash
+make test-wat 
+```
+
+Cette commande lance le script Python `../ifcc-wat-test.py` qui exécute les tests dans le répertoire `../tests/testfiles/`. Notez que tous les tests ne passent pas en WebAssembly car c'est une version béta qui ne prend pas en charge toutes les fonctionnalités de la version x86. 

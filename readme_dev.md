@@ -165,3 +165,17 @@ make test-wat
 ```
 
 Cette commande lance le script Python `../ifcc-wat-test.py` qui exécute les tests dans le répertoire `../tests/testfiles/`. Notez que tous les tests ne passent pas en WebAssembly car c'est une version béta qui ne prend pas en charge toutes les fonctionnalités de la version x86. 
+
+Pour lancer des tests en particulier, il est aussi possible de faire la commande : 
+
+```bash
+python3 ifcc-test.py tests/testfiles/01_BasicStructure
+```
+
+Pour lancer l'ensemble des tests sur les structures de bases, par exemple. 
+
+Commande standard : 
+
+```bash
+python3 ifcc-test.py <dossier_ou_fichier_de_test>
+```

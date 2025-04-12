@@ -11,6 +11,9 @@ LDFLAGS=-g
 default: all
 all: ifcc
 
+# Declare phony targets (targets that are not real files)
+.PHONY: all clean gui test test-wat
+
 ##########################################
 # link together all pieces of our compiler 
 OBJECTS=build/ifccBaseVisitor.o \

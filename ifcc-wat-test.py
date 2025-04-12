@@ -72,6 +72,10 @@ argparser.add_argument('-v','--verbose',action="count",default=0,
                        help='Increase verbosity level. You can use this option multiple times.')
 argparser.add_argument('-w','--wrapper',metavar='PATH',
                        help='Invoke your compiler through the shell script at PATH. (default: `ifcc-wrapper.sh`)')
+argparser.add_argument('-c','--compiler',metavar='PATH',
+                       help='Path to the IFCC compiler. (default: `../compiler/ifcc`)')
+argparser.add_argument('-o','--output-dir',metavar='PATH',
+                       help='Directory where test results will be stored. (default: `../ifcc-wat-test-output`)')
 
 args=argparser.parse_args()
 
@@ -79,18 +83,23 @@ if args.debug >=2:
     print('debug: command-line arguments '+str(args))
 
 orig_cwd=os.getcwd()
+if args.output_dir:
+    output_dir = os.path.realpath(args.output_dir)
+else:
+    output_dir = os.path.dirname(orig_cwd) + "/ifcc-wat-test-output"
+
 if "ifcc-wat-test-output" in orig_cwd:
     print('error: cannot run from within the output directory')
     exit(1)
     
-if os.path.isdir('ifcc-wat-test-output'):
+if os.path.isdir(output_dir):
     # cleanup previous output directory
-    command('rm -rf ifcc-wat-test-output')
-os.mkdir('ifcc-wat-test-output')
+    command(f'rm -rf "{output_dir}"')
+os.makedirs(output_dir, exist_ok=True)
 
 # Compilation du projet
-print("Compilation du projet...")
-make_command = f"cd {os.path.dirname(orig_cwd)}/4IF_PLD/compiler && make -j"
+print(f"Compilation du projet : {os.path.dirname(orig_cwd)}/compiler")
+make_command = f"cd {os.path.dirname(orig_cwd)}/compiler && make -j"
 print(f"Exécution de : {make_command}")
 makestatus = command(make_command, "make-compile.txt")
 if makestatus != 0:
@@ -136,19 +145,18 @@ for inputfilename in inputfilenames:
         print("error: "+e.args[1]+": "+inputfilename)
         sys.exit(1)
 
-## Last but not least: we now locate the "wrapper script" that we will
-## use to invoke ifcc
-if args.wrapper:
-    wrapper=os.path.realpath(os.getcwd()+"/"+ args.wrapper)
+## Last but not least: we now locate the compiler that we will use
+if args.compiler:
+    compiler = os.path.realpath(os.getcwd() + "/" + args.compiler)
 else:
-    wrapper=os.path.dirname(os.path.realpath(__file__))+"/ifcc-wrapper.sh"
+    compiler = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/4IF_PLD/compiler/ifcc"
 
-if not os.path.isfile(wrapper):
-    print("error: cannot find "+os.path.basename(wrapper)+" in directory: "+os.path.dirname(wrapper))
+if not os.path.isfile(compiler):
+    print("error: cannot find ifcc compiler at: " + compiler)
     exit(1)
 
 if args.debug:
-    print("debug: wrapper path: "+wrapper)
+    print("debug: compiler path: " + compiler)
         
 ######################################################################################
 ## PREPARE step: copy all test-cases under ifcc-wat-test-output
@@ -165,8 +173,9 @@ for inputfilename in inputfilenames:
     
     ## each test-case gets copied and processed in its own subdirectory:
     ## ../somedir/subdir/file.c becomes ./ifcc-wat-test-output/somedir-subdir-file/input.c
-    subdir='ifcc-wat-test-output/'+inputfilename.strip("./")[:-2].replace('/','-')
-    os.mkdir(subdir)
+    subdir_name = inputfilename.strip("./")[:-2].replace('/','-')
+    subdir = f'{output_dir}/{subdir_name}'
+    os.makedirs(subdir, exist_ok=True)
     shutil.copyfile(inputfilename, subdir+'/input.c')
     jobs.append(subdir)
 
@@ -199,7 +208,7 @@ for i, jobname in enumerate(jobs):
     emccstatus=command("emcc -O0 -sEXIT_RUNTIME=1 -o exe-emcc.js input.c", "emcc-compile.txt")
     
     ## IFCC compiler with WAT output
-    ifccstatus=command(wrapper+" output.wat -w input.c", "ifcc-compile.txt")
+    ifccstatus=command(compiler + " -o output.wat -w input.c", "ifcc-compile.txt")
     
     # 1. Vérifier si le programme est valide selon emcc
     with open("emcc-compile.txt", "r") as f:

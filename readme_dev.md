@@ -16,7 +16,7 @@ Le compilateur suit les étapes suivantes :
 6. Génération de la représentation intermédiaire avec IRGenVisitor
 7. Génération du code cible (x86_64 ou WebAssembly)
 
-![image](schema_execution.png)
+![image](pictures/schema_execution.png)
 
 ## Architecture du Compilateur
 

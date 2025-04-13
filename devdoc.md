@@ -37,4 +37,4 @@ The backend code is generated using the CFGs created by the `IRGenVisitor`. The 
 
 # Summary
 
-![image](schema_execution.png)
+![image](pictures/schema_execution.png)

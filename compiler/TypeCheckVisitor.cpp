@@ -57,9 +57,6 @@ antlrcpp::Any TypeCheckVisitor::visitDecl_stmt(ifccParser::Decl_stmtContext *ctx
             if (type_expr != stv.varTable[nomVar].type) {
                 reportError("warning: type mismatch in declaration of variable " + nomVar + ", expected " + typeToString(stv.varTable[nomVar].type) + " found " + typeToString(type_expr), ctx->decl_element(i));
             }
-            if (type_expr != stv.varTable[nomVar].type) {
-                std::cerr << "warning: type mismatch in declaration of variable " << nomVar << ", expected " << typeToString(stv.varTable[nomVar].type) << " found " << typeToString(type_expr) << "\n";
-            }
         }
     }
     return 0;
@@ -81,9 +78,6 @@ antlrcpp::Any TypeCheckVisitor::visitReturn_stmt(ifccParser::Return_stmtContext 
     }
     else if (type_expr != stv.funcTable[func_name].type) {
         reportError("warning: type mismatch in return statement of function " + func_name + ", expected " + typeToString(stv.funcTable[func_name].type) + " found " + typeToString(type_expr), ctx);
-    }
-    if (type_expr != stv.funcTable[func_name].type) {
-        std::cerr << "warning: type mismatch in return statement of function " << func_name << ", expected " << typeToString(stv.funcTable[func_name].type) << " found " << typeToString(type_expr) << "\n";
     }
     
     return 0;
@@ -161,10 +155,9 @@ antlrcpp::Any TypeCheckVisitor::visitAssignExpr(ifccParser::AssignExprContext *c
         reportError("error: type mismatch in assignment of variable expected " + typeToString(type_var) + " found " + typeToString(type_expr), ctx);
         error++;
     }
-    // if (type_expr != type_var) {
-    //     std::cerr << "error: type mismatch in assignment of variable " << nomVar << ", expected " << typeToString(type_var) << " found " << typeToString(type_expr) << "\n";
-    //     error++;
-    // }
+    else if (type_expr != type_var) {
+        reportError("warning: type mismatch in assignment of variable expected " + typeToString(type_var) + " found " + typeToString(type_expr), ctx);
+    }
     
     return type_var;
 }
@@ -175,10 +168,9 @@ antlrcpp::Any TypeCheckVisitor::visitAssign_stmt(ifccParser::Assign_stmtContext 
         reportError("error: type mismatch in assignment of variable expected " + typeToString(type_var) + " found " + typeToString(type_expr), ctx);
         error++;
     }
-    // if (type_expr != type_var) {
-    //     std::cerr << "error: type mismatch in assignment of variable " << nomVar << ", expected " << typeToString(type_var) << " found " << typeToString(type_expr) << "\n";
-    //     error++;
-    // }
+    else if (type_expr != type_var) {
+        reportError("warning: type mismatch in assignment of variable expected " + typeToString(type_var) + " found " + typeToString(type_expr), ctx);
+    }
     
     return type_var;
 }
@@ -262,9 +254,6 @@ antlrcpp::Any TypeCheckVisitor::visitAddSubExpr(ifccParser::AddSubExprContext *c
     if (type_left != type_right) {
         reportError("warning: type mismatch in add/sub expression, found " + typeToString(type_left) + " and " + typeToString(type_right), ctx);
     }
-    if (type_left != type_right) {
-        std::cerr << "warning: type mismatch in add/sub expression, found " << typeToString(type_left) << " and " << typeToString(type_right) << "\n";
-    }
 
     return output_type;
 }
@@ -279,9 +268,6 @@ antlrcpp::Any TypeCheckVisitor::visitCompExpr(ifccParser::CompExprContext *ctx) 
     if (type_left != type_right) {
         reportError("warning: type mismatch in comparison expression, found " + typeToString(type_left) + " and " + typeToString(type_right), ctx);
     }
-    if (type_left != type_right) {
-        std::cerr << "warning: type mismatch in comparison expression, found " << typeToString(type_left) << " and " << typeToString(type_right) << "\n";
-    }
 
     return Type::INT32_T;
 }
@@ -295,9 +281,6 @@ antlrcpp::Any TypeCheckVisitor::visitEqExpr(ifccParser::EqExprContext *ctx) {
     }
     if (type_left != type_right) {
         reportError("warning: type mismatch in comparison expression, found " + typeToString(type_left) + " and " + typeToString(type_right), ctx);
-    }
-    if (type_left != type_right) {
-        std::cerr << "warning: type mismatch in comparison expression, found " << typeToString(type_left) << " and " << typeToString(type_right) << "\n";
     }
 
     return Type::INT32_T;

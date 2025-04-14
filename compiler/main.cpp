@@ -126,7 +126,7 @@ int main(int argc, char* argv[])
 
     // Récupération du CFG généré
     std::vector<CFG*> cfgs = cgv.getCFGs();
-    if(wat) {
+    if (wat) {
         out << "(module\n ;; Import de putchar depuis l'environnement hôte\n (import \"env\" \"putchar\" (func $putchar (param i32) (result i32)))\n";
         out << "  ;; Déclaration de la mémoire\n";
         out << "  (memory 1)\n";  

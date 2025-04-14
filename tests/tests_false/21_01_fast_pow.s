@@ -77,13 +77,13 @@ print_int_epilogue:
     popq %rbp
     ret
 
-fast_exp:
+fast_pow:
     pushq %rbp # prologue
     movq %rsp, %rbp
     subq $64, %rsp
     movl %edi, -4(%rbp)
     movl %esi, -8(%rbp)
-fast_exp_0:
+fast_pow_0:
     movl -8(%rbp), %eax # rmem
     movl %eax, -12(%rbp) # wmem
     movl $0, %ecx # ldconstint
@@ -92,12 +92,12 @@ fast_exp_0:
     sete %al
     movzbl %al, %eax
     cmpl $0, %eax # jump false
-    je fast_exp_1_endif
-    jmp fast_exp_1_if_true
-fast_exp_1_if_true:
+    je fast_pow_1_endif
+    jmp fast_pow_1_if_true
+fast_pow_1_if_true:
     movl $1, %eax # ldconstint
-    jmp fast_exp_epilogue # jump
-fast_exp_1_endif:
+    jmp fast_pow_epilogue # jump
+fast_pow_1_endif:
     movl -8(%rbp), %eax # rmem
     movl %eax, -16(%rbp) # wmem
     movl $1, %ecx # ldconstint
@@ -106,12 +106,12 @@ fast_exp_1_endif:
     sete %al
     movzbl %al, %eax
     cmpl $0, %eax # jump false
-    je fast_exp_3_endif
-    jmp fast_exp_3_if_true
-fast_exp_3_if_true:
+    je fast_pow_3_endif
+    jmp fast_pow_3_if_true
+fast_pow_3_if_true:
     movl -4(%rbp), %eax # rmem
-    jmp fast_exp_epilogue # jump
-fast_exp_3_endif:
+    jmp fast_pow_epilogue # jump
+fast_pow_3_endif:
     movl -8(%rbp), %eax # rmem
     movl %eax, -20(%rbp) # wmem
     movl $2, %ecx # ldconstint
@@ -126,9 +126,9 @@ fast_exp_3_endif:
     sete %al
     movzbl %al, %eax
     cmpl $0, %eax # jump false
-    je fast_exp_5_if_false
-    jmp fast_exp_5_if_true
-fast_exp_5_if_true:
+    je fast_pow_5_if_false
+    jmp fast_pow_5_if_true
+fast_pow_5_if_true:
     movl -4(%rbp), %eax # rmem
     movl %eax, -32(%rbp) # wmem
     movl -4(%rbp), %eax # rmem
@@ -143,12 +143,12 @@ fast_exp_5_if_true:
     cqo # div
     idivl %ecx
     movl %eax, -36(%rbp) # wmem
-    # call fast_exp
+    # call fast_pow
     movl -28(%rbp), %edi
     movl -36(%rbp), %esi
-    call fast_exp
-    jmp fast_exp_epilogue # jump
-fast_exp_5_if_false:
+    call fast_pow
+    jmp fast_pow_epilogue # jump
+fast_pow_5_if_false:
     movl -4(%rbp), %eax # rmem
     movl %eax, -44(%rbp) # wmem
     movl -4(%rbp), %eax # rmem
@@ -165,17 +165,17 @@ fast_exp_5_if_false:
     cqo # div
     idivl %ecx
     movl %eax, -56(%rbp) # wmem
-    # call fast_exp
+    # call fast_pow
     movl -48(%rbp), %edi
     movl -56(%rbp), %esi
-    call fast_exp
+    call fast_pow
     movl %eax, %ecx # copy
     movl -44(%rbp), %eax # rmem
     imull %ecx, %eax # mul
-    jmp fast_exp_epilogue # jump
-fast_exp_5_endif:
-    jmp fast_exp_epilogue # jump
-fast_exp_epilogue:
+    jmp fast_pow_epilogue # jump
+fast_pow_5_endif:
+    jmp fast_pow_epilogue # jump
+fast_pow_epilogue:
     movq %rbp, %rsp # epilogue
     popq %rbp
     ret
@@ -369,10 +369,10 @@ main_5_endwhile:
     movl %eax, -36(%rbp) # wmem
     movl -12(%rbp), %eax # rmem
     movl %eax, -40(%rbp) # wmem
-    # call fast_exp
+    # call fast_pow
     movl -36(%rbp), %edi
     movl -40(%rbp), %esi
-    call fast_exp
+    call fast_pow
     movl %eax, -16(%rbp) # wmem
     movl -8(%rbp), %eax # rmem
     movl %eax, -44(%rbp) # wmem

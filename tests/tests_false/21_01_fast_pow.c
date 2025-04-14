@@ -9,7 +9,7 @@ void print_int(int x) {
     putchar(x % 10 + '0');
 }
 
-int fast_exp(int base, int exp) {
+int fast_pow(int base, int exp) {
     if (exp == 0) {
         return 1;
     }
@@ -18,10 +18,10 @@ int fast_exp(int base, int exp) {
     }
 
     if (exp % 2 == 0) {
-        return fast_exp(base*base, exp / 2);
+        return fast_pow(base*base, exp / 2);
     }
     else {
-        return base*fast_exp(base*base, exp / 2);
+        return base*fast_pow(base*base, exp / 2);
     }
 }
 
@@ -60,7 +60,7 @@ int main() {
         exp *= 10;
         exp += c-'0';
     }
-    res = fast_exp(base, exp);
+    res = fast_pow(base, exp);
 
     print_int(base);
     putchar('^');

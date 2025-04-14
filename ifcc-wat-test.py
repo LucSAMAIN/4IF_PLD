@@ -84,9 +84,22 @@ if args.debug >=2:
 
 orig_cwd=os.getcwd()
 if args.output_dir:
-    output_dir = os.path.realpath(args.output_dir)
+    # Si l'utilisateur a spécifié un dossier de sortie, on l'utilise mais en s'assurant qu'il est dans 4IF_PLD
+    user_output_dir = os.path.realpath(args.output_dir)
+    base_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    pld_path = f"{base_path}/4IF_PLD"
+    
+    # Vérifier si le chemin spécifié est déjà dans 4IF_PLD
+    if pld_path in user_output_dir:
+        output_dir = user_output_dir
+    else:
+        # Sinon, utiliser le nom du dossier spécifié mais dans 4IF_PLD
+        output_dir = os.path.join(pld_path, os.path.basename(user_output_dir))
+        print(f"Redirection du dossier de sortie vers 4IF_PLD: {output_dir}")
 else:
-    output_dir = os.path.dirname(orig_cwd) + "/ifcc-wat-test-output"
+    # Si aucun dossier n'est spécifié, créer le dossier par défaut dans 4IF_PLD
+    base_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    output_dir = f"{base_path}/4IF_PLD/ifcc-wat-test-output"
 
 if "ifcc-wat-test-output" in orig_cwd:
     print('error: cannot run from within the output directory')
@@ -98,8 +111,18 @@ if os.path.isdir(output_dir):
 os.makedirs(output_dir, exist_ok=True)
 
 # Compilation du projet
-print(f"Compilation du projet : {os.path.dirname(orig_cwd)}/compiler")
-make_command = f"cd {os.path.dirname(orig_cwd)}/compiler && make -j"
+base_path = os.path.dirname(orig_cwd)
+compiler_path = f"{base_path}/compiler"
+compiler_path_alt = f"{base_path}/4IF_PLD/compiler"
+
+# Vérifie si le chemin standard existe, sinon utilise le chemin alternatif
+if not os.path.exists(compiler_path):
+    compiler_path = compiler_path_alt
+    print(f"Chemin standard non trouvé, utilisation du chemin alternatif: {compiler_path}")
+else:
+    print(f"Compilation du projet : {compiler_path}")
+
+make_command = f"cd {compiler_path} && make -j"
 print(f"Exécution de : {make_command}")
 makestatus = command(make_command, "make-compile.txt")
 if makestatus != 0:
@@ -149,7 +172,15 @@ for inputfilename in inputfilenames:
 if args.compiler:
     compiler = os.path.realpath(os.getcwd() + "/" + args.compiler)
 else:
-    compiler = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "/4IF_PLD/compiler/ifcc"
+    base_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    ifcc_path = base_path + "/compiler/ifcc"
+    ifcc_path_alt = base_path + "/4IF_PLD/compiler/ifcc"
+    
+    # Vérifie si le chemin standard existe, sinon utilise le chemin alternatif
+    if os.path.isfile(ifcc_path):
+        compiler = ifcc_path
+    else:
+        compiler = ifcc_path_alt
 
 if not os.path.isfile(compiler):
     print("error: cannot find ifcc compiler at: " + compiler)

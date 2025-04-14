@@ -1,5 +1,5 @@
 int main() {
-    int x = 5;
+    int x = 7;
     if (x < 7) {
         x = 8;
     } else {

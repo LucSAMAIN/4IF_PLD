@@ -4,6 +4,15 @@
 
 The IFCC compiler is a compiler for a subset of the C programming language. It handles x86_64 and WebAssembly (WASM) architectures. It uses our own IR (Intermediate Representation) to help handle the compilation process with the different architectures and optimizations.
 
+## Group
+
+- PALISSER Eugénie
+- GOUINEAUD Romane
+- MUHULET Mathias
+- SAMAIN Luc
+- JOUSSOT-DUBIEN Gabin
+- PERRIGAULT Simon
+
 ## Build
 
 To build the IFCC compiler, go to the `compiler` directory and use the following command:
